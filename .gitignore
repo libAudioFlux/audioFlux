@@ -1,0 +1,6 @@
+# 忽略 
+build/
+scripts/android
+scripts/windows
+
+
