@@ -1,8 +1,5 @@
 #! /bin/sh
 
-NDK_ROOT=/Users/good/Documents/ABV/Android/android-ndk-r10e
-export PATH=$NDK_ROOT:$PATH
-
 cd ../
 rm -r build
 mkdir build && cd build 

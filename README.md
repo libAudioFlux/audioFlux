@@ -134,7 +134,7 @@ The current system development environment needs to be installed [**android NDK*
 For example, ndk installation path is `~/Android/android-ndk-r16b`:  
 
 ```
-$ NDK_ROOT=~/Android/android-ndk-r16b
+$ export NDK_ROOT=~/Android/android-ndk-r16b
 $ export PATH=$NDK_ROOT:$PATH
 ```
 

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(FluxLib)
+project(audioflux)
 
 aux_source_directory(vector vector)
 aux_source_directory(util util)
