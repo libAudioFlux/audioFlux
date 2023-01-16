@@ -124,7 +124,6 @@ Enter the **`audioFlux`** project **`scripts`** directory and switch to the curr
 
 ```
 $ ./build_iOS.sh
-
 ```
 
 Build  and compile successfully, the project build compilation results are in the **`build`** folder
@@ -137,7 +136,6 @@ For example, ndk installation path is `~/Android/android-ndk-r16b`:
 ```
 $ NDK_ROOT=~/Android/android-ndk-r16b
 $ export PATH=$NDK_ROOT:$PATH
-
 ```
 
 Android **`audioFlux`** build uses [**fftw**](https://www.fftw.org/) library to accelerate performance, compile the single-floating point version for android platform. fftw lib successful compilation, copy to  **`audioFlux`** project **`scripts/android/fftw3`** directory.
@@ -146,7 +144,6 @@ Enter the **`audioFlux`** project **`scripts`** directory and switch to the curr
 
 ```
 $ ./build_android.sh
-
 ```
 
 Build  and compile successfully, the project build compilation results are in the **`build`** folder
@@ -158,12 +155,12 @@ Documentation of the package can be found online:
 [https://audioflux.top](https://audioflux.top/)
 
 ## Contributing
-* <a href="https://github.com/liufeigit/Van-lang/issues/new">Open an issue</a>:
+* <a href="https://github.com/libAudioFlux/audioFlux/issues/new">Open an issue</a>:
 	* if you need help
 	* if you find a bug
 	* if you have a feature request
 	* to ask a general question
-* <a href="https://github.com/liufeigit/Van-lang/pulls">Submit a pull request</a>:
+* <a href="https://github.com/libAudioFlux/audioFlux/pulls">Submit a pull request</a>:
 	* if you want to contribute
 
 <!-- ## Citing -->
