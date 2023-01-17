@@ -1,11 +1,29 @@
 
-<img src='./image/icon.png'  width="150" > 
+
+<img src='./image/logo.png'  width="400"  style="max-width: 100%;" > 
+
 
 # audioFlux
+
+<!--<p align="center">
+<img src='./image/logo.png'  width="380"  style="max-width: 100%;" > 
+</p>-->
+
+
 <!-- 
 [![Pypi Downloads](https://img.shields.io/pypi/dm/aubio.svg?label=Pypi%20downloads)](https://pypi.org/project/aubio/)
 [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/aubio.svg?label=Conda%20downloads)](https://anaconda.org/conda-forge/aubio)
 [![Documentation](https://readthedocs.org/projects/aubio/badge/?version=latest)](http://aubio.readthedocs.io/en/latest/?badge=latest "Latest documentation") -->
+
+<!-- shields.io -->
+![GitHub Workflow Status (with branch)](https://img.shields.io/github/actions/workflow/status/libAudioFlux/audioFlux/build.yml?branch=master) 
+![GitHub](https://img.shields.io/github/license/libAudioFlux/audioFlux)
+![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/libAudioFlux/audioFlux)
+![example branch parameter](https://github.com/libAudioFlux/audioFlux/actions/workflows/build.yml/badge.svg?branch=master)
+![language](https://img.shields.io/badge/language-python | c -blue.svg)
+
+[![codebeat badge](https://codebeat.co/badges/0e21a344-0928-4aee-8262-be9a41fa488b)](https://codebeat.co/projects/github-com-libaudioflux-audioflux-master)
+![](https://img.shields.io/badge/pod-v0.1.1-blue.svg)
 
 A library for audio and music analysis, feature extraction. 
 
@@ -85,6 +103,8 @@ The mir module contains the following algorithms:
 - `hpss` - Median filtering, NMF algorithm.
 
 ## Installation
+![language](https://img.shields.io/badge/platform-iOS | android | macOS | linux | windows-lyellow.svg) 
+
 The library is cross-platform and currently supports Linux, macOS, Windows, iOS and Android systems. 
 
 ### Python Package Intsall  
@@ -155,13 +175,9 @@ Documentation of the package can be found online:
 [https://audioflux.top](https://audioflux.top/)
 
 ## Contributing
-* <a href="https://github.com/libAudioFlux/audioFlux/issues/new">Open an issue</a>:
-	* if you need help
-	* if you find a bug
-	* if you have a feature request
-	* to ask a general question
-* <a href="https://github.com/libAudioFlux/audioFlux/pulls">Submit a pull request</a>:
-	* if you want to contribute
+We are more than happy to collaborate and receive your contributions to **`audioFlux`**. If you want to contribute, the best way is is to submit your code. <a href="https://github.com/libAudioFlux/audioFlux/pulls">Create a pull request</a>
+
+You are also more than welcome to suggest any improvements, including proposals for need help, find a bug, have a feature request, ask a general question, new algorithms. <a href="https://github.com/libAudioFlux/audioFlux/issues/new">Open an issue</a>
 
 <!-- ## Citing -->
 
