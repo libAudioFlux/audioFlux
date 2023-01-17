@@ -20,7 +20,7 @@
 ![GitHub](https://img.shields.io/github/license/libAudioFlux/audioFlux)
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/libAudioFlux/audioFlux)
 ![example branch parameter](https://github.com/libAudioFlux/audioFlux/actions/workflows/build.yml/badge.svg?branch=master)
-![language](https://img.shields.io/badge/language-python | c -blue.svg)
+![language](https://img.shields.io/badge/language-python%20|%20c%20-blue.svg)
 
 [![codebeat badge](https://codebeat.co/badges/0e21a344-0928-4aee-8262-be9a41fa488b)](https://codebeat.co/projects/github-com-libaudioflux-audioflux-master)
 ![](https://img.shields.io/badge/pod-v0.1.1-blue.svg)
@@ -103,7 +103,7 @@ The mir module contains the following algorithms:
 - `hpss` - Median filtering, NMF algorithm.
 
 ## Installation
-![language](https://img.shields.io/badge/platform-iOS | android | macOS | linux | windows-lyellow.svg) 
+![language](https://img.shields.io/badge/platform-iOS%20|%20android%20|%20macOS%20|%20linux%20|%20windows%20-lyellow.svg) 
 
 The library is cross-platform and currently supports Linux, macOS, Windows, iOS and Android systems. 
 
