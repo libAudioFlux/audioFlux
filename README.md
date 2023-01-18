@@ -36,6 +36,29 @@ A library for audio and music analysis, feature extraction.
 
 Can be used for deep learning, pattern recognition, signal processing, bioinformatics, statistics, finance, etc
 
+#  Table of Contents
+
+- [Overview](#overview)
+  - [Description](#description)
+  - [Functionality](#functionality)
+    - [transform](#1-transform)
+    - [feature](#2-feature)
+    - [mir](#3-mir)
+- [Quickstart](#quickstart)
+	-  [Mel & MFCC](#mel--mfcc)
+	-  [CWT & Synchrosqueezing](#cwt--synchrosqueezing)
+	-  [More examples](#more-examples)
+- [Installation](#installation)
+    - [Python Package Intsall](#python-package-intsall)
+    - [iOS build](#ios-build)
+    - [Android build](#android-build)
+    - [Compiling from source](#compiling-from-source)
+- [Documentation](#documentation)
+- [Contributing](#contributing)
+- [Citing](#citing)
+- [License](#license)
+
+
 ## Overview 
 
 ###  Description 
@@ -109,10 +132,126 @@ The mir module contains the following algorithms:
 - `onset` - Spectrum flux, novelty, etc algorithm. 
 - `hpss` - Median filtering, NMF algorithm.
 
+
+## Quickstart
+
+### Mel & Mfcc
+
+```python
+# Feature extraction example
+import numpy as np
+import audioflux as af
+import matplotlib.pyplot as plt
+from audioflux.display import fill_spec
+from audioflux.type import SpectralFilterBankScaleType
+
+# Get a 220Hz's audio file path
+sample_path = af.utils.sample_path('220')
+
+# Read audio data and sample rate
+audio_arr, sr = af.read(sample_path)
+
+# Extract mel spectrogram
+bft_obj = af.BFT(num=128, radix2_exp=12, samplate=sr,
+                 scale_type=SpectralFilterBankScaleType.MEL)
+spec_arr = bft_obj.bft(audio_arr)
+spec_arr = np.abs(spec_arr)
+
+# Create XXCC object and extract mfcc
+xxcc_obj = af.XXCC(bft_obj.num)
+xxcc_obj.set_time_length(time_length=spec_arr.shape[1])
+mfcc_arr = xxcc_obj.xxcc(spec_arr)
+
+audio_len = audio_arr.shape[0]
+fig, ax = plt.subplots()
+img = fill_spec(spec_arr, axes=ax,
+          x_coords=bft_obj.x_coords(audio_len),
+          y_coords=bft_obj.y_coords(),
+          x_axis='time', y_axis='log',
+          title='Mel Spectrogram')
+fig.colorbar(img, ax=ax)
+
+fig, ax = plt.subplots()
+img = fill_spec(mfcc_arr, axes=ax,
+          x_coords=bft_obj.x_coords(audio_len), x_axis='time',
+          title='MFCC')
+fig.colorbar(img, ax=ax)
+
+plt.show()
+```
+
+<img src='image/demo_mel.png'  width="415"  /><img src='image/demo_mfcc.png'  width="415"  />
+
+### CWT & Synchrosqueezing
+
+```python
+# Feature extraction example
+import numpy as np
+import audioflux as af
+import matplotlib.pyplot as plt
+from audioflux.display import fill_spec
+from audioflux.type import SpectralFilterBankScaleType, WaveletContinueType
+from audioflux.utils import note_to_hz
+
+# Get a 220Hz's audio file path
+sample_path = af.utils.sample_path('220')
+
+# Read audio data and sample rate
+audio_arr, sr = af.read(sample_path)
+audio_arr = audio_arr[:4096]
+
+cwt_obj = af.CWT(num=84, radix2_exp=12, samplate=sr, low_fre=note_to_hz('C1'),
+                 bin_per_octave=12, wavelet_type=WaveletContinueType.MORSE,
+                 scale_type=SpectralFilterBankScaleType.OCTAVE)
+
+cwt_spec_arr = cwt_obj.cwt(audio_arr)
+
+synsq_obj = af.Synsq(num=cwt_obj.num,
+                     radix2_exp=cwt_obj.radix2_exp,
+                     samplate=cwt_obj.samplate)
+
+synsq_arr = synsq_obj.synsq(cwt_spec_arr,
+                            filter_bank_type=cwt_obj.scale_type,
+                            fre_arr=cwt_obj.get_fre_band_arr())
+
+# Show CWT
+fig, ax = plt.subplots(figsize=(7,4))
+img = fill_spec(np.abs(cwt_spec_arr), axes=ax,
+                x_coords=cwt_obj.x_coords(),
+                y_coords=cwt_obj.y_coords(),
+                x_axis='time', y_axis='log',
+                title='CWT')
+fig.colorbar(img, ax=ax)
+# Show Synsq
+fig, ax = plt.subplots(figsize=(7,4))
+img = fill_spec(np.abs(synsq_arr), axes=ax,
+                x_coords=cwt_obj.x_coords(),
+                y_coords=cwt_obj.y_coords(),
+                x_axis='time', y_axis='log',
+                title='Synsq')
+fig.colorbar(img, ax=ax)
+
+plt.show()
+```
+
+<img src='image/demo_cwt.png'  width="415"  /><img src='image/demo_synsq.png'  width="415"  />
+
+
+### Other examples
+
+- [CQT & Chroma](docs/examples.md#cqt--chroma)
+- [Wavelet Type](docs/examples.md#wavelet-type)
+- [Spectral Features](docs/examples.md#spectral-feature)
+- [Pitch Estimate](docs/examples.md#pitch-estimate)
+- [Onset Detection](docs/examples.md#onset-detection)
+- [Harmonic-percussive source separation](docs/examples.md#harmonic-percussive-source-separation)
+
+More example scripts are provided in the [Documentation](https://audioflux.top/) section.
+
 ## Installation
 ![language](https://img.shields.io/badge/platform-iOS%20|%20android%20|%20macOS%20|%20linux%20|%20windows%20-lyellow.svg) 
 
-The library is cross-platform and currently supports Linux, macOS, Windows, iOS and Android systems. 
+The library is cross-platform and currently supports Linux, macOS, Windows, iOS and Android systems.
 
 ### Python Package Intsall  
 
@@ -122,23 +261,19 @@ Using PyPI:
 $ pip install audioflux 
 ```
 
-Using Anaconda: 
+<!--Using Anaconda: 
 
 ```
 $ conda install -c conda-forge audioflux
-```
+```-->
 
-Building from source:
-
-```
-$ python setup.py build
-$ python setup.py install
-```
 
 <!--Read installation instructions:
 https://audioflux.top/install-->
 
+
 ### iOS build
+
 To compile iOS on a Mac, Xcode Command Line Tools must exist in the system:  
 
 - Install the full Xcode package
@@ -156,6 +291,7 @@ $ ./build_iOS.sh
 Build  and compile successfully, the project build compilation results are in the **`build`** folder
 
 ### Android build
+
 The current system development environment needs to be installed [**android NDK**](https://developer.android.com/ndk), ndk version>=16,after installation, set the environment variable ndk path.  
  
 For example, ndk installation path is `~/Android/android-ndk-r16b`:  
@@ -175,6 +311,13 @@ $ ./build_android.sh
 
 Build  and compile successfully, the project build compilation results are in the **`build`** folder
 
+
+### Compiling from source
+
+For Linux, macOS, Windows systems. Read installation instructions:
+
+* [docs/installing.md](docs/installing.md)
+
 ## Documentation
 
 Documentation of the package can be found online:
@@ -186,7 +329,15 @@ We are more than happy to collaborate and receive your contributions to **`audio
 
 You are also more than welcome to suggest any improvements, including proposals for need help, find a bug, have a feature request, ask a general question, new algorithms. <a href="https://github.com/libAudioFlux/audioFlux/issues/new">Open an issue</a>
 
-<!-- ## Citing -->
+
+## Citing
+
+If you want to cite **`audioFlux`** in a scholarly work, there are two ways to do it.
+
+- If you are using the library for your work, for the sake of reproducibility, please cite
+  the version you used as indexed at Zenodo:
+
+    [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7548289.svg)](https://doi.org/10.5281/zenodo.7548289)
 
 ## License
 audioFlux project is available MIT License.
