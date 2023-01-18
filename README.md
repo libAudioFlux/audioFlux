@@ -14,11 +14,11 @@
 [![Pypi Downloads](https://img.shields.io/pypi/dm/aubio.svg?label=Pypi%20downloads)](https://pypi.org/project/aubio/)
 [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/aubio.svg?label=Conda%20downloads)](https://anaconda.org/conda-forge/aubio)
 [![Documentation](https://readthedocs.org/projects/aubio/badge/?version=latest)](http://aubio.readthedocs.io/en/latest/?badge=latest "Latest documentation") -->
+<!--![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/libAudioFlux/audioFlux)-->
 
 <!-- shields.io -->
 ![GitHub Workflow Status (with branch)](https://img.shields.io/github/actions/workflow/status/libAudioFlux/audioFlux/build.yml?branch=master) 
 ![GitHub](https://img.shields.io/github/license/libAudioFlux/audioFlux)
-<!--![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/libAudioFlux/audioFlux)-->
 ![example branch parameter](https://github.com/libAudioFlux/audioFlux/actions/workflows/build.yml/badge.svg?branch=master)
 ![language](https://img.shields.io/badge/language-python%20|%20c%20-blue.svg)
 [![PyPI - Version](https://img.shields.io/pypi/v/audioflux)](https://pypi.org/project/audioflux/)
