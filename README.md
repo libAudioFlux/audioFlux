@@ -21,9 +21,15 @@
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/libAudioFlux/audioFlux)
 ![example branch parameter](https://github.com/libAudioFlux/audioFlux/actions/workflows/build.yml/badge.svg?branch=master)
 ![language](https://img.shields.io/badge/language-python%20|%20c%20-blue.svg)
+[![PyPI - Version](https://img.shields.io/pypi/v/audioflux)](https://pypi.org/project/audioflux/)
+[![PyPI - Python Version](https://img.shields.io/badge/python-%3E%3D3.6-brightgreen)](https://pypi.org/project/audioflux/)
 
-[![codebeat badge](https://codebeat.co/badges/0e21a344-0928-4aee-8262-be9a41fa488b)](https://codebeat.co/projects/github-com-libaudioflux-audioflux-master)
-![](https://img.shields.io/badge/pod-v0.1.1-blue.svg)
+[![Docs](https://img.shields.io/badge/Docs-passing-brightgreen)](https://audioflux.top/index.html)
+
+
+<!--[![codebeat badge](https://codebeat.co/badges/0e21a344-0928-4aee-8262-be9a41fa488b)](https://codebeat.co/projects/github-com-libaudioflux-audioflux-master)
+![](https://img.shields.io/badge/pod-v0.1.1-blue.svg)-->
+
 
 A library for audio and music analysis, feature extraction. 
 
