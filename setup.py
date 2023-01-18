@@ -5,9 +5,6 @@ from sys import platform
 from setuptools import find_packages, setup
 import setuptools.command.build_py
 
-with open('/tmp/tttt.log', 'a') as f:
-    f.write(str(sys.argv) + '\n')
-
 
 class BuildPyCommand(setuptools.command.build_py.build_py):
 
