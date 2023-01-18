@@ -1,0 +1,17 @@
+nav.wy-nav-side {
+    width: 330px !important;
+}
+div.wy-side-scroll {
+    width: 350px !important;
+}
+div.wy-side-nav-search {
+    width: 330px !important;
+
+}
+div.wy-menu-vertical {
+    width: 330px !important;
+}
+
+div.wy-nav-content {
+    max-width: 1000px;
+}
