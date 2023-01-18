@@ -1,11 +1,36 @@
 
-<img src='./image/icon.png'  width="150" > 
+
+<img src='./image/logo.png'  width="400"  style="max-width: 100%;" > 
+
 
 # audioFlux
+
+<!--<p align="center">
+<img src='./image/logo.png'  width="380"  style="max-width: 100%;" > 
+</p>-->
+
+
 <!-- 
 [![Pypi Downloads](https://img.shields.io/pypi/dm/aubio.svg?label=Pypi%20downloads)](https://pypi.org/project/aubio/)
 [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/aubio.svg?label=Conda%20downloads)](https://anaconda.org/conda-forge/aubio)
 [![Documentation](https://readthedocs.org/projects/aubio/badge/?version=latest)](http://aubio.readthedocs.io/en/latest/?badge=latest "Latest documentation") -->
+<!--![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/libAudioFlux/audioFlux)-->
+
+<!-- shields.io -->
+![GitHub Workflow Status (with branch)](https://img.shields.io/github/actions/workflow/status/libAudioFlux/audioFlux/build.yml?branch=master) 
+![GitHub](https://img.shields.io/github/license/libAudioFlux/audioFlux)
+![example branch parameter](https://github.com/libAudioFlux/audioFlux/actions/workflows/build.yml/badge.svg?branch=master)
+![language](https://img.shields.io/badge/language-python%20|%20c%20-blue.svg)
+[![PyPI - Version](https://img.shields.io/pypi/v/audioflux)](https://pypi.org/project/audioflux/)
+[![PyPI - Python Version](https://img.shields.io/badge/python-%3E%3D3.6-brightgreen)](https://pypi.org/project/audioflux/)
+
+[![Docs](https://img.shields.io/badge/Docs-passing-brightgreen)](https://audioflux.top/index.html)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7548289.svg)](https://doi.org/10.5281/zenodo.7548289)
+<!--[![PyPI Downloads](https://img.shields.io/pypi/dm/audioflux.svg?label=Pypi%20downloads)](https://pypi.org/project/audioflux/)-->
+
+<!--[![codebeat badge](https://codebeat.co/badges/0e21a344-0928-4aee-8262-be9a41fa488b)](https://codebeat.co/projects/github-com-libaudioflux-audioflux-master)
+![](https://img.shields.io/badge/pod-v0.1.1-blue.svg)-->
+
 
 A library for audio and music analysis, feature extraction. 
 
@@ -85,6 +110,8 @@ The mir module contains the following algorithms:
 - `hpss` - Median filtering, NMF algorithm.
 
 ## Installation
+![language](https://img.shields.io/badge/platform-iOS%20|%20android%20|%20macOS%20|%20linux%20|%20windows%20-lyellow.svg) 
+
 The library is cross-platform and currently supports Linux, macOS, Windows, iOS and Android systems. 
 
 ### Python Package Intsall  
@@ -124,7 +151,6 @@ Enter the **`audioFlux`** project **`scripts`** directory and switch to the curr
 
 ```
 $ ./build_iOS.sh
-
 ```
 
 Build  and compile successfully, the project build compilation results are in the **`build`** folder
@@ -135,9 +161,8 @@ The current system development environment needs to be installed [**android NDK*
 For example, ndk installation path is `~/Android/android-ndk-r16b`:  
 
 ```
-$ NDK_ROOT=~/Android/android-ndk-r16b
+$ export NDK_ROOT=~/Android/android-ndk-r16b
 $ export PATH=$NDK_ROOT:$PATH
-
 ```
 
 Android **`audioFlux`** build uses [**fftw**](https://www.fftw.org/) library to accelerate performance, compile the single-floating point version for android platform. fftw lib successful compilation, copy to  **`audioFlux`** project **`scripts/android/fftw3`** directory.
@@ -146,7 +171,6 @@ Enter the **`audioFlux`** project **`scripts`** directory and switch to the curr
 
 ```
 $ ./build_android.sh
-
 ```
 
 Build  and compile successfully, the project build compilation results are in the **`build`** folder
@@ -158,13 +182,9 @@ Documentation of the package can be found online:
 [https://audioflux.top](https://audioflux.top/)
 
 ## Contributing
-* <a href="https://github.com/liufeigit/Van-lang/issues/new">Open an issue</a>:
-	* if you need help
-	* if you find a bug
-	* if you have a feature request
-	* to ask a general question
-* <a href="https://github.com/liufeigit/Van-lang/pulls">Submit a pull request</a>:
-	* if you want to contribute
+We are more than happy to collaborate and receive your contributions to **`audioFlux`**. If you want to contribute, the best way is is to submit your code. <a href="https://github.com/libAudioFlux/audioFlux/pulls">Create a pull request</a>
+
+You are also more than welcome to suggest any improvements, including proposals for need help, find a bug, have a feature request, ask a general question, new algorithms. <a href="https://github.com/libAudioFlux/audioFlux/issues/new">Open an issue</a>
 
 <!-- ## Citing -->
 
