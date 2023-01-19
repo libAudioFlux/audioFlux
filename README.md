@@ -47,7 +47,7 @@ Can be used for deep learning, pattern recognition, signal processing, bioinform
 - [Quickstart](#quickstart)
 	-  [Mel & MFCC](#mel--mfcc)
 	-  [CWT & Synchrosqueezing](#cwt--synchrosqueezing)
-	-  [More examples](#more-examples)
+	-  [Other examples](#other-examples)
 - [Installation](#installation)
     - [Python Package Intsall](#python-package-intsall)
     - [iOS build](#ios-build)
@@ -135,7 +135,9 @@ The mir module contains the following algorithms:
 
 ## Quickstart
 
-### Mel & Mfcc
+### Mel & MFCC
+
+Mel spectrogram and Mel-frequency cepstral coefficients 
 
 ```python
 # Feature extraction example
@@ -183,6 +185,8 @@ plt.show()
 <img src='image/demo_mel.png'  width="415"  /><img src='image/demo_mfcc.png'  width="415"  />
 
 ### CWT & Synchrosqueezing
+
+Continuous Wavelet Transform spectrogram and synchrosqueezing reassignment spectrogram
 
 ```python
 # Feature extraction example

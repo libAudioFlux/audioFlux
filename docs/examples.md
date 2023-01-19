@@ -4,13 +4,15 @@
 
 - [CQT & Chroma](#cqt--chroma)
 - [Wavelet Type](#wavelet-type)
-- [Spectral Features](#spectral-feature)
+- [Spectral Features](#spectral-features)
 - [Pitch Estimate](#pitch-estimate)
 - [Onset Detection](#onset-detection)
 - [Harmonic-percussive source separation](#harmonic-percussive-source-separation)
 
 
 ## CQT & Chroma
+
+Constant-Q Transform spectrogram and cqt_chroma 
 
 ```python
 import numpy as np
@@ -59,6 +61,8 @@ plt.show()
 
 
 ## Wavelet Type
+
+Comparison of different Wavelet Continue Type spectrogram
 
 ```python
 import audioflux as af
@@ -140,6 +144,8 @@ plt.show()
 
 ## Spectral Features
 
+Flatness, Novelty, Entropy, RMS and Slope features
+
 ```python
 import numpy as np
 import matplotlib.pyplot as plt
@@ -205,6 +211,9 @@ plt.show()
 
 ## Pitch Estimate
 
+Fundamental frequency (F0) estimation using the YIN algorithm.
+
+
 ```python
 import numpy as np
 import audioflux as af
@@ -231,6 +240,9 @@ plt.show()
 <img src='../image/demos/demo_pitch.png'  width="800"  />
 
 ## Onset Detection
+
+Locate note onset events by picking peaks in an onset strength envelope.
+
 
 ```python
 import numpy as np
@@ -278,6 +290,9 @@ plt.show()
 
 
 ### Harmonic-percussive source separation
+
+Decompose audio into harmonic and percussive components
+
 
 ```python
 import numpy as np
