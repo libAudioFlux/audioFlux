@@ -3,7 +3,7 @@
 
 #### Linux build
 
-1. Installing dependencies on Linux
+1. Installing **fft3w** lib dependencies on Linux
 
 	For Ubuntu: 
 		

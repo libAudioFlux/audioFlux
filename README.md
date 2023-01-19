@@ -34,7 +34,6 @@
 
 A library for audio and music analysis, feature extraction. 
 
-Can be used for deep learning, pattern recognition, signal processing, bioinformatics, statistics, finance, etc
 
 #  Table of Contents
 
@@ -68,6 +67,8 @@ In audio domain, feature extraction is particularly important for Audio Classifi
 In the above tasks, **mel spectrogram** and **mfcc** features are commonly used in traditional machine-learning based on statistics and deep-learning based on neural network.
 
 **`audioFlux`** provides systematic, comprehensive and multi-dimensional feature extraction and combination, and combines various deep learning network models to conduct research and development learning in different fields.
+
+Can be used for deep learning, pattern recognition, signal processing, bioinformatics, statistics, finance, etc.
 
 ###  Functionality 
 
@@ -186,7 +187,7 @@ plt.show()
 
 ### CWT & Synchrosqueezing
 
-Continuous Wavelet Transform spectrogram and synchrosqueezing reassignment spectrogram
+Continuous Wavelet Transform spectrogram and its corresponding synchrosqueezing reassignment spectrogram
 
 ```python
 # Feature extraction example
@@ -244,11 +245,11 @@ plt.show()
 ### Other examples
 
 - [CQT & Chroma](docs/examples.md#cqt--chroma)
-- [Wavelet Type](docs/examples.md#wavelet-type)
+- [Different Wavelet Type](docs/examples.md#different-wavelet-type)
 - [Spectral Features](docs/examples.md#spectral-features)
 - [Pitch Estimate](docs/examples.md#pitch-estimate)
 - [Onset Detection](docs/examples.md#onset-detection)
-- [Harmonic-percussive source separation](docs/examples.md#harmonic-percussive-source-separation)
+- [Harmonic Percussive Source Separation](docs/examples.md#harmonic-percussive-source-separation)
 
 More example scripts are provided in the [Documentation](https://audioflux.top/) section.
 

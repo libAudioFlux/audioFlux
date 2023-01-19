@@ -3,11 +3,11 @@
 
 
 - [CQT & Chroma](#cqt--chroma)
-- [Wavelet Type](#wavelet-type)
+- [Different Wavelet Type](#different-wavelet-type)
 - [Spectral Features](#spectral-features)
 - [Pitch Estimate](#pitch-estimate)
 - [Onset Detection](#onset-detection)
-- [Harmonic-percussive source separation](#harmonic-percussive-source-separation)
+- [Harmonic Percussive Source Separation](#harmonic-percussive-source-separation)
 
 
 ## CQT & Chroma
@@ -60,9 +60,9 @@ plt.show()
 <img src='../image/demos/demo_chroma_cqt.png'  width="800"  />
 
 
-## Wavelet Type
-
-Comparison of different Wavelet Continue Type spectrogram
+## Different Wavelet Type
+ 
+Compare morlet, morese, paul and bump Wavelet type spectrogram
 
 ```python
 import audioflux as af
@@ -289,7 +289,7 @@ plt.show()
 <img src='../image/demos/demo_onset.png'  width="800"  />
 
 
-### Harmonic-percussive source separation
+### Harmonic Percussive Source Separation
 
 Decompose audio into harmonic and percussive components
 
