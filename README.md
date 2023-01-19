@@ -245,7 +245,7 @@ plt.show()
 
 - [CQT & Chroma](docs/examples.md#cqt--chroma)
 - [Wavelet Type](docs/examples.md#wavelet-type)
-- [Spectral Features](docs/examples.md#spectral-feature)
+- [Spectral Features](docs/examples.md#spectral-features)
 - [Pitch Estimate](docs/examples.md#pitch-estimate)
 - [Onset Detection](docs/examples.md#onset-detection)
 - [Harmonic-percussive source separation](docs/examples.md#harmonic-percussive-source-separation)
