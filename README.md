@@ -342,7 +342,7 @@ If you want to cite **`audioFlux`** in a scholarly work, there are two ways to d
 - If you are using the library for your work, for the sake of reproducibility, please cite
   the version you used as indexed at Zenodo:
 
-    [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7548289.svg)](https://doi.org/10.5281/zenodo.7548289)
+    [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7548288.svg)](https://doi.org/10.5281/zenodo.7548288)
 
 ## License
 audioFlux project is available MIT License.
