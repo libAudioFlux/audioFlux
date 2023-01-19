@@ -53,8 +53,6 @@ class Reassign(Base):
     >>> import audioflux as af
     >>> audio_path = af.utils.sample_path('220')
     >>> audio_arr, sr = af.read(audio_path)
-    array([-5.5879354e-09, -9.3132257e-09,  0.0000000e+00, ...,
-            3.2826858e-03,  3.2447521e-03,  3.0795704e-03], dtype=float32)
 
     Create Reassign object
 

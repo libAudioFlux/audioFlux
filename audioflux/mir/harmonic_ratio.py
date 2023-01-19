@@ -29,6 +29,8 @@ class HarmonicRatio(Base):
     window_type: WindowType
         Window type for each frame.
 
+        See: `type.WindowType`
+
     slide_length: int
         Window sliding length.
 
@@ -102,7 +104,7 @@ class HarmonicRatio(Base):
         data_len = data_arr.shape[0]
 
         time_length = self.cal_time_length(data_len)
-        # print(time_length)
+
         value_arr = np.zeros(time_length, dtype=np.float32)
 
         fn(self._obj, data_arr, c_int(data_len), value_arr)

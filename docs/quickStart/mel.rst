@@ -8,7 +8,7 @@ Simple extraction of mel spectrogram
 
     # Feature extraction example
     import numpy as np
-    import audixflux as af
+    import audioflux as af
 
     # Get a 220Hz's audio file path
     sample_path = af.utils.sample_path('220')
@@ -17,12 +17,9 @@ Simple extraction of mel spectrogram
     audio_arr, sr = af.read(sample_path)
 
     # Extract mel spectrogram
-    spec_arr = af.mel_spectrogram(audio_arr, samplate=sr)
-    spec_arr = np.abs(spec_arr)
+    spec_arr, _ = af.mel_spectrogram(audio_arr, samplate=sr)
 
-If you want to extract the mel spectrogram multiple times or need
-more parameters, it is recommended to use the
-:ref:`BFT <transforms/bft:BFT - Based Fourier Transform, similar short-time Fourier transform>` class.
+We recommend using the :ref:`BFT <transforms/bft:BFT - Based Fourier Transform, similar short-time Fourier transform>` class, you can use it more flexibly and efficiently.
 
 .. code-block:: python
     :linenos:

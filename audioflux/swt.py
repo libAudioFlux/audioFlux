@@ -70,20 +70,12 @@ class SWT(Base):
         >>> audio_arr, sr = af.read(audio_path)
         >>> audio_len = 4096 * 5
         >>> audio_arr = audio_arr[:audio_len]
-        array([-5.5879354e-09, -9.3132257e-09,  0.0000000e+00, ...,
-               -1.3137090e-01, -1.5649168e-01, -1.8550715e-01], dtype=float32)
 
         Create SWT object
 
         >>> from audioflux.type import WaveletDiscreteType
-        >>> num = 5
-        >>> fft_length = audio_len
-        >>> wavelet_type = WaveletDiscreteType.DB
-        >>> t1 = 4
-        >>> t2 = 0
-        >>> obj = af.SWT(num=num, fft_length=fft_length,
-        >>>              wavelet_type=wavelet_type,
-        >>>              t1=t1, t2=t2)
+        >>> obj = af.SWT(num=5, fft_length=audio_len,
+        >>>              wavelet_type=WaveletDiscreteType.DB, t1=4, t2=0)
 
         Get SWT data
 
@@ -97,6 +89,26 @@ class SWT(Base):
         >>> # af.write('SAVE_PATH_1.wav', save_data_arr1)
         >>> # af.write('SAVE_PATH_2.wav', save_data_arr2)
 
+        Show wave plot
+
+        >>> import matplotlib.pyplot as plt
+        >>> from audioflux.display import fill_wave
+        >>>
+        >>> n_num, n_time = data_arr2.shape
+        >>> fig, ax = plt.subplots(nrows=n_num + 1, figsize=(8, 16), sharex=True, layout='tight')
+        >>> _ax0 = fill_wave(audio_arr[:n_time], samplate=sr, axes=ax[0])
+        >>> _ax0.set_title('SWT arr2 origin')
+        >>> for i in range(n_num):
+        >>>     _ax = fill_wave(data_arr2[i], samplate=sr, axes=ax[i + 1])
+        >>>     _ax.set_title(f'SWT arr2 num={i}')
+        >>>
+        >>> n_num, n_time = data_arr1.shape
+        >>> fig, ax = plt.subplots(nrows=n_num + 1, figsize=(8, 16), sharex=True, layout='tight')
+        >>> _ax0 = fill_wave(audio_arr[:n_time], samplate=sr, axes=ax[0])
+        >>> _ax0.set_title('SWT arr1 origin')
+        >>> for i in range(n_num):
+        >>>     _ax = fill_wave(data_arr1[i], samplate=sr, axes=ax[i + 1])
+        >>>     _ax.set_title(f'SWT arr1 num={i}')
     """
 
     def __init__(self, num, fft_length, wavelet_type=WaveletDiscreteType.SYM, t1=4, t2=0):

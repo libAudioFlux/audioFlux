@@ -35,10 +35,10 @@ class BuildPyCommand(setuptools.command.build_py.build_py):
         print('Compile audioFlux successful.')
 
         import shutil
-        dst_lib_path = './audioflux/lib'
-        # if os.path.exists(dst_lib_path):
-        #     shutil.rmtree(dst_lib_path)
-        # os.mkdir(dst_lib_path)
+        dst_lib_path = 'audioflux/lib'
+        if not os.path.exists(dst_lib_path):
+            os.makedirs(dst_lib_path)
+
         dst_lib_fp = os.path.join(dst_lib_path, filename)
         if os.path.exists(dst_lib_fp):
             os.remove(dst_lib_fp)
@@ -70,7 +70,9 @@ class BuildPyWinCommand(setuptools.command.build_py.build_py):
         print('Compile audioFlux successful.')
 
         import shutil
-        dst_lib_path = './audioflux/lib'
+        dst_lib_path = 'audioflux/lib'
+        if not os.path.exists(dst_lib_path):
+            os.makedirs(dst_lib_path)
 
         dst_lib_fp = os.path.join(dst_lib_path, filename)
         if os.path.exists(dst_lib_fp):

@@ -91,8 +91,6 @@ class WSST(Base):
     >>> # WSST can only input fft_length data
     >>> # For radix2_exp=12, then fft_length=4096
     >>> audio_arr = audio_arr[:4096]
-    array([-5.5879354e-09, -9.3132257e-09,  0.0000000e+00, ...,
-           -1.3137090e-01, -1.5649168e-01, -1.8550715e-01], dtype=float32)
 
     Create WSST object of mel
 
@@ -119,7 +117,7 @@ class WSST(Base):
     >>>                 x_coords=obj.x_coords(),
     >>>                 y_coords=obj.y_coords(),
     >>>                 x_axis='time', y_axis='log',
-    >>>                 title='CWT')
+    >>>                 title='CWT-Mel')
     >>> fig.colorbar(img, ax=ax)
     >>>
     >>> # Show WSST
@@ -128,7 +126,7 @@ class WSST(Base):
     >>>                 x_coords=obj.x_coords(),
     >>>                 y_coords=obj.y_coords(),
     >>>                 x_axis='time', y_axis='log',
-    >>>                 title='WSST')
+    >>>                 title='WSST-Mel')
     >>> fig.colorbar(img, ax=ax)
     """
 

@@ -1,4 +1,4 @@
-Synsq - reassign data use `STFT` data
+Synsq - reassign data use `CWT` data
 =====================================
 
 .. autoclass:: audioflux.Synsq

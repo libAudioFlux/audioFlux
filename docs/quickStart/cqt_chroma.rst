@@ -7,7 +7,7 @@ Simple extraction of cqt and chroma_cqt
     :linenos:
 
     import numpy as np
-    import audixflux as af
+    import audioflux as af
 
     # Get a 220Hz's audio file path
     sample_path = af.utils.sample_path('220')
@@ -16,14 +16,12 @@ Simple extraction of cqt and chroma_cqt
     audio_arr, sr = af.read(sample_path)
 
     # Extract CQT
-    cqt_arr = af.cqt(audio_arr, samplate=sr)
+    cqt_arr, _ = af.cqt(audio_arr, samplate=sr)
 
     # Extract CQT_CHROMA
     chroma_cqt_arr = af.chroma_cqt(audio_arr, samplate=sr)
 
-If you want to extract the cqt multiple times or need
-more parameters, it is recommended to use the
-:ref:`CQT <transforms/cqt:CQT - Constant-Q transform>` class.
+We recommend using the :ref:`CQT <transforms/cqt:CQT>` class, you can use it more flexibly and efficiently.
 
 .. code-block:: python
     :linenos:

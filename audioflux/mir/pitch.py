@@ -45,25 +45,13 @@ class Pitch(Base):
 
     >>> import audioflux as af
     >>> audio_arr, sr = af.read(af.utils.sample_path('220'))
-    >>> audio_arr = audio_arr[:8192]
+    # >>> audio_arr = audio_arr[:8192]
 
     Create Pitch object and get frequency
 
     >>> from audioflux.type import PitchType
     >>> obj = af.Pitch(pitch_type=PitchType.YIN)
     >>> fre_arr, value_arr1, value_arr2 = obj.pitch(audio_arr)
-    >>> # fre_arr is 220Hz
-    >>> fre_arr
-    array([  0.     ,   0.     , 220.73265, 220.68478, 220.61868],
-      dtype=float32)
-
-    >>> value_arr1
-    array([0.        , 0.        , 0.03432978, 0.00873703, 0.00305533],
-      dtype=float32)
-
-    >>> value_arr2
-    array([0.26218787, 0.14966235, 0.03079604, 0.00542674, 0.0016437 ],
-      dtype=float32)
 
     Display plot
 
@@ -71,10 +59,11 @@ class Pitch(Base):
     >>> from audioflux.display import fill_wave, fill_plot
     >>> import numpy as np
     >>> audio_len = audio_arr.shape[0]
-    >>> fig, axes = plt.subplots(nrows=3, sharex=True)
+    >>> fig, axes = plt.subplots(nrows=2)
     >>> fill_wave(audio_arr, samplate=sr, axes=axes[0])
     >>>
-    >>> fill_plot(np.arange(len(fre_arr)), fre_arr, label='fre')
+    >>> ax = fill_plot(np.arange(len(fre_arr)), fre_arr, label='fre', axes=axes[1])
+    >>> ax.set_ylabel('frequency(Hz)')
     """
 
     def __init__(self, pitch_type=None, samplate=32000,

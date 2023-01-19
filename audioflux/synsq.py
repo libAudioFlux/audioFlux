@@ -46,8 +46,6 @@ class Synsq(Base):
     >>> # WSST can only input fft_length data
     >>> # For radix2_exp=12, then fft_length=4096
     >>> audio_arr = audio_arr[:4096]
-    array([-5.5879354e-09, -9.3132257e-09,  0.0000000e+00, ...,
-           -1.3137090e-01, -1.5649168e-01, -1.8550715e-01], dtype=float32)
 
     Create CWT object of octave
 
@@ -135,6 +133,8 @@ class Synsq(Base):
 
         filter_bank_type: SpectralFilterBankScaleType
             bank type，need to correspond to `m_data_arr`.
+
+            See: `type.SpectralFilterBankScaleType`
 
         fre_arr: np.ndarray [shape=(fre,)]
             fre band arr，need to correspond to `m_data_arr`.

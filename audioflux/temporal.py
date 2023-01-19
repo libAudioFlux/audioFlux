@@ -28,6 +28,21 @@ class Temporal(Base):
         Window type for each frame.
 
         See: `type.WindowType`
+
+    Examples
+    --------
+
+    Read 220Hz audio data
+
+    >>> import audioflux as af
+    >>> audio_path = af.utils.sample_path('220')
+    >>> audio_arr, sr = af.read(audio_path)
+
+    Create Temporal and extract feature
+
+    >>> temp_obj = af.Temporal(frame_length=2048, slide_length=512)
+    >>> temp_obj.temporal(audio_arr)
+    >>> energy_arr, rms_arr, zero_cross_arr, m_arr = temp_obj.get_data(len(audio_arr))
     """
 
     def __init__(self, frame_length=2048, slide_length=512, window_type=WindowType.HANN):

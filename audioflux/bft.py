@@ -104,8 +104,6 @@ class BFT(Base):
     >>> import audioflux as af
     >>> audio_path = af.utils.sample_path('220')
     >>> audio_arr, sr = af.read(audio_path)
-    array([-5.5879354e-09, -9.3132257e-09,  0.0000000e+00, ...,
-            3.2826858e-03,  3.2447521e-03,  3.0795704e-03], dtype=float32)
 
     Create BFT object of Linser(STFT)
 
@@ -124,19 +122,6 @@ class BFT(Base):
     >>> spec_arr = obj.bft(audio_arr)
     >>> spec_arr = np.abs(spec_arr)
     >>> spec_dB_arr = power_to_db(spec_arr)
-    array([[-41.382824, -37.95072 , -50.98091 , ..., -48.275932, -66.01512 ,
-            -53.229565],
-           [-29.873356, -33.225224, -32.94691 , ..., -49.855965, -49.439796,
-            -53.827766],
-           [-27.326801, -36.17459 , -32.978054, ..., -56.360283, -51.485504,
-            -51.036415],
-           ...,
-           [-80.      , -80.      , -80.      , ..., -80.      , -80.      ,
-            -80.      ],
-           [-80.      , -80.      , -80.      , ..., -80.      , -80.      ,
-            -80.      ],
-           [-80.      , -80.      , -80.      , ..., -80.      , -80.      ,
-            -80.      ]], dtype=float32)
 
     Show spectrogram plot
 
@@ -163,6 +148,12 @@ class BFT(Base):
                  data_type=SpectralDataType.MAG,
                  is_reassign=False, is_temporal=False):
         super(BFT, self).__init__(pointer(OpaqueBFT()))
+
+        self.fft_length = fft_length = 1 << radix2_exp
+
+        # check num
+        if num > (fft_length // 2 + 1):
+            raise ValueError(f'num={num} is too large')
 
         # check BPO
         if scale_type == SpectralFilterBankScaleType.OCTAVE and bin_per_octave < 1:

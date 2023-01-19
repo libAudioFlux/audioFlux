@@ -122,9 +122,9 @@ class SpectralFilterBankScaleType(Enum):
     """
     Spectral Filter Bank Scale Type
     """
-    #: Short-time Fourier transform.
+    #: Short-time Fourier transform spectrogram.
     LINEAR = 0
-    #: Numbers evenly distributed over the specified interval.
+    #: Linspace-scale spectrogram.
     LINSPACE = 1
 
     #: Mel-scale spectrogram.
@@ -136,7 +136,7 @@ class SpectralFilterBankScaleType(Enum):
 
     #: Octave-scale spectrogram.
     OCTAVE = 5  # similar Constant-Q
-    #: Evenly distributed numbers on a logarithmic scale.
+    #: Logarithmic-scale spectrogram.
     LOG = 6
 
 
@@ -144,9 +144,9 @@ class SpectralFilterBankType(Enum):
     """
     Spectral Filter Bank Type
     """
-    #: Short-time Fourier transform.
+    #: Short-time Fourier transform spectrogram.
     LINEAR = 0
-    #: Numbers evenly distributed over the specified interval.
+    #: Linspace-scale spectrogram.
     LINSPACE = 1
 
     #: Mel-scale spectrogram.
@@ -156,15 +156,15 @@ class SpectralFilterBankType(Enum):
     #: Erb-scale spectrogram.
     ERB = 4
 
-    #: Octave-scale spectrogram. Similar Constant-Q.
-    OCTAVE = 5
-    #: Evenly distributed numbers on a logarithmic scale.
+    #: Octave-scale spectrogram.
+    OCTAVE = 5  # similar Constant-Q
+    #: Logarithmic-scale spectrogram.
     LOG = 6
 
-    #: Deep-scale spectrogram. Similar Constant-Q.
+    #: Deep-scale spectrogram.
     DEEP = 7
 
-    #: STFT(Linear) chroma.
+    #: Linear(STFT) chroma.
     CHROMA = 8
 
     #: Octave-scale chroma. Similar cqt-chroma.

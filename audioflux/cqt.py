@@ -156,6 +156,8 @@ class CQTBase(Base):
         data_type: SpectralDataType
             Data type of CQT spectrogram matrix
 
+            See: `type.SpectralDataType`
+
         norm_type: ChromaDataNormalType
             Normalization type of chroma
 
@@ -539,8 +541,6 @@ class CQT(CQTBase):
     >>> import audioflux as af
     >>> audio_path = af.utils.sample_path('220')
     >>> audio_arr, sr = af.read(audio_path)
-    array([-5.5879354e-09, -9.3132257e-09,  0.0000000e+00, ...,
-            3.2826858e-03,  3.2447521e-03,  3.0795704e-03], dtype=float32)
 
     Create CQT object
 
@@ -554,19 +554,6 @@ class CQT(CQTBase):
     >>> import numpy as np
     >>> spec_arr = obj.cqt(audio_arr)
     >>> spec_mag_arr = np.abs(spec_arr)
-    array([[4.13306177e-01, 4.24238801e-01, 4.03985798e-01, ...,
-            9.09681246e-03, 7.72366347e-03, 6.51519699e-03],
-           [3.45392436e-01, 3.47385347e-01, 3.18555593e-01, ...,
-            3.74186062e-03, 3.57810827e-03, 5.09629818e-03],
-           [2.74609476e-01, 2.69073159e-01, 2.38167673e-01, ...,
-            1.73897278e-02, 1.37754036e-02, 1.05445199e-02],
-           ...,
-           [6.24795386e-04, 4.99437414e-02, 1.60291921e-02, ...,
-            1.42244404e-04, 1.27240157e-04, 7.22698495e-03],
-           [8.64346686e-04, 3.18217799e-02, 2.55288873e-02, ...,
-            1.96875044e-04, 1.22444399e-04, 7.08540343e-03],
-           [5.32156206e-04, 3.65380235e-02, 1.94845423e-02, ...,
-            1.01396305e-04, 4.90328348e-05, 6.83017401e-03]], dtype=float32)
 
     Show CQT spectrogram plot
 
