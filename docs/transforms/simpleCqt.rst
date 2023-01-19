@@ -1,7 +1,7 @@
-CQT
----
+SimpleCQT
+---------
 
-.. autoclass:: audioflux.CQT
+.. autoclass:: audioflux.SimpleCQT
    :members: cal_time_length,
              get_fft_length,
              get_fre_band_arr,

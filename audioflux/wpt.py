@@ -71,8 +71,6 @@ class WPT(Base):
     >>> audio_path = af.utils.sample_path('880')
     >>> audio_arr, sr = af.read(audio_path)
     >>> audio_arr = audio_arr[:4096]
-    array([-5.5879354e-09, -9.3132257e-09,  0.0000000e+00, ...,
-           -1.3013066e-01, -8.8289484e-02, -7.2360471e-02], dtype=float32)
 
     Create WPT object
 
@@ -86,35 +84,17 @@ class WPT(Base):
     >>> import numpy as np
     >>> coef_arr, m_data_arr = obj.wpt(audio_arr)
     >>> m_data_arr = np.abs(m_data_arr)
-    >>> coef_arr
-    array([ 3.6137632e-01, -2.3430534e-01, -2.9199639e-01, ...,
-            4.3719047e-06,  5.2029663e-04, -7.2287242e-03], dtype=float32)
-
-    >>> m_data_arr
-    array([[0.36137632, 0.36137632, 0.36137632, ..., 0.1472302 , 0.1472302 ,
-            0.1472302 ],
-           [0.07282908, 0.07282908, 0.07282908, ..., 0.07150738, 0.07150738,
-            0.07150738],
-           [0.03349842, 0.03349842, 0.03349842, ..., 0.01227883, 0.01227883,
-            0.01227883],
-           ...,
-           [0.00414347, 0.00414347, 0.00414347, ..., 0.00337636, 0.00337636,
-            0.00337636],
-           [0.00756872, 0.00756872, 0.00756872, ..., 0.00425741, 0.00425741,
-            0.00425741],
-           [0.00048361, 0.00048361, 0.00048361, ..., 0.00722872, 0.00722872,
-            0.00722872]], dtype=float32)
 
     Show plot
 
     >>> import matplotlib.pyplot as plt
     >>> from audioflux.display import fill_spec, fill_plot
-    >>> fig, ax = plt.subplots(nrows=2, sharex=True)
+    >>> fig, ax = plt.subplots(nrows=2)
     >>> fill_spec(m_data_arr, axes=ax[0],
     >>>           x_coords=obj.x_coords(), y_coords=obj.y_coords(),
     >>>           x_axis='time', y_axis='log',
-    >>>           title='WPT-abs')
-    >>> fill_plot(obj.x_coords()[1:], coef_arr,
+    >>>           title='WPT')
+    >>> fill_plot(np.arange(len(coef_arr)), coef_arr,
     >>>           axes=ax[1], label='WPT-coef')
 
     """

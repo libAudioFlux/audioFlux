@@ -86,10 +86,8 @@ class NSGT(Base):
     >>> audio_path = af.utils.sample_path('220')
     >>> audio_arr, sr = af.read(audio_path)
     >>> # NSGT can only input fft_length data
-    >>> # For radix2_exp=15, then fft_length=2**15=
+    >>> # For radix2_exp=15, then fft_length=2**15=32768
     >>> audio_arr = audio_arr[:32768]
-    array([-5.5879354e-09, -9.3132257e-09,  0.0000000e+00, ...,
-           -1.3137090e-01, -1.5649168e-01, -1.8550715e-01], dtype=float32)
 
     Create NSGT object of Octave
 
@@ -107,19 +105,6 @@ class NSGT(Base):
     >>> import numpy as np
     >>> spec_arr = obj.nsgt(audio_arr)
     >>> spec_arr = np.abs(spec_arr)
-    array([[1.6688864e+01, 1.6688864e+01, 1.6688864e+01, ..., 3.6051276e+00,
-            3.6051276e+00, 3.6051276e+00],
-           [1.2269066e+01, 1.2269066e+01, 1.2269066e+01, ..., 2.2744296e+00,
-            2.2744296e+00, 2.2744296e+00],
-           [8.4105768e+00, 8.4105768e+00, 8.4105768e+00, ..., 3.0433545e+00,
-            3.0433545e+00, 3.0433545e+00],
-           ...,
-           [1.6345095e-02, 1.4781086e-01, 2.2834454e-01, ..., 1.0761657e-02,
-            7.4106222e-03, 7.7240127e-03],
-           [1.3756215e-02, 5.9653565e-02, 1.4187603e-01, ..., 1.1111894e-03,
-            5.4555084e-03, 3.7545679e-04],
-           [6.0960581e-03, 4.1618239e-02, 6.6681899e-02, ..., 1.9094696e-03,
-            3.1084872e-03, 2.7320804e-03]], dtype=float32)
 
     Show spectrogram plot
 
@@ -143,6 +128,12 @@ class NSGT(Base):
                  style_type=SpectralFilterBankStyleType.SLANEY,
                  normal_type=SpectralFilterBankNormalType.BAND_WIDTH):
         super(NSGT, self).__init__(pointer(OpaqueNSGT()))
+
+        self.fft_length = fft_length = 1 << radix2_exp
+
+        # check num
+        if num > (fft_length // 2 + 1):
+            raise ValueError(f'num={num} is too large')
 
         # check BPO
         if scale_type == SpectralFilterBankScaleType.OCTAVE and bin_per_octave < 1:
@@ -173,8 +164,6 @@ class NSGT(Base):
         if low_fre < 0:
             # linear/linspace/mel/bark/erb low_fre>=0
             raise ValueError(f'{scale_type.name} low_fre={low_fre} must be a non-negative number')
-
-        self.fft_length = 1 << radix2_exp
 
         self.num = num
         self.radix2_exp = radix2_exp

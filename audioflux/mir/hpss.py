@@ -23,6 +23,8 @@ class HPSS(Base):
     window_type: WindowType
         Window type for each frame.
 
+        See: `type.WindowType`
+
     slide_length: int
         Window sliding length.
 
@@ -52,16 +54,17 @@ class HPSS(Base):
     Disable Plot of Linear spectrogram
 
     >>> import numpy as np
-    >>> from audioflux.type import SpectralFilterBankScaleType
+    >>> from audioflux.type import SpectralFilterBankScaleType, SpectralDataType
     >>> bft_obj = af.BFT(num=2049, radix2_exp=12, samplate=sr,
-    >>>                  scale_type=SpectralFilterBankScaleType.LINEAR)
+    >>>                  scale_type=SpectralFilterBankScaleType.LINEAR,
+    >>>                  data_type=SpectralDataType.POWER)
     >>> audio_arr = audio_arr[:len(h_arr)]
-    >>> origin_spec_arr = bft_obj.bft(audio_arr)
-    >>> h_spec_arr = bft_obj.bft(h_arr)
-    >>> p_spec_arr = bft_obj.bft(p_arr)
-    >>> origin_spec_arr = np.abs(origin_spec_arr)
-    >>> h_spec_arr = np.abs(h_spec_arr)
-    >>> p_spec_arr = np.abs(p_spec_arr)
+    >>> origin_spec_arr = bft_obj.bft(audio_arr, result_type=1)
+    >>> h_spec_arr = bft_obj.bft(h_arr, result_type=1)
+    >>> p_spec_arr = bft_obj.bft(p_arr, result_type=1)
+    >>> origin_spec_arr = af.utils.power_to_abs_db(origin_spec_arr)
+    >>> h_spec_arr = af.utils.power_to_abs_db(h_spec_arr)
+    >>> p_spec_arr = af.utils.power_to_abs_db(p_spec_arr)
 
     >>> import matplotlib.pyplot as plt
     >>> from audioflux.display import fill_spec

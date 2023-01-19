@@ -55,7 +55,7 @@ class Onset(Base):
 
     >>> from audioflux.type import SpectralFilterBankScaleType, SpectralDataType
     >>> import numpy as np
-    >>> bft_obj = af.BFT(num=128, samplate=sr, radix2_exp=11, slide_length=2048,
+    >>> bft_obj = af.BFT(num=128, samplate=sr, radix2_exp=12, slide_length=2048,
     >>>                  scale_type=SpectralFilterBankScaleType.MEL,
     >>>                  data_type=SpectralDataType.POWER)
     >>> spec_arr = bft_obj.bft(audio_arr)
@@ -80,8 +80,6 @@ class Onset(Base):
     >>>                 title='Onset')
     >>>
     >>> ax = fill_wave(audio_arr, samplate=sr, axes=axes[1])
-    >>> ax.vlines(time_arr, -1, 1, color='r', alpha=0.9,
-    >>>            linestyle='--', label='Onsets')
     >>>
     >>> times = np.arange(0, len(evn_arr)) * (bft_obj.slide_length / sr)
     >>> ax = fill_plot(times, evn_arr, axes=axes[2], label='Onset strength')

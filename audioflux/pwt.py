@@ -82,8 +82,6 @@ class PWT(Base):
     >>> # PWT can only input fft_length data
     >>> # For radix2_exp=12, then fft_length=4096
     >>> audio_arr = audio_arr[:4096]
-    array([-5.5879354e-09, -9.3132257e-09,  0.0000000e+00, ...,
-           -1.3137090e-01, -1.5649168e-01, -1.8550715e-01], dtype=float32)
 
     Create PWT object of Octave
 
@@ -101,19 +99,6 @@ class PWT(Base):
     >>> import numpy as np
     >>> spec_arr = obj.pwt(audio_arr)
     >>> spec_arr = np.abs(spec_arr)
-    array([[2.0927351e-04, 2.0927349e-04, 2.0927351e-04, ..., 2.0927351e-04,
-            2.0927349e-04, 2.0927351e-04],
-           [3.3626966e-03, 3.3626966e-03, 3.3626969e-03, ..., 3.3626969e-03,
-            3.3626969e-03, 3.3626966e-03],
-           [1.1016995e-03, 1.1016995e-03, 1.1016997e-03, ..., 1.1016995e-03,
-            1.1016997e-03, 1.1016995e-03],
-           ...,
-           [4.2387177e-04, 4.2435329e-04, 4.2531796e-04, ..., 1.5332833e-03,
-            1.5327019e-03, 1.5324111e-03],
-           [1.4914650e-05, 1.4527454e-05, 1.3769239e-05, ..., 3.9103269e-04,
-            3.9109713e-04, 3.9112900e-04],
-           [2.5504729e-04, 2.5552284e-04, 2.5647049e-04, ..., 3.5153513e-04,
-            3.5086548e-04, 3.5052933e-04]], dtype=float32)
 
     Show spectrogram plot
 
@@ -135,6 +120,12 @@ class PWT(Base):
                  normal_type=SpectralFilterBankNormalType.NONE,
                  is_padding=True):
         super(PWT, self).__init__(pointer(OpaquePWT()))
+
+        self.fft_length = fft_length = 1 << radix2_exp
+
+        # check num
+        if num > (fft_length // 2 + 1):
+            raise ValueError(f'num={num} is too large')
 
         # check BPO
         if scale_type == SpectralFilterBankScaleType.OCTAVE and bin_per_octave < 1:
@@ -170,8 +161,6 @@ class PWT(Base):
         self.style_type = style_type
         self.normal_type = normal_type
         self.is_padding = is_padding
-
-        self.fft_length = 1 << radix2_exp
 
         fn = self._lib['pwtObj_new']
         fn.argtypes = [POINTER(POINTER(OpaquePWT)), c_int, c_int,

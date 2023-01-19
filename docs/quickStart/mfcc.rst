@@ -7,7 +7,7 @@ Simple extraction of mfcc
     :linenos:
 
     import numpy as np
-    import audixflux as af
+    import audioflux as af
 
     # Get a 220Hz's audio file path
     sample_path = af.utils.sample_path('220')
@@ -16,11 +16,11 @@ Simple extraction of mfcc
     audio_arr, sr = af.read(sample_path)
 
     # Extract mfcc
-    mfcc_arr = af.mfcc(audio_arr, samplate=sr)
+    mfcc_arr, _ = af.mfcc(audio_arr, samplate=sr)
 
-If you want to adjust the parameters more finely, it is recommended to use the
+We recommend using the
 :ref:`BFT <transforms/bft:BFT - Based Fourier Transform, similar short-time Fourier transform>` and
-:ref:`XXCC <feature/xxcc:XXCC>` class.
+:ref:`XXCC <feature/xxcc:XXCC>` class, you can use it more flexibly and efficiently.
 
 .. code-block:: python
     :linenos:

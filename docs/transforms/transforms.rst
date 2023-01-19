@@ -45,7 +45,7 @@ The following transform are not supports multiple frequency scale types, only us
 .. toctree::
     :maxdepth: 1
 
-    cqt
+    cqtBase
     st
     fst
     dwt

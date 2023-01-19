@@ -8,50 +8,44 @@ Python Package Install
 
 To install the ``audioFlux`` package, you must have Python 3.6 or newer
 
-Using PyPI::
+Using PyPI
+^^^^^^^^^^
+
+We recommend installing using the released python package::
 
     $ pip install audioflux
 
-Using Anaconda::
 
-    $ conda install -c conda-forge audioflux
+Building from source
+^^^^^^^^^^^^^^^^^^^^
 
+1. **Prerequisites**
 
-Building from source::
-
-    $ python setup.py build
-    $ python setup.py install
-
-.. note::
-    Installation of fft library
+    Install fft library
 
     * Linux:
 
-        Install **fftw-3.x**
+        Install **fftw-3f**, detail see: `Install fftw <https://www.fftw.org/download.html>`_
 
-        For Ubuntu::
+            For Ubuntu::
 
-            sudo apt install libfftw3-dev
+                sudo apt install libfftw3-dev
 
-        For CentOS::
 
-            sudo yum install -y fftw3-devel
+            For CentOS::
 
-        For FreeBSD::
+                sudo yum install fftw3-devel
 
-            sudo pkg install fftw3
-
-        Detail See: `Install fftw <https://www.fftw.org/download.html>`_
-
-    * Windows:
-
-        Install **fftw-3.x**
-
-        Detail See: `Install Windows fftw <https://www.fftw.org/install/windows.html>`_
 
     * macOS:
 
         If version>=13, need to install Xcode and ``xcode-select``.
+
+2. **Build and install**::
+
+    $ python setup.py build
+    $ python setup.py install
+
 
 iOS build
 ---------
@@ -59,42 +53,33 @@ iOS build
 To compile iOS on a Mac, Xcode Command Line Tools must exist in the system:
 
 - Install the full Xcode package
-- install Xcode Command Line Tools when triggered by a command or run xcode-select command::
+- Install Xcode Command Line Tools when triggered by a command or run xcode-select command::
 
     $ xcode-select --install
 
-Enter the ``audioFlux`` project ``scripts`` directory and switch to the current directory,
-run the following script to build and compile::
 
-    $ ./buildFluxLib_iOS.sh
+Enter the ``audioFlux`` project ``scripts`` directory and switch to the current directory, run the following script to build and compile::
 
-If the system has permission problems, run::
-
-    $ sudo ./buildFluxLib_iOS.sh
+    $ ./build_iOS.sh
 
 
-Build  and compile successfully, the project build compilation results are in the ``build`` folder
+Build and compile successfully, the project build compilation results are in the ``build`` folder
 
 Android build
 -------------
+The current system development environment needs to be installed `android NDK <https://developer.android.com/ndk>`_, ndk version>=16,after installation, set the environment variable ndk path.
 
-The current system development environment needs to be installed `android NDK <https://developer.android.com/ndk>`_,
-ndk version>=16,after installation, set the environment variable ndk path.
+For example, ndk installation path is ``~/Android/android-ndk-r16b``::
 
-For example, ndk installation path is `~/Android/android-ndk-r16b`::
-
-    $ NDK_ROOT=~/Android/android-ndk-r16b
+    $ export NDK_ROOT=~/Android/android-ndk-r16b
     $ export PATH=$NDK_ROOT:$PATH
 
 
-Android ``audioFlux`` build uses `fftw <https://www.fftw.org/>`_ library to accelerate performance, compile
-the single-floating point version for android platform. fftw lib successful compilation, copy to
-``audioFlux`` project ``scripts/android/fftw3`` directory.
+Android ``audioFlux`` build uses `fftw <https://www.fftw.org/>`_ library to accelerate performance, compile the single-floating point version for android platform. fftw lib successful compilation, copy to  ``audioFlux`` project ``scripts/android/fftw3`` directory.
 
-Enter the ``audioFlux`` project ``scripts`` directory and switch to the current directory, run the following
-script to build and compile::
+Enter the ``audioFlux`` project ``scripts`` directory and switch to the current directory, run the following script to build and compile::
 
-    $ ./buildFluxLib_android.sh
+    $ ./build_android.sh
 
 
-Build  and compile successfully, the project build compilation results are in the ``build`` folder
+Build and compile successfully, the project build compilation results are in the ``build`` folder

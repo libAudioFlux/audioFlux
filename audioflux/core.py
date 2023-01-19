@@ -18,7 +18,7 @@ def linear_spectrogram(X, num=None, radix2_exp=12, samplate=32000, slide_length=
                        low_fre=0., window_type=WindowType.HANN,
                        style_type=SpectralFilterBankStyleType.SLANEY,
                        data_type=SpectralDataType.POWER,
-                       is_reassign=False, result_type=0):
+                       is_reassign=False):
     """
     Short-time Fourier transform (Linear/STFT)
 
@@ -26,7 +26,7 @@ def linear_spectrogram(X, num=None, radix2_exp=12, samplate=32000, slide_length=
     the sinusoidal frequency and phase content of
     local sections of a signal as it changes over time.
 
-    .. Note:: If you want to set more parameters, use the `BFT` class
+    .. Note:: We recommend using the `BFT` class, you can use it more flexibly and efficiently.
 
     Parameters
     ----------
@@ -59,8 +59,12 @@ def linear_spectrogram(X, num=None, radix2_exp=12, samplate=32000, slide_length=
     window_type: WindowType
         Window type for each frame.
 
+        See: `type.WindowType`
+
     style_type: SpectralFilterBankStyleType
         Spectral filter bank style type. It determines the bank type of window.
+
+        see: `type.SpectralFilterBankStyleType`
 
     data_type: SpectralDataType
         Spectrogram data type.
@@ -68,17 +72,18 @@ def linear_spectrogram(X, num=None, radix2_exp=12, samplate=32000, slide_length=
         It cat be set to mag or power. If you needs `db` type,
         you can set `power` type and then call the `power_to_db` method.
 
+        See: `type.SpectralDataType`
+
     is_reassign: bool
         Whether to use reassign.
 
-    result_type: int，0 or 1
-        - If `0`, then the result is a matrix of complex numbers.
-        - If `1`, then the result is a matrix of real numbers.
-
     Returns
     -------
-    out: np.ndarray [shape=(fre, time)]
+    spectrogram: np.ndarray [shape=(fre, time)]
         The matrix of Linear(STFT)
+
+    fre_band_arr: np:ndarray [shape=(fre,)]
+        The array of frequency bands
 
     See Also
     --------
@@ -90,15 +95,50 @@ def linear_spectrogram(X, num=None, radix2_exp=12, samplate=32000, slide_length=
     NSGT
     CWT
     PWT
+
+    Examples
+    --------
+
+    Read 220Hz audio data
+
+    >>> import audioflux as af
+    >>> audio_path = af.utils.sample_path('220')
+    >>> audio_arr, sr = af.read(audio_path)
+
+    Extract spectrogram of dB
+
+    >>> low_fre = 0
+    >>> spec_arr, fre_band_arr = af.linear_spectrogram(audio_arr, samplate=sr, low_fre=low_fre)
+    >>> spec_dB_arr = af.utils.power_to_db(spec_arr)
+
+    Show spectrogram plot
+
+    >>> import matplotlib.pyplot as plt
+    >>> from audioflux.display import fill_spec
+    >>> import numpy as np
+    >>>
+    >>> # calculate x/y-coords
+    >>> audio_len = audio_arr.shape[0]
+    >>> x_coords = np.linspace(0, audio_len/sr, spec_arr.shape[1] + 1)
+    >>> y_coords = np.insert(fre_band_arr, 0, low_fre)
+    >>>
+    >>> fig, ax = plt.subplots()
+    >>> img = fill_spec(spec_dB_arr, axes=ax,
+    >>>                 x_coords=x_coords,
+    >>>                 y_coords=y_coords,
+    >>>                 x_axis='time', y_axis='log',
+    >>>                 title='Linear Spectrogram')
+    >>> fig.colorbar(img, ax=ax, format="%+2.0f dB")
     """
     if num is None:
-        num = (1 << radix2_exp) / 2 + 1
+        num = (1 << radix2_exp) // 2 + 1
     bft_obj = BFT(num=num, radix2_exp=radix2_exp, samplate=samplate,
                   low_fre=low_fre, window_type=window_type, slide_length=slide_length,
                   scale_type=SpectralFilterBankScaleType.LINEAR, style_type=style_type,
                   data_type=data_type, is_reassign=is_reassign)
-    spec_arr = bft_obj.bft(X, result_type=result_type)
-    return spec_arr
+    spec_arr = bft_obj.bft(X, result_type=1)
+    fre_band_arr = bft_obj.get_fre_band_arr()
+    return spec_arr, fre_band_arr
 
 
 def mel_spectrogram(X, num=128, radix2_exp=12, samplate=32000,
@@ -107,11 +147,11 @@ def mel_spectrogram(X, num=128, radix2_exp=12, samplate=32000,
                     style_type=SpectralFilterBankStyleType.SLANEY,
                     normal_type=SpectralFilterBankNormalType.NONE,
                     data_type=SpectralDataType.POWER,
-                    is_reassign=False, result_type=0):
+                    is_reassign=False):
     """
     Mel-scale spectrogram.
 
-    .. Note:: If you want to set more parameters, use the `BFT` class
+    .. Note:: We recommend using the `BFT` class, you can use it more flexibly and efficiently.
 
     Parameters
     ----------
@@ -136,6 +176,8 @@ def mel_spectrogram(X, num=128, radix2_exp=12, samplate=32000,
     window_type: WindowType
         Window type for each frame.
 
+        See: `type.WindowType`
+
     slide_length: int or None
         Window sliding length.
 
@@ -144,8 +186,12 @@ def mel_spectrogram(X, num=128, radix2_exp=12, samplate=32000,
     style_type: SpectralFilterBankStyleType
         Spectral filter bank style type. It determines the bank type of window.
 
+        see: `type.SpectralFilterBankStyleType`
+
     normal_type: SpectralFilterBankNormalType
         Spectral filter normal type. It determines the type of normalization.
+
+        See: `type.SpectralFilterBankNormalType`
 
     data_type: SpectralDataType
         Spectrogram data type.
@@ -153,17 +199,18 @@ def mel_spectrogram(X, num=128, radix2_exp=12, samplate=32000,
         It cat be set to mag or power. If you needs `db` type,
         you can set `power` type and then call the `power_to_db` method.
 
+        See: `type.SpectralDataType`
+
     is_reassign: bool
         Whether to use reassign.
 
-    result_type: int，0 or 1
-        - If `0`, then the result is a matrix of complex numbers.
-        - If `1`, then the result is a matrix of real numbers.
-
     Returns
     -------
-    out: np.ndarray [shape=(fre, time)]
+    spectrogram: np.ndarray [shape=(fre, time)]
         The matrix of MEL
+
+    fre_band_arr: np:ndarray [shape=(fre,)]
+        The array of frequency bands
 
     See Also
     --------
@@ -175,6 +222,41 @@ def mel_spectrogram(X, num=128, radix2_exp=12, samplate=32000,
     NSGT
     CWT
     PWT
+
+    Examples
+    --------
+
+    Read 220Hz audio data
+
+    >>> import audioflux as af
+    >>> audio_path = af.utils.sample_path('220')
+    >>> audio_arr, sr = af.read(audio_path)
+
+    Extract spectrogram of dB
+
+    >>> low_fre = 0
+    >>> spec_arr, fre_band_arr = af.mel_spectrogram(audio_arr, samplate=sr, low_fre=low_fre)
+    >>> spec_dB_arr = af.utils.power_to_db(spec_arr)
+
+    Show spectrogram plot
+
+    >>> import matplotlib.pyplot as plt
+    >>> from audioflux.display import fill_spec
+    >>> import numpy as np
+    >>>
+    >>> # calculate x/y-coords
+    >>> audio_len = audio_arr.shape[0]
+    >>> x_coords = np.linspace(0, audio_len/sr, spec_arr.shape[1] + 1)
+    >>> y_coords = np.insert(fre_band_arr, 0, low_fre)
+    >>>
+    >>> fig, ax = plt.subplots()
+    >>> img = fill_spec(spec_dB_arr, axes=ax,
+    >>>                 x_coords=x_coords,
+    >>>                 y_coords=y_coords,
+    >>>                 x_axis='time', y_axis='log',
+    >>>                 title='Mel Spectrogram')
+    >>> fig.colorbar(img, ax=ax, format="%+2.0f dB")
+
     """
     bft_obj = BFT(num=num, radix2_exp=radix2_exp, samplate=samplate,
                   low_fre=low_fre, high_fre=high_fre,
@@ -182,8 +264,9 @@ def mel_spectrogram(X, num=128, radix2_exp=12, samplate=32000,
                   scale_type=SpectralFilterBankScaleType.MEL, style_type=style_type,
                   normal_type=normal_type, data_type=data_type,
                   is_reassign=is_reassign)
-    spec_arr = bft_obj.bft(X, result_type=result_type)
-    return spec_arr
+    spec_arr = bft_obj.bft(X, result_type=1)
+    fre_band_arr = bft_obj.get_fre_band_arr()
+    return spec_arr, fre_band_arr
 
 
 def bark_spectrogram(X, num=128, radix2_exp=12, samplate=32000,
@@ -192,11 +275,11 @@ def bark_spectrogram(X, num=128, radix2_exp=12, samplate=32000,
                      style_type=SpectralFilterBankStyleType.SLANEY,
                      normal_type=SpectralFilterBankNormalType.NONE,
                      data_type=SpectralDataType.POWER,
-                     is_reassign=False, result_type=0):
+                     is_reassign=False):
     """
     Bark-scale spectrogram.
 
-    .. Note:: If you want to set more parameters, use the `BFT` class
+    .. Note:: We recommend using the `BFT` class, you can use it more flexibly and efficiently.
 
     Parameters
     ----------
@@ -221,6 +304,8 @@ def bark_spectrogram(X, num=128, radix2_exp=12, samplate=32000,
     window_type: WindowType
         Window type for each frame.
 
+        See: `type.WindowType`
+
     slide_length: int or None
         Window sliding length.
 
@@ -229,8 +314,12 @@ def bark_spectrogram(X, num=128, radix2_exp=12, samplate=32000,
     style_type: SpectralFilterBankStyleType
         Spectral filter bank style type. It determines the bank type of window.
 
+        see: `type.SpectralFilterBankStyleType`
+
     normal_type: SpectralFilterBankNormalType
         Spectral filter normal type. It determines the type of normalization.
+
+        See: `type.SpectralFilterBankNormalType`
 
     data_type: SpectralDataType
         Spectrogram data type.
@@ -238,17 +327,18 @@ def bark_spectrogram(X, num=128, radix2_exp=12, samplate=32000,
         It cat be set to mag or power. If you needs `db` type,
         you can set `power` type and then call the `power_to_db` method.
 
+        See: `type.SpectralDataType`
+
     is_reassign: bool
         Whether to use reassign.
 
-    result_type: int，0 or 1
-        - If `0`, then the result is a matrix of complex numbers.
-        - If `1`, then the result is a matrix of real numbers.
-
     Returns
     -------
-    out: np.ndarray [shape=(fre, time)]
+    spectrogram: np.ndarray [shape=(fre, time)]
         The matrix of BARK
+
+    fre_band_arr: np:ndarray [shape=(fre,)]
+        The array of frequency bands
 
     See Also
     --------
@@ -260,6 +350,40 @@ def bark_spectrogram(X, num=128, radix2_exp=12, samplate=32000,
     NSGT
     CWT
     PWT
+
+    Examples
+    --------
+
+    Read 220Hz audio data
+
+    >>> import audioflux as af
+    >>> audio_path = af.utils.sample_path('220')
+    >>> audio_arr, sr = af.read(audio_path)
+
+    Extract spectrogram of dB
+
+    >>> low_fre = 0
+    >>> spec_arr, fre_band_arr = af.bark_spectrogram(audio_arr, samplate=sr, low_fre=low_fre)
+    >>> spec_dB_arr = af.utils.power_to_db(spec_arr)
+
+    Show spectrogram plot
+
+    >>> import matplotlib.pyplot as plt
+    >>> from audioflux.display import fill_spec
+    >>> import numpy as np
+    >>>
+    >>> # calculate x/y-coords
+    >>> audio_len = audio_arr.shape[0]
+    >>> x_coords = np.linspace(0, audio_len/sr, spec_arr.shape[1] + 1)
+    >>> y_coords = np.insert(fre_band_arr, 0, low_fre)
+    >>>
+    >>> fig, ax = plt.subplots()
+    >>> img = fill_spec(spec_dB_arr, axes=ax,
+    >>>                 x_coords=x_coords,
+    >>>                 y_coords=y_coords,
+    >>>                 x_axis='time', y_axis='log',
+    >>>                 title='Bark Spectrogram')
+    >>> fig.colorbar(img, ax=ax, format="%+2.0f dB")
     """
     bft_obj = BFT(num=num, radix2_exp=radix2_exp, samplate=samplate,
                   low_fre=low_fre, high_fre=high_fre,
@@ -267,8 +391,9 @@ def bark_spectrogram(X, num=128, radix2_exp=12, samplate=32000,
                   scale_type=SpectralFilterBankScaleType.BARK, style_type=style_type,
                   normal_type=normal_type, data_type=data_type,
                   is_reassign=is_reassign)
-    spec_arr = bft_obj.bft(X, result_type=result_type)
-    return spec_arr
+    spec_arr = bft_obj.bft(X, result_type=1)
+    fre_band_arr = bft_obj.get_fre_band_arr()
+    return spec_arr, fre_band_arr
 
 
 def erb_spectrogram(X, num=128, radix2_exp=12, samplate=32000,
@@ -277,11 +402,11 @@ def erb_spectrogram(X, num=128, radix2_exp=12, samplate=32000,
                     style_type=SpectralFilterBankStyleType.SLANEY,
                     normal_type=SpectralFilterBankNormalType.NONE,
                     data_type=SpectralDataType.POWER,
-                    is_reassign=False, result_type=0):
+                    is_reassign=False):
     """
     Erb-scale spectrogram.
 
-    .. Note:: If you want to set more parameters, use the `BFT` class
+    .. Note:: We recommend using the `BFT` class, you can use it more flexibly and efficiently.
 
     Parameters
     ----------
@@ -306,6 +431,8 @@ def erb_spectrogram(X, num=128, radix2_exp=12, samplate=32000,
     window_type: WindowType
         Window type for each frame.
 
+        See: `type.WindowType`
+
     slide_length: int or None
         Window sliding length.
 
@@ -314,8 +441,12 @@ def erb_spectrogram(X, num=128, radix2_exp=12, samplate=32000,
     style_type: SpectralFilterBankStyleType
         Spectral filter bank style type. It determines the bank type of window.
 
+        see: `type.SpectralFilterBankStyleType`
+
     normal_type: SpectralFilterBankNormalType
         Spectral filter normal type. It determines the type of normalization.
+
+        See: `type.SpectralFilterBankNormalType`
 
     data_type: SpectralDataType
         Spectrogram data type.
@@ -323,17 +454,18 @@ def erb_spectrogram(X, num=128, radix2_exp=12, samplate=32000,
         It cat be set to mag or power. If you needs `db` type,
         you can set `power` type and then call the `power_to_db` method.
 
+        See: `type.SpectralDataType`
+
     is_reassign: bool
         Whether to use reassign.
-
-    result_type: int，0 or 1
-        - If `0`, then the result is a matrix of complex numbers.
-        - If `1`, then the result is a matrix of real numbers.
 
     Returns
     -------
     out: np.ndarray [shape=(fre, time)]
         The matrix of ERB
+
+    fre_band_arr: np:ndarray [shape=(fre,)]
+        The array of frequency bands
 
     See Also
     --------
@@ -345,6 +477,40 @@ def erb_spectrogram(X, num=128, radix2_exp=12, samplate=32000,
     NSGT
     CWT
     PWT
+
+    Examples
+    --------
+
+    Read 220Hz audio data
+
+    >>> import audioflux as af
+    >>> audio_path = af.utils.sample_path('220')
+    >>> audio_arr, sr = af.read(audio_path)
+
+    Extract spectrogram of dB
+
+    >>> low_fre = 0
+    >>> spec_arr, fre_band_arr = af.erb_spectrogram(audio_arr, samplate=sr, low_fre=low_fre)
+    >>> spec_dB_arr = af.utils.power_to_db(spec_arr)
+
+    Show spectrogram plot
+
+    >>> import matplotlib.pyplot as plt
+    >>> from audioflux.display import fill_spec
+    >>> import numpy as np
+    >>>
+    >>> # calculate x/y-coords
+    >>> audio_len = audio_arr.shape[0]
+    >>> x_coords = np.linspace(0, audio_len/sr, spec_arr.shape[1] + 1)
+    >>> y_coords = np.insert(fre_band_arr, 0, low_fre)
+    >>>
+    >>> fig, ax = plt.subplots()
+    >>> img = fill_spec(spec_dB_arr, axes=ax,
+    >>>                 x_coords=x_coords,
+    >>>                 y_coords=y_coords,
+    >>>                 x_axis='time', y_axis='log',
+    >>>                 title='Erb Spectrogram')
+    >>> fig.colorbar(img, ax=ax, format="%+2.0f dB")
     """
     bft_obj = BFT(num=num, radix2_exp=radix2_exp, samplate=samplate,
                   low_fre=low_fre, high_fre=high_fre,
@@ -352,15 +518,18 @@ def erb_spectrogram(X, num=128, radix2_exp=12, samplate=32000,
                   scale_type=SpectralFilterBankScaleType.ERB, style_type=style_type,
                   normal_type=normal_type, data_type=data_type,
                   is_reassign=is_reassign)
-    spec_arr = bft_obj.bft(X, result_type=result_type)
-    return spec_arr
+    spec_arr = bft_obj.bft(X, result_type=1)
+    fre_band_arr = bft_obj.get_fre_band_arr()
+    return spec_arr, fre_band_arr
 
 
 def mfcc(X, cc_num=13, rectify_type=CepstralRectifyType.LOG,
-         num=128, radix2_exp=12, samplate=32000, slide_length=None,
+         mel_num=128, radix2_exp=12, samplate=32000, slide_length=None,
          low_fre=None, high_fre=None, window_type=WindowType.HANN):
     """
     Mel-frequency cepstral coefficients (MFCCs)
+
+    .. Note:: We recommend using the `BFT` and `XXCC` class, you can use it more flexibly and efficiently.
 
     Parameters
     ----------
@@ -373,7 +542,7 @@ def mfcc(X, cc_num=13, rectify_type=CepstralRectifyType.LOG,
     rectify_type: CepstralRectifyType
         cepstral rectify type
 
-    num: int
+    mel_num: int
         Number of mel frequency bins to generate, starting at `low_fre`.
 
     radix2_exp: int
@@ -396,10 +565,15 @@ def mfcc(X, cc_num=13, rectify_type=CepstralRectifyType.LOG,
     window_type: WindowType
         Window type for each frame.
 
+        See: `type.WindowType`
+
     Returns
     -------
     out: np.ndarray [shape=(cc_num, time)]
         The matrix of MFCCs
+
+    fre_band_arr: np:ndarray [shape=(fre,)]
+        The array of Mel frequency bands
 
     See Also
     --------
@@ -409,8 +583,37 @@ def mfcc(X, cc_num=13, rectify_type=CepstralRectifyType.LOG,
 
     BFT
     XXCC
+
+    Examples
+    --------
+
+    Read 220Hz audio data
+
+    >>> import audioflux as af
+    >>> audio_path = af.utils.sample_path('220')
+    >>> audio_arr, sr = af.read(audio_path)
+
+    Extract mfcc data
+
+    >>> cc_arr, _ = af.mfcc(audio_arr, samplate=sr)
+
+    Show plot
+
+    >>> import matplotlib.pyplot as plt
+    >>> from audioflux.display import fill_spec
+    >>> import numpy as np
+    >>>
+    >>> # calculate x-coords
+    >>> audio_len = audio_arr.shape[0]
+    >>> x_coords = np.linspace(0, audio_len/sr, cc_arr.shape[1] + 1)
+    >>>
+    >>> fig, ax = plt.subplots()
+    >>> img = fill_spec(cc_arr, axes=ax,
+    >>>                 x_coords=x_coords, x_axis='time',
+    >>>                 title='MFCC')
+    >>> fig.colorbar(img, ax=ax)
     """
-    bft_obj = BFT(num=num, radix2_exp=radix2_exp, samplate=samplate,
+    bft_obj = BFT(num=mel_num, radix2_exp=radix2_exp, samplate=samplate,
                   low_fre=low_fre, high_fre=high_fre,
                   window_type=window_type, slide_length=slide_length,
                   scale_type=SpectralFilterBankScaleType.MEL,
@@ -422,14 +625,17 @@ def mfcc(X, cc_num=13, rectify_type=CepstralRectifyType.LOG,
     xxcc_obj = XXCC(num=bft_obj.num)
     xxcc_obj.set_time_length(time_length=spec_arr.shape[1])
     xxcc_arr = xxcc_obj.xxcc(spec_arr, cc_num=cc_num, rectify_type=rectify_type)
-    return xxcc_arr
+    fre_band_arr = bft_obj.get_fre_band_arr()
+    return xxcc_arr, fre_band_arr
 
 
 def bfcc(X, cc_num=13, rectify_type=CepstralRectifyType.LOG,
-         num=128, radix2_exp=12, samplate=32000, slide_length=None,
+         bark_num=128, radix2_exp=12, samplate=32000, slide_length=None,
          low_fre=None, high_fre=None, window_type=WindowType.HANN):
     """
     Bark-frequency cepstral coefficients (BFCCs)
+
+    .. Note:: We recommend using the `BFT` and `XXCC` class, you can use it more flexibly and efficiently.
 
     Parameters
     ----------
@@ -442,8 +648,8 @@ def bfcc(X, cc_num=13, rectify_type=CepstralRectifyType.LOG,
     rectify_type: CepstralRectifyType
         cepstral rectify type
 
-    num: int
-        Number of mel frequency bins to generate, starting at `low_fre`.
+    bark_num: int
+        Number of bark frequency bins to generate, starting at `low_fre`.
 
     radix2_exp: int
         ``fft_length=2**radix2_exp``
@@ -465,10 +671,15 @@ def bfcc(X, cc_num=13, rectify_type=CepstralRectifyType.LOG,
     window_type: WindowType
         Window type for each frame.
 
+        See: `type.WindowType`
+
     Returns
     -------
     out: np.ndarray [shape=(cc_num, time)]
         The matrix of BFCCs
+
+    fre_band_arr: np:ndarray [shape=(fre,)]
+        The array of Bark frequency bands
 
     See Also
     --------
@@ -478,8 +689,37 @@ def bfcc(X, cc_num=13, rectify_type=CepstralRectifyType.LOG,
 
     BFT
     XXCC
+
+    Examples
+    --------
+
+    Read 220Hz audio data
+
+    >>> import audioflux as af
+    >>> audio_path = af.utils.sample_path('220')
+    >>> audio_arr, sr = af.read(audio_path)
+
+    Extract bfcc data
+
+    >>> cc_arr, _ = af.bfcc(audio_arr, samplate=sr)
+
+    Show plot
+
+    >>> import matplotlib.pyplot as plt
+    >>> from audioflux.display import fill_spec
+    >>> import numpy as np
+    >>>
+    >>> # calculate x-coords
+    >>> audio_len = audio_arr.shape[0]
+    >>> x_coords = np.linspace(0, audio_len/sr, cc_arr.shape[1] + 1)
+    >>>
+    >>> fig, ax = plt.subplots()
+    >>> img = fill_spec(cc_arr, axes=ax,
+    >>>                 x_coords=x_coords, x_axis='time',
+    >>>                 title='BFCC')
+    >>> fig.colorbar(img, ax=ax)
     """
-    bft_obj = BFT(num=num, radix2_exp=radix2_exp, samplate=samplate,
+    bft_obj = BFT(num=bark_num, radix2_exp=radix2_exp, samplate=samplate,
                   low_fre=low_fre, high_fre=high_fre,
                   window_type=window_type, slide_length=slide_length,
                   scale_type=SpectralFilterBankScaleType.BARK,
@@ -491,14 +731,17 @@ def bfcc(X, cc_num=13, rectify_type=CepstralRectifyType.LOG,
     xxcc_obj = XXCC(num=bft_obj.num)
     xxcc_obj.set_time_length(time_length=spec_arr.shape[1])
     xxcc_arr = xxcc_obj.xxcc(spec_arr, cc_num=cc_num, rectify_type=rectify_type)
-    return xxcc_arr
+    fre_band_arr = bft_obj.get_fre_band_arr()
+    return xxcc_arr, fre_band_arr
 
 
 def gtcc(X, cc_num=13, rectify_type=CepstralRectifyType.LOG,
-         num=128, radix2_exp=12, samplate=32000, slide_length=None,
+         erb_num=128, radix2_exp=12, samplate=32000, slide_length=None,
          low_fre=None, high_fre=None, window_type=WindowType.HANN):
     """
     Gammatone cepstral coefficients (GTCCs)
+
+    .. Note:: We recommend using the `BFT` and `XXCC` class, you can use it more flexibly and efficiently.
 
     Parameters
     ----------
@@ -511,8 +754,8 @@ def gtcc(X, cc_num=13, rectify_type=CepstralRectifyType.LOG,
     rectify_type: CepstralRectifyType
         cepstral rectify type
 
-    num: int
-        Number of mel frequency bins to generate, starting at `low_fre`.
+    erb_num: int
+        Number of erb frequency bins to generate, starting at `low_fre`.
 
     radix2_exp: int
         ``fft_length=2**radix2_exp``
@@ -534,10 +777,15 @@ def gtcc(X, cc_num=13, rectify_type=CepstralRectifyType.LOG,
     window_type: WindowType
         Window type for each frame.
 
+        See: `type.WindowType`
+
     Returns
     -------
     out: np.ndarray [shape=(cc_num, time)]
         The matrix of GTCCs
+
+    fre_band_arr: np:ndarray [shape=(fre,)]
+        The array of Erb frequency bands
 
     See Also
     --------
@@ -547,8 +795,37 @@ def gtcc(X, cc_num=13, rectify_type=CepstralRectifyType.LOG,
 
     BFT
     XXCC
+
+    Examples
+    --------
+
+    Read 220Hz audio data
+
+    >>> import audioflux as af
+    >>> audio_path = af.utils.sample_path('220')
+    >>> audio_arr, sr = af.read(audio_path)
+
+    Extract gtcc data
+
+    >>> cc_arr, _ = af.gtcc(audio_arr, samplate=sr)
+
+    Show plot
+
+    >>> import matplotlib.pyplot as plt
+    >>> from audioflux.display import fill_spec
+    >>> import numpy as np
+    >>>
+    >>> # calculate x-coords
+    >>> audio_len = audio_arr.shape[0]
+    >>> x_coords = np.linspace(0, audio_len/sr, cc_arr.shape[1] + 1)
+    >>>
+    >>> fig, ax = plt.subplots()
+    >>> img = fill_spec(cc_arr, axes=ax,
+    >>>                 x_coords=x_coords, x_axis='time',
+    >>>                 title='GTCC')
+    >>> fig.colorbar(img, ax=ax)
     """
-    bft_obj = BFT(num=num, radix2_exp=radix2_exp, samplate=samplate,
+    bft_obj = BFT(num=erb_num, radix2_exp=radix2_exp, samplate=samplate,
                   low_fre=low_fre, high_fre=high_fre,
                   window_type=window_type, slide_length=slide_length,
                   scale_type=SpectralFilterBankScaleType.ERB,
@@ -556,21 +833,23 @@ def gtcc(X, cc_num=13, rectify_type=CepstralRectifyType.LOG,
                   normal_type=SpectralFilterBankNormalType.AREA,
                   data_type=SpectralDataType.POWER, is_reassign=False)
     spec_arr = bft_obj.bft(X)
-    print(spec_arr.shape)
 
     xxcc_obj = XXCC(num=bft_obj.num)
     xxcc_obj.set_time_length(time_length=spec_arr.shape[1])
     xxcc_arr = xxcc_obj.xxcc(spec_arr, cc_num=cc_num, rectify_type=rectify_type)
-    return xxcc_arr
+    fre_band_arr = bft_obj.get_fre_band_arr()
+    return xxcc_arr, fre_band_arr
 
 
 def cqcc(X, cc_num=13, rectify_type=CepstralRectifyType.LOG,
-         num=84, samplate=32000, low_fre=note_to_hz('C1'), slide_length=None,
+         cqt_num=84, samplate=32000, low_fre=note_to_hz('C1'), slide_length=None,
          bin_per_octave=12, window_type=WindowType.HANN,
          normal_type=SpectralFilterBankNormalType.AREA,
          is_scale=True):
     """
     Constant-Q cepstral coefficients (CQCCs)
+
+    .. Note:: We recommend using the :ref:`CQT <transforms/cqt:CQT>` class, you can use it more flexibly and efficiently.
 
     Parameters
     ----------
@@ -583,8 +862,8 @@ def cqcc(X, cc_num=13, rectify_type=CepstralRectifyType.LOG,
     rectify_type: CepstralRectifyType
         cepstral rectify type
 
-    num: int
-        Number of mel frequency bins to generate, starting at `low_fre`.
+    cqt_num: int
+        Number of cqt frequency bins to generate, starting at `low_fre`.
 
     samplate: int
         Sampling rate of the incoming audio.
@@ -603,8 +882,12 @@ def cqcc(X, cc_num=13, rectify_type=CepstralRectifyType.LOG,
     window_type: WindowType
         Window type for each frame.
 
+        See: `type.WindowType`
+
     normal_type: SpectralFilterBankNormalType
         Spectral filter normal type. It determines the type of normalization.
+
+        See: `type.SpectralFilterBankNormalType`
 
     is_scale: bool
         Whether to use scale.
@@ -612,7 +895,10 @@ def cqcc(X, cc_num=13, rectify_type=CepstralRectifyType.LOG,
     Returns
     -------
     out: np.ndarray [shape=(cc_num, time)]
-        The matrix of GTCCs
+        The matrix of CQCCs
+
+    fre_band_arr: np:ndarray [shape=(fre,)]
+        The array of cqt frequency bands
 
     See Also
     --------
@@ -621,15 +907,44 @@ def cqcc(X, cc_num=13, rectify_type=CepstralRectifyType.LOG,
     gtcc
 
     CQT
+
+    Examples
+    --------
+
+    Read 220Hz audio data
+
+    >>> import audioflux as af
+    >>> audio_path = af.utils.sample_path('220')
+    >>> audio_arr, sr = af.read(audio_path)
+
+    Extract cqcc data
+
+    >>> cc_arr, _ = af.cqcc(audio_arr, samplate=sr)
+
+    Show plot
+
+    >>> import matplotlib.pyplot as plt
+    >>> from audioflux.display import fill_spec
+    >>> import numpy as np
+    >>>
+    >>> # calculate x-coords
+    >>> audio_len = audio_arr.shape[0]
+    >>> x_coords = np.linspace(0, audio_len/sr, cc_arr.shape[1] + 1)
+    >>>
+    >>> fig, ax = plt.subplots()
+    >>> img = fill_spec(cc_arr, axes=ax,
+    >>>                 x_coords=x_coords, x_axis='time',
+    >>>                 title='CQCC')
+    >>> fig.colorbar(img, ax=ax)
     """
-    cqt_obj = CQT(num=num, samplate=samplate, low_fre=low_fre, slide_length=slide_length,
+    cqt_obj = CQT(num=cqt_num, samplate=samplate, low_fre=low_fre, slide_length=slide_length,
                   bin_per_octave=bin_per_octave, window_type=window_type,
                   normal_type=normal_type, is_scale=is_scale)
     spec_arr = cqt_obj.cqt(X)
-    print(spec_arr.shape)
     power_arr = np.abs(spec_arr) ** 2
     cqcc_arr = cqt_obj.cqcc(power_arr, cc_num=cc_num, rectify_type=rectify_type)
-    return cqcc_arr
+    fre_band_arr = cqt_obj.get_fre_band_arr()
+    return cqcc_arr, fre_band_arr
 
 
 def cqt(X, num=84, samplate=32000, low_fre=note_to_hz('C1'), bin_per_octave=12,
@@ -639,6 +954,8 @@ def cqt(X, num=84, samplate=32000, low_fre=note_to_hz('C1'), bin_per_octave=12,
         is_scale=True):
     """
     Constant-Q transform (CQT)
+
+    .. Note:: We recommend using the :ref:`CQT <transforms/cqt:CQT>` class, you can use it more flexibly and efficiently.
 
     Parameters
     ----------
@@ -668,11 +985,15 @@ def cqt(X, num=84, samplate=32000, low_fre=note_to_hz('C1'), bin_per_octave=12,
     window_type: WindowType
         Window type for each frame.
 
+        See: `type.WindowType`
+
     slide_length: int
         Window sliding length.
 
     normal_type: SpectralFilterBankNormalType
         Spectral filter normal type. It determines the type of normalization.
+
+        See: `type.SpectralFilterBankNormalType`
 
     is_scale: bool
         Whether to use scale.
@@ -681,13 +1002,59 @@ def cqt(X, num=84, samplate=32000, low_fre=note_to_hz('C1'), bin_per_octave=12,
     -------
     out: np.ndarray [shape=(num, time)]
         The matrix of CQT
+
+    fre_band_arr: np:ndarray [shape=(fre,)]
+        The array of frequency bands
+
+    See Also
+    --------
+    cqcc
+    vqt
+
+    CQT
+
+    Examples
+    --------
+
+    Read 220Hz audio data
+
+    >>> import audioflux as af
+    >>> audio_path = af.utils.sample_path('220')
+    >>> audio_arr, sr = af.read(audio_path)
+
+    Extract spectrogram of dB
+
+    >>> low_fre = af.utils.note_to_hz('C1')
+    >>> spec_arr, fre_band_arr = af.cqt(audio_arr, samplate=sr, low_fre=low_fre)
+    >>> spec_dB_arr = af.utils.power_to_db(spec_arr ** 2)
+
+    Show spectrogram plot
+
+    >>> import matplotlib.pyplot as plt
+    >>> from audioflux.display import fill_spec
+    >>> import numpy as np
+    >>>
+    >>> # calculate x/y-coords
+    >>> audio_len = audio_arr.shape[0]
+    >>> x_coords = np.linspace(0, audio_len/sr, spec_arr.shape[1] + 1)
+    >>> y_coords = np.insert(fre_band_arr, 0, low_fre)
+    >>>
+    >>> fig, ax = plt.subplots()
+    >>> img = fill_spec(spec_dB_arr, axes=ax,
+    >>>                 x_coords=x_coords,
+    >>>                 y_coords=y_coords,
+    >>>                 x_axis='time', y_axis='log',
+    >>>                 title='CQT')
+    >>> fig.colorbar(img, ax=ax, format="%+2.0f dB")
     """
     cqt_obj = CQT(num=num, samplate=samplate, low_fre=low_fre, slide_length=slide_length,
                   bin_per_octave=bin_per_octave, window_type=window_type,
                   normal_type=normal_type, is_scale=is_scale,
                   factor=factor, beta=0., thresh=thresh)
     cqt_arr = cqt_obj.cqt(X)
-    return cqt_arr
+    cqt_arr = np.abs(cqt_arr)
+    fre_band_arr = cqt_obj.get_fre_band_arr()
+    return cqt_arr, fre_band_arr
 
 
 def vqt(X, num=84, samplate=32000, low_fre=note_to_hz('C1'), bin_per_octave=12,
@@ -697,6 +1064,8 @@ def vqt(X, num=84, samplate=32000, low_fre=note_to_hz('C1'), bin_per_octave=12,
         is_scale=True):
     """
     Variable-Q transform (VQT)
+
+    .. Note:: We recommend using the :ref:`CQT <transforms/cqt:CQT>` class, you can use it more flexibly and efficiently.
 
     Parameters
     ----------
@@ -729,11 +1098,15 @@ def vqt(X, num=84, samplate=32000, low_fre=note_to_hz('C1'), bin_per_octave=12,
     window_type: WindowType
         Window type for each frame.
 
+        See: `type.WindowType`
+
     slide_length: int
         Window sliding length.
 
     normal_type: SpectralFilterBankNormalType
         Spectral filter normal type. It determines the type of normalization.
+
+        See: `type.SpectralFilterBankNormalType`
 
     is_scale: bool
         Whether to use scale.
@@ -741,18 +1114,63 @@ def vqt(X, num=84, samplate=32000, low_fre=note_to_hz('C1'), bin_per_octave=12,
     Returns
     -------
     out: np.ndarray [shape=(num, time)]
-        The matrix of CQT
+        The matrix of VQT
+
+    fre_band_arr: np:ndarray [shape=(fre,)]
+        The array of frequency bands
+
+    See Also
+    --------
+    cqcc
+    vqt
+
+    CQT
+
+    Examples
+    --------
+
+    Read 220Hz audio data
+
+    >>> import audioflux as af
+    >>> audio_path = af.utils.sample_path('220')
+    >>> audio_arr, sr = af.read(audio_path)
+
+    Extract spectrogram of dB
+    >>> low_fre = af.utils.note_to_hz('C1')
+    >>> spec_arr, fre_band_arr = af.vqt(audio_arr, samplate=sr, low_fre=low_fre)
+    >>> spec_dB_arr = af.utils.power_to_db(spec_arr ** 2)
+
+    Show spectrogram plot
+
+    >>> import matplotlib.pyplot as plt
+    >>> from audioflux.display import fill_spec
+    >>> import numpy as np
+    >>>
+    >>> # calculate x/y-coords
+    >>> audio_len = audio_arr.shape[0]
+    >>> x_coords = np.linspace(0, audio_len/sr, spec_arr.shape[1] + 1)
+    >>> y_coords = np.insert(fre_band_arr, 0, low_fre)
+    >>>
+    >>> fig, ax = plt.subplots()
+    >>> img = fill_spec(spec_dB_arr, axes=ax,
+    >>>                 x_coords=x_coords,
+    >>>                 y_coords=y_coords,
+    >>>                 x_axis='time', y_axis='log',
+    >>>                 title='VQT')
+    >>> fig.colorbar(img, ax=ax, format="%+2.0f dB")
     """
-    cqt_obj = CQT(num=num, samplate=samplate, low_fre=low_fre, slide_length=slide_length,
+    vqt_obj = CQT(num=num, samplate=samplate, low_fre=low_fre, slide_length=slide_length,
                   bin_per_octave=bin_per_octave, window_type=window_type,
                   normal_type=normal_type, is_scale=is_scale,
                   factor=factor, beta=beta, thresh=thresh)
-    cqt_arr = cqt_obj.cqt(X)
-    return cqt_arr
+    vqt_arr = vqt_obj.cqt(X)
+    vqt_arr = np.abs(vqt_arr)
+    fre_band_arr = vqt_obj.get_fre_band_arr()
+    return vqt_arr, fre_band_arr
 
 
 def chroma_linear(X, chroma_num=12, radix2_exp=12, samplate=32000, low_fre=0., high_fre=16000.,
-                  window_type=WindowType.HANN, slide_length=1024,
+                  window_type=WindowType.HANN, slide_length=1024, data_type=SpectralDataType.POWER,
                   style_type=SpectralFilterBankStyleType.SLANEY,
                   normal_type=SpectralFilterBankNormalType.NONE):
     """
@@ -773,7 +1191,7 @@ def chroma_linear(X, chroma_num=12, radix2_exp=12, samplate=32000, low_fre=0., h
         Sampling rate of the incoming audio.
 
     low_fre: float
-        Lowest frequency. `default: 32.703(C1)`
+        Lowest frequency.
 
     high_fre: float or None
         Highest frequency. Default is `16000(samplate/2)`.
@@ -781,14 +1199,25 @@ def chroma_linear(X, chroma_num=12, radix2_exp=12, samplate=32000, low_fre=0., h
     window_type: WindowType
         Window type for each frame.
 
+        See: `type.WindowType`
+
     slide_length: int
         Window sliding length.
+
+    data_type: SpectralDataType
+        Spectrogram data type.
+
+        See: `type.SpectralDataType`
 
     style_type: SpectralFilterBankStyleType
         Spectral filter bank style type. It determines the bank type of window.
 
+        see: `type.SpectralFilterBankStyleType`
+
     normal_type: SpectralFilterBankNormalType
         Spectral filter normal type. It determines the type of normalization.
+
+        See: `type.SpectralFilterBankNormalType`
 
     Returns
     -------
@@ -799,20 +1228,51 @@ def chroma_linear(X, chroma_num=12, radix2_exp=12, samplate=32000, low_fre=0., h
     --------
     chroma_cqt
     chroma_octave
+
+    Examples
+    --------
+
+    Read 220Hz audio data
+
+    >>> import audioflux as af
+    >>> audio_path = af.utils.sample_path('220')
+    >>> audio_arr, sr = af.read(audio_path)
+
+    Extract chroma_linear data
+
+    >>> chroma_arr = af.chroma_linear(audio_arr, samplate=sr)
+
+    Show spectrogram plot
+
+    >>> import matplotlib.pyplot as plt
+    >>> from audioflux.display import fill_spec
+    >>> import numpy as np
+    >>>
+    >>> # calculate x-coords
+    >>> audio_len = audio_arr.shape[0]
+    >>> x_coords = np.linspace(0, audio_len/sr, chroma_arr.shape[1] + 1)
+    >>>
+    >>> fig, ax = plt.subplots()
+    >>> img = fill_spec(chroma_arr, axes=ax,
+    >>>                 x_coords=x_coords,
+    >>>                 x_axis='time', y_axis='chroma',
+    >>>                 title='Chroma_linear')
+    >>> fig.colorbar(img, ax=ax)
     """
     spec_obj = Spectrogram(num=chroma_num, radix2_exp=radix2_exp, samplate=samplate,
                            low_fre=low_fre, high_fre=high_fre, window_type=window_type,
                            slide_length=slide_length,
                            filter_bank_type=SpectralFilterBankType.CHROMA,
-                           filter_style_type=style_type, filter_normal_type=normal_type)
+                           filter_style_type=style_type, filter_normal_type=normal_type,
+                           data_type=data_type)
 
     spec_arr = spec_obj.spectrogram(X)
     return spec_arr
 
 
-def chroma_octave(X, chroma_num=12, radix2_exp=12, samplate=32000, low_fre=0., high_fre=16000.,
-               window_type=WindowType.HANN, slide_length=1024,
-               style_type=SpectralFilterBankStyleType.SLANEY, normal_type=SpectralFilterBankNormalType.NONE):
+def chroma_octave(X, chroma_num=12, radix2_exp=12, samplate=32000, low_fre=note_to_hz('C1'), high_fre=16000.,
+                  window_type=WindowType.HANN, slide_length=1024, data_type=SpectralDataType.POWER,
+                  style_type=SpectralFilterBankStyleType.SLANEY, normal_type=SpectralFilterBankNormalType.NONE):
     """
     Octave chromagram
 
@@ -839,14 +1299,25 @@ def chroma_octave(X, chroma_num=12, radix2_exp=12, samplate=32000, low_fre=0., h
     window_type: WindowType
         Window type for each frame.
 
+        See: `type.WindowType`
+
     slide_length: int
         Window sliding length.
+
+    data_type: SpectralDataType
+        Spectrogram data type.
+
+        See: `type.SpectralDataType`
 
     style_type: SpectralFilterBankStyleType
         Spectral filter bank style type. It determines the bank type of window.
 
+        see: `type.SpectralFilterBankStyleType`
+
     normal_type: SpectralFilterBankNormalType
         Spectral filter normal type. It determines the type of normalization.
+
+        See: `type.SpectralFilterBankNormalType`
 
     Returns
     -------
@@ -857,10 +1328,40 @@ def chroma_octave(X, chroma_num=12, radix2_exp=12, samplate=32000, low_fre=0., h
     --------
     chroma_linear
     chroma_cqt
+
+    Examples
+    --------
+
+    Read 220Hz audio data
+
+    >>> import audioflux as af
+    >>> audio_path = af.utils.sample_path('220')
+    >>> audio_arr, sr = af.read(audio_path)
+
+    Extract chroma_octave data
+
+    >>> chroma_arr = af.chroma_octave(audio_arr, samplate=sr)
+
+    Show spectrogram plot
+
+    >>> import matplotlib.pyplot as plt
+    >>> from audioflux.display import fill_spec
+    >>> import numpy as np
+    >>>
+    >>> # calculate x-coords
+    >>> audio_len = audio_arr.shape[0]
+    >>> x_coords = np.linspace(0, audio_len/sr, chroma_arr.shape[1] + 1)
+    >>>
+    >>> fig, ax = plt.subplots()
+    >>> img = fill_spec(chroma_arr, axes=ax,
+    >>>                 x_coords=x_coords,
+    >>>                 x_axis='time', y_axis='chroma',
+    >>>                 title='Chroma_octave')
+    >>> fig.colorbar(img, ax=ax)
     """
     spec_obj = Spectrogram(num=chroma_num, radix2_exp=radix2_exp, samplate=samplate,
                            low_fre=low_fre, high_fre=high_fre, window_type=window_type,
-                           slide_length=slide_length,
+                           slide_length=slide_length, data_type=data_type,
                            filter_bank_type=SpectralFilterBankType.OCTAVE_CHROMA,
                            filter_style_type=style_type, filter_normal_type=normal_type)
 
@@ -869,12 +1370,14 @@ def chroma_octave(X, chroma_num=12, radix2_exp=12, samplate=32000, low_fre=0., h
 
 
 def chroma_cqt(X, chroma_num=12, num=84, samplate=32000, low_fre=note_to_hz('C1'), bin_per_octave=12,
-               factor=1., beta=0., thresh=0.01,
+               factor=1., thresh=0.01,
                window_type=WindowType.HANN, slide_length=None,
                normal_type=SpectralFilterBankNormalType.AREA,
                is_scale=True):
     """
     Constant-Q chromagram
+
+    .. Note:: We recommend using the :ref:`CQT <transforms/cqt:CQT>` class, you can use it more flexibly and efficiently.
 
     Parameters
     ----------
@@ -901,20 +1404,21 @@ def chroma_cqt(X, chroma_num=12, num=84, samplate=32000, low_fre=note_to_hz('C1'
     factor: float
         Factor value
 
-    beta: float
-        Beta value
-
     thresh: float
         Thresh value
 
     window_type: WindowType
         Window type for each frame.
 
+        See: `type.WindowType`
+
     slide_length: int
         Window sliding length.
 
     normal_type: SpectralFilterBankNormalType
         Spectral filter normal type. It determines the type of normalization.
+
+        See: `type.SpectralFilterBankNormalType`
 
     is_scale: bool
         Whether to use scale.
@@ -928,11 +1432,42 @@ def chroma_cqt(X, chroma_num=12, num=84, samplate=32000, low_fre=note_to_hz('C1'
     --------
     chroma_linear
     chroma_octave
+
+    Examples
+    --------
+
+    Read 220Hz audio data
+
+    >>> import audioflux as af
+    >>> audio_path = af.utils.sample_path('220')
+    >>> audio_arr, sr = af.read(audio_path)
+
+    Extract chroma_cqt data
+
+    >>> chroma_arr = af.chroma_cqt(audio_arr, samplate=sr)
+
+    Show spectrogram plot
+
+    >>> import matplotlib.pyplot as plt
+    >>> from audioflux.display import fill_spec
+    >>> import numpy as np
+    >>>
+    >>> # calculate x-coords
+    >>> audio_len = audio_arr.shape[0]
+    >>> x_coords = np.linspace(0, audio_len/sr, chroma_arr.shape[1] + 1)
+    >>>
+    >>> fig, ax = plt.subplots()
+    >>> img = fill_spec(chroma_arr, axes=ax,
+    >>>                 x_coords=x_coords,
+    >>>                 x_axis='time', y_axis='chroma',
+    >>>                 title='Chroma_cqt')
+    >>> fig.colorbar(img, ax=ax)
     """
     cqt_obj = CQT(num=num, samplate=samplate, low_fre=low_fre, slide_length=slide_length,
                   bin_per_octave=bin_per_octave, window_type=window_type,
                   normal_type=normal_type, is_scale=is_scale,
-                  factor=factor, beta=beta, thresh=thresh)
+                  factor=factor, beta=0, thresh=thresh)
     cqt_arr = cqt_obj.cqt(X)
-    chroma_arr = cqt_obj.chroma(cqt_arr, chroma_num=chroma_num)
+    power_arr = cqt_arr ** 2
+    chroma_arr = cqt_obj.chroma(power_arr, chroma_num=chroma_num, data_type=SpectralDataType.POWER)
     return chroma_arr

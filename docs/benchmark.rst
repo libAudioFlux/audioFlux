@@ -4,6 +4,15 @@ Benchmark
 Server performance
 ------------------
 
+server hardware::
+
+    - CPU: AMD Ryzen Threadripper 3970X 32-Core Processor
+    - Memory: 128GB
+
+Using 128ms audio data(sampling rate: 32000).
+
+The total time spent on extracting features for 1000 times.
+
 +--------+-----------+---------+-----------------+--------------------------+
 | Lib    | audioFlux | librosa | pyAudioAnalysis | python\_speech\_features |
 +========+===========+=========+=================+==========================+
@@ -15,12 +24,14 @@ Server performance
 +--------+-----------+---------+-----------------+--------------------------+
 | Chroma | 0.155s    | 2.174s  | 1.287s          | --                       |
 +--------+-----------+---------+-----------------+--------------------------+
-| NSGT   | 0.292     | --      | --              | --                       |
-+--------+-----------+---------+-----------------+--------------------------+
 
 
 Mobile performance
 ------------------
+
+Using 128ms audio data(sampling rate: 32000).
+
+The time spent on extracting features each time.
 
 +--------+---------------+----------+-----------+------------------+
 | Method | iPhone 13 Pro | iPhone X | Honor V40 | OPPO Reno4 SE 5G |
@@ -32,6 +43,4 @@ Mobile performance
 | CQT    | 0.350ms       | 0.609ms  | 0.786ms   | 1.779ms          |
 +--------+---------------+----------+-----------+------------------+
 | Chroma | 0.354ms       | 0.615ms  | 0.803ms   | 1.775ms          |
-+--------+---------------+----------+-----------+------------------+
-| NSGT   | 0.044ms       | 0.084ms  | 0.188ms   | 0.615ms          |
 +--------+---------------+----------+-----------+------------------+

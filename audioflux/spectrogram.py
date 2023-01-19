@@ -1501,12 +1501,8 @@ class SpectrogramBase(Base):
         method_type: SpectralNoveltyMethodType
             Novelty method type.
 
-            See: `type.SpectralNoveltyMethodType`
-
         data_type: SpectralNoveltyDataType
             Novelty data type.
-
-            See: `type.SpectralNoveltyDataType`
 
         Returns
         -------
@@ -1809,6 +1805,8 @@ class Spectrogram(SpectrogramBase):
         - The default value of `Deep/DeepChroma` is **hamm**, and others are **hann**
         - Deep/DeepChroma can only be set to `hamm/hann/rect`
 
+        See: `type.WindowType`
+
     slide_length: int
         Window sliding length
 
@@ -1817,16 +1815,22 @@ class Spectrogram(SpectrogramBase):
 
         It cat be set to mag or power. If you needs `db` type, you can set `power` type and then call the `power_to_db` method.
 
+        See: `type.SpectralDataType`
+
     filter_bank_type: SpectralFilterBankType
         Spectral filter bank type. It determines the type of spectrogram, like Linear/Mel/Bank/Erb etc.
 
     filter_style_type: SpectralFilterBankStyleType
         Spectral filter bank style type. It determines the bank type of window.
 
+        see: `type.SpectralFilterBankStyleType`
+
     filter_normal_type: SpectralFilterBankNormalType
         Spectral filter normal type. It determines the type of normalization.
 
         Linear/Chroma/Deep/DeepChroma is not provided.
+
+        See: `type.SpectralFilterBankNormalType`
 
     Notes
     -----
@@ -2357,7 +2361,6 @@ class Deep(SpectrogramBase):
         >>> from audioflux.spectrogram import Deep
         >>> spec_obj = Deep(num=84)
         >>> spec_arr = spec_obj.spectrogram(audio_arr)
-        >>> print(spec_arr.shape)
 
         Show plot
 

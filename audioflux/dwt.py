@@ -74,9 +74,6 @@ class DWT(Base):
     >>> audio_path = af.utils.sample_path('880')
     >>> audio_arr, sr = af.read(audio_path)
     >>> audio_arr = audio_arr[:4096]
-    >>> audio_arr
-    array([-5.5879354e-09, -9.3132257e-09,  0.0000000e+00, ...,
-           -1.3013066e-01, -8.8289484e-02, -7.2360471e-02], dtype=float32)
 
     Create DWT object
 
@@ -90,37 +87,19 @@ class DWT(Base):
     >>> import numpy as np
     >>> coef_arr, m_data_arr = obj.dwt(audio_arr)
     >>> m_data_arr = np.abs(m_data_arr)
-    >>> coef_arr
-    array([ 0.01794817, -0.11379103,  0.01852291, ...,  0.00575202,
-           -0.01306073,  0.01146322], dtype=float32)
-
-    >>> m_data_arr
-    array([[ 0.13798241,  0.13798241,  0.13798241, ...,  0.06006188,
-             0.06006188,  0.06006188],
-           [-0.03932592, -0.03932592, -0.03932592, ..., -0.00320929,
-            -0.00320929, -0.00320929],
-           [ 0.19744706,  0.19744706,  0.19744706, ...,  0.02507702,
-             0.02507702,  0.02507702],
-           ...,
-           [-0.03494655, -0.03494655, -0.03494655, ...,  0.03548484,
-             0.03548484,  0.03548484],
-           [-0.03214145, -0.03214145, -0.03214145, ...,  0.01973005,
-             0.01973005,  0.01973005],
-           [-0.02876501, -0.02876501,  0.00548246, ..., -0.06147008,
-            -0.00574392, -0.00574392]], dtype=float32)
 
     Show plot
 
     >>> import matplotlib.pyplot as plt
     >>> from audioflux.display import fill_spec, fill_plot
-    >>> fig, ax = plt.subplots(nrows=2, sharex=True)
+    >>> fig, ax = plt.subplots(nrows=2)
     >>> fill_spec(m_data_arr, axes=ax[0],
     >>>           x_coords=obj.x_coords(),
     >>>           y_coords=obj.y_coords(),
     >>>           x_axis='time', y_axis='log',
     >>>           title='DWT')
     >>>
-    >>> fill_plot(obj.x_coords()[1:], coef_arr,
+    >>> fill_plot(np.arange(len(coef_arr)), coef_arr,
     >>>           axes=ax[1], label='DWT-coef')
 
     """

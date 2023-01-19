@@ -96,8 +96,6 @@ class CWT(Base):
     >>> # CWT can only input fft_length data
     >>> # For radix2_exp=12, then fft_length=4096
     >>> audio_arr = audio_arr[:4096]
-    array([-5.5879354e-09, -9.3132257e-09,  0.0000000e+00, ...,
-           -1.3137090e-01, -1.5649168e-01, -1.8550715e-01], dtype=float32)
 
     Create CWT object of Octave
 
@@ -113,19 +111,6 @@ class CWT(Base):
     >>> import numpy as np
     >>> spec_arr = obj.cwt(audio_arr)
     >>> spec_arr = np.abs(spec_arr)
-    array([[5.9040589e-03, 5.9040883e-03, 5.9041460e-03, ..., 3.3131682e-03,
-            3.3131670e-03, 3.3131654e-03],
-           [1.1005097e-02, 1.1005105e-02, 1.1005125e-02, ..., 5.0106235e-03,
-            5.0106221e-03, 5.0106202e-03],
-           [1.4031209e-02, 1.4031209e-02, 1.4031206e-02, ..., 5.7992758e-03,
-            5.7992786e-03, 5.7992795e-03],
-           ...,
-           [2.9626326e-08, 2.8529593e-08, 2.7170261e-08, ..., 3.9147399e-03,
-            4.0606451e-03, 4.1351509e-03],
-           [8.1756388e-09, 7.8093771e-09, 6.8754065e-09, ..., 4.8332815e-03,
-            5.0402004e-03, 5.1454846e-03],
-           [1.8423437e-08, 1.8048882e-08, 2.0733696e-08, ..., 7.7667395e-03,
-            7.9389615e-03, 8.0277789e-03]], dtype=float32)
 
     Show spectrogram plot
 
@@ -146,6 +131,12 @@ class CWT(Base):
                  scale_type=SpectralFilterBankScaleType.OCTAVE,
                  gamma=None, beta=None, is_padding=True):
         super(CWT, self).__init__(pointer(OpaqueCWT()))
+
+        self.fft_length = fft_length = 1 << radix2_exp
+
+        # check num
+        if num > (fft_length // 2 + 1):
+            raise ValueError(f'num={num} is too large')
 
         # check BPO
         if scale_type == SpectralFilterBankScaleType.OCTAVE and bin_per_octave < 1:
@@ -177,8 +168,6 @@ class CWT(Base):
             gamma = default_gamma
         if beta is None:
             beta = default_beta
-
-        self.fft_length = 1 << radix2_exp
 
         self.num = num
         self.radix2_exp = radix2_exp
