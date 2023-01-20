@@ -1,5 +1,5 @@
 
-## Compiling from source
+## Building from source
 
 #### Linux build
 

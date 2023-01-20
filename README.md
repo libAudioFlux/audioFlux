@@ -23,10 +23,10 @@
 ![language](https://img.shields.io/badge/language-python%20|%20c%20-blue.svg)
 [![PyPI - Version](https://img.shields.io/pypi/v/audioflux)](https://pypi.org/project/audioflux/)
 [![PyPI - Python Version](https://img.shields.io/badge/python-%3E%3D3.6-brightgreen)](https://pypi.org/project/audioflux/)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/audioflux.svg?label=Pypi%20downloads)](https://pypi.org/project/audioflux/)
 
 [![Docs](https://img.shields.io/badge/Docs-passing-brightgreen)](https://audioflux.top/index.html)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7548288.svg)](https://doi.org/10.5281/zenodo.7548288)
-<!--[![PyPI Downloads](https://img.shields.io/pypi/dm/audioflux.svg?label=Pypi%20downloads)](https://pypi.org/project/audioflux/)-->
 
 <!--[![codebeat badge](https://codebeat.co/badges/0e21a344-0928-4aee-8262-be9a41fa488b)](https://codebeat.co/projects/github-com-libaudioflux-audioflux-master)
 ![](https://img.shields.io/badge/pod-v0.1.1-blue.svg)-->
@@ -40,9 +40,9 @@ A library for audio and music analysis, feature extraction.
 - [Overview](#overview)
   - [Description](#description)
   - [Functionality](#functionality)
-    - [transform](#1-transform)
-    - [feature](#2-feature)
-    - [mir](#3-mir)
+    - [Transform](#1-transform)
+    - [Feature](#2-feature)
+    - [MIR](#3-mir)
 - [Quickstart](#quickstart)
 	-  [Mel & MFCC](#mel--mfcc)
 	-  [CWT & Synchrosqueezing](#cwt--synchrosqueezing)
@@ -51,7 +51,7 @@ A library for audio and music analysis, feature extraction.
     - [Python Package Intsall](#python-package-intsall)
     - [iOS build](#ios-build)
     - [Android build](#android-build)
-    - [Compiling from source](#compiling-from-source)
+    - [Building from source](#building-from-source)
 - [Documentation](#documentation)
 - [Contributing](#contributing)
 - [Citing](#citing)
@@ -78,7 +78,7 @@ Can be used for deep learning, pattern recognition, signal processing, bioinform
 <!--<img src='./feature_all.pdf'>-->
 
 The main functions of **`audioFlux`** include **transform**, **feature** and **mir** modules. 
-#### 1. transform
+#### 1. Transform
 In the time–frequency representation, main transform algorithm: 
 
 - **`BFT`**&nbsp;&nbsp; -  &nbsp;&nbsp;Based Fourier Transform, similar short-time Fourier transform.
@@ -112,39 +112,45 @@ Detailed transform function, description, and use view the documentation.
 
 The *_synchrosqueezing_* or *_reassignment_* is a technique for sharpening a time-frequency representation, contains the following algorithms:
 
-- `reassign` - reassign transform for `STFT`.
-- `synsq` - reassign data use `STFT` data. 
-- `wsst` - reassign transform for `CWT`.
+- **`reassign`** - reassign transform for `STFT`.
+- **`synsq`** - reassign data use `CWT` data. 
+- **`wsst`** - reassign transform for `CWT`.
 
-#### 2. feature
+#### 2. Feature
 The feature module contains the following algorithms:
 
-- `spectral ` - Spectrum feature, supports all spectrum types.
-- `xxcc` -  Cepstrum coefficients, supports all spectrum types.
-- `deconv` - Deconvolution for spectrum, supports all spectrum types.
-- `chroma` - Chroma feature, only supports `CQT` spectrum, Linear/Octave spectrum based on `BFT`. 
+- **`spectral`** - Spectrum feature, supports all spectrum types.
+- **`xxcc`** -  Cepstrum coefficients, supports all spectrum types.
+- **`deconv`** - Deconvolution for spectrum, supports all spectrum types.
+- **`chroma`** - Chroma feature, only supports `CQT` spectrum, Linear/Octave spectrum based on `BFT`. 
 
 <!-- harmonic pitch class profiles(HPCP) -->
 
-#### 3. mir 
+#### 3. MIR 
 The mir module contains the following algorithms:
 
-- `pitch` - YIN, STFT, etc algorithm.
-- `onset` - Spectrum flux, novelty, etc algorithm. 
-- `hpss` - Median filtering, NMF algorithm.
+- **`pitch`** - YIN, STFT, etc algorithm.
+- **`onset`** - Spectrum flux, novelty, etc algorithm. 
+- **`hpss`** - Median filtering, NMF algorithm.
 
 
 ## Quickstart
+To install the **`audioFlux`** package, Python >=3.6, using the released python package:
 
-### Mel & MFCC
+ ```bash
+ pip install audioflux
+ ```
+ 
+ ### Mel & MFCC
 
 Mel spectrogram and Mel-frequency cepstral coefficients 
 
 ```python
 # Feature extraction example
 import numpy as np
-import audioflux as af
 import matplotlib.pyplot as plt
+
+import audioflux as af
 from audioflux.display import fill_spec
 from audioflux.type import SpectralFilterBankScaleType
 
@@ -192,8 +198,9 @@ Continuous Wavelet Transform spectrogram and its corresponding synchrosqueezing 
 ```python
 # Feature extraction example
 import numpy as np
-import audioflux as af
 import matplotlib.pyplot as plt
+
+import audioflux as af
 from audioflux.display import fill_spec
 from audioflux.type import SpectralFilterBankScaleType, WaveletContinueType
 from audioflux.utils import note_to_hz
@@ -317,7 +324,7 @@ $ ./build_android.sh
 Build  and compile successfully, the project build compilation results are in the **`build`** folder
 
 
-### Compiling from source
+### Building from source
 
 For Linux, macOS, Windows systems. Read installation instructions:
 
@@ -330,10 +337,9 @@ Documentation of the package can be found online:
 [https://audioflux.top](https://audioflux.top/)
 
 ## Contributing
-We are more than happy to collaborate and receive your contributions to **`audioFlux`**. If you want to contribute, the best way is is to submit your code. <a href="https://github.com/libAudioFlux/audioFlux/pulls">Create a pull request</a>
+We are more than happy to collaborate and receive your contributions to **`audioFlux`**. If you want to contribute, please fork the latest git repository and create a feature branch. Submitted requests should pass all continuous integration tests.
 
 You are also more than welcome to suggest any improvements, including proposals for need help, find a bug, have a feature request, ask a general question, new algorithms. <a href="https://github.com/libAudioFlux/audioFlux/issues/new">Open an issue</a>
-
 
 ## Citing
 
@@ -342,7 +348,9 @@ If you want to cite **`audioFlux`** in a scholarly work, there are two ways to d
 - If you are using the library for your work, for the sake of reproducibility, please cite
   the version you used as indexed at Zenodo:
 
-    [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7548289.svg)](https://doi.org/10.5281/zenodo.7548289)
+    [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7548288.svg)](https://doi.org/10.5281/zenodo.7548288)
 
 ## License
 audioFlux project is available MIT License.
+
+
