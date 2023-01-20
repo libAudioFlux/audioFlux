@@ -135,16 +135,22 @@ The mir module contains the following algorithms:
 
 
 ## Quickstart
+To install the **`audioFlux`** package, Python >=3.6, using the released python package:
 
-### Mel & MFCC
+ ```bash
+ pip install audioflux
+ ```
+ 
+ ### Mel & MFCC
 
 Mel spectrogram and Mel-frequency cepstral coefficients 
 
 ```python
 # Feature extraction example
 import numpy as np
-import audioflux as af
 import matplotlib.pyplot as plt
+
+import audioflux as af
 from audioflux.display import fill_spec
 from audioflux.type import SpectralFilterBankScaleType
 
@@ -192,8 +198,9 @@ Continuous Wavelet Transform spectrogram and its corresponding synchrosqueezing 
 ```python
 # Feature extraction example
 import numpy as np
-import audioflux as af
 import matplotlib.pyplot as plt
+
+import audioflux as af
 from audioflux.display import fill_spec
 from audioflux.type import SpectralFilterBankScaleType, WaveletContinueType
 from audioflux.utils import note_to_hz
