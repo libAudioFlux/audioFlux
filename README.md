@@ -52,6 +52,9 @@ A library for audio and music analysis, feature extraction.
     - [iOS build](#ios-build)
     - [Android build](#android-build)
     - [Building from source](#building-from-source)
+- [Benchmark](#benchmark)
+    - [Server performance](#server-performance)
+    - [Mobile performance](#mobile-performance)
 - [Documentation](#documentation)
 - [Contributing](#contributing)
 - [Citing](#citing)
@@ -329,6 +332,36 @@ Build  and compile successfully, the project build compilation results are in th
 For Linux, macOS, Windows systems. Read installation instructions:
 
 * [docs/installing.md](docs/installing.md)
+
+## Benchmark
+### Server performance
+server hardware:
+
+    - CPU: AMD Ryzen Threadripper 3970X 32-Core Processor
+    - Memory: 128GB
+    
+Each sample data is 128ms(sampling rate: 32000, data length: 4096).
+
+The total time spent on extracting features for 1000 sample data.
+
+| Package    | [audioFlux](https://github.com/libAudioFlux/audioFlux) | [librosa](https://github.com/librosa/librosa) | [pyAudioAnalysis](https://github.com/tyiannak/pyAudioAnalysis) | [python\_speech\_features](https://github.com/jameslyons/python_speech_features) |
+| ------ |  ------ |  ------ |  ------ |  ------ | 
+| Mel    | 0.777s    | 2.967s  | --              | --                       |
+| MFCC   | 0.797s    | 2.963s  | 0.805s          | 2.150s                   |
+| CQT    | 5.743s    | 21.477s | --              | --                       |
+| Chroma | 0.155s    | 2.174s  | 1.287s          | --                       |
+ 
+### Mobile performance
+For 128ms audio data per frame(sampling rate: 32000, data length: 4096).
+
+The time spent on extracting features for 1 frame data.
+
+| Mobile | iPhone 13 Pro | iPhone X | Honor V40 | OPPO Reno4 SE 5G |
+| ------ |  ------ |  ------ |  ------ |  ------ | 
+| Mel    | 0.249ms       | 0.359ms  | 0.313ms   | 0.891ms          |
+| MFCC   | 0.249ms       | 0.361ms  | 0.315ms   | 1.116ms          |
+| CQT    | 0.350ms       | 0.609ms  | 0.786ms   | 1.779ms          |
+| Chroma | 0.354ms       | 0.615ms  | 0.803ms   | 1.775ms          |
 
 ## Documentation
 
