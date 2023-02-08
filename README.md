@@ -49,8 +49,7 @@ A library for audio and music analysis, feature extraction.
 	-  [Other examples](#other-examples)
 - [Installation](#installation)
     - [Python Package Intsall](#python-package-intsall)
-    - [iOS build](#ios-build)
-    - [Android build](#android-build)
+    - [Build for mobile](#Build for mobile)
     - [Compiling from source](#compiling-from-source)
 - [Documentation](#documentation)
 - [Contributing](#contributing)
@@ -141,12 +140,11 @@ The mir module contains the following algorithms:
 Mel spectrogram and Mel-frequency cepstral coefficients 
 
 ```python
-# Feature extraction example
 import numpy as np
 import audioflux as af
+
 import matplotlib.pyplot as plt
 from audioflux.display import fill_spec
-from audioflux.type import SpectralFilterBankScaleType
 
 # Get a 220Hz's audio file path
 sample_path = af.utils.sample_path('220')
@@ -155,29 +153,28 @@ sample_path = af.utils.sample_path('220')
 audio_arr, sr = af.read(sample_path)
 
 # Extract mel spectrogram
-bft_obj = af.BFT(num=128, radix2_exp=12, samplate=sr,
-                 scale_type=SpectralFilterBankScaleType.MEL)
-spec_arr = bft_obj.bft(audio_arr)
+spec_arr, mel_fre_band_arr = af.mel_spectrogram(audio_arr, num=128, radix2_exp=12, samplate=sr)
 spec_arr = np.abs(spec_arr)
 
-# Create XXCC object and extract mfcc
-xxcc_obj = af.XXCC(bft_obj.num)
-xxcc_obj.set_time_length(time_length=spec_arr.shape[1])
-mfcc_arr = xxcc_obj.xxcc(spec_arr)
+# Extract mfcc
+mfcc_arr, _ = af.mfcc(audio_arr, cc_num=13, mel_num=128, radix2_exp=12, samplate=sr)
 
+# Display
 audio_len = audio_arr.shape[0]
+# calculate x/y-coords
+x_coords = np.linspace(0, audio_len / sr, spec_arr.shape[1] + 1)
+y_coords = np.insert(mel_fre_band_arr, 0, 0)
 fig, ax = plt.subplots()
 img = fill_spec(spec_arr, axes=ax,
-          x_coords=bft_obj.x_coords(audio_len),
-          y_coords=bft_obj.y_coords(),
-          x_axis='time', y_axis='log',
-          title='Mel Spectrogram')
+                x_coords=x_coords, y_coords=y_coords,
+                x_axis='time', y_axis='log',
+                title='Mel Spectrogram')
 fig.colorbar(img, ax=ax)
 
 fig, ax = plt.subplots()
 img = fill_spec(mfcc_arr, axes=ax,
-          x_coords=bft_obj.x_coords(audio_len), x_axis='time',
-          title='MFCC')
+                x_coords=x_coords, x_axis='time',
+                title='MFCC')
 fig.colorbar(img, ax=ax)
 
 plt.show()
@@ -190,13 +187,13 @@ plt.show()
 Continuous Wavelet Transform spectrogram and its corresponding synchrosqueezing reassignment spectrogram
 
 ```python
-# Feature extraction example
 import numpy as np
 import audioflux as af
-import matplotlib.pyplot as plt
-from audioflux.display import fill_spec
 from audioflux.type import SpectralFilterBankScaleType, WaveletContinueType
 from audioflux.utils import note_to_hz
+
+import matplotlib.pyplot as plt
+from audioflux.display import fill_spec
 
 # Get a 220Hz's audio file path
 sample_path = af.utils.sample_path('220')
@@ -220,7 +217,7 @@ synsq_arr = synsq_obj.synsq(cwt_spec_arr,
                             fre_arr=cwt_obj.get_fre_band_arr())
 
 # Show CWT
-fig, ax = plt.subplots(figsize=(7,4))
+fig, ax = plt.subplots(figsize=(7, 4))
 img = fill_spec(np.abs(cwt_spec_arr), axes=ax,
                 x_coords=cwt_obj.x_coords(),
                 y_coords=cwt_obj.y_coords(),
@@ -228,7 +225,7 @@ img = fill_spec(np.abs(cwt_spec_arr), axes=ax,
                 title='CWT')
 fig.colorbar(img, ax=ax)
 # Show Synsq
-fig, ax = plt.subplots(figsize=(7,4))
+fig, ax = plt.subplots(figsize=(7, 4))
 img = fill_spec(np.abs(synsq_arr), axes=ax,
                 x_coords=cwt_obj.x_coords(),
                 y_coords=cwt_obj.y_coords(),
@@ -276,46 +273,11 @@ $ conda install -c conda-forge audioflux
 <!--Read installation instructions:
 https://audioflux.top/install-->
 
+### Build for mobile
 
-### iOS build
+For iOS, Android. Read installation instructions:
 
-To compile iOS on a Mac, Xcode Command Line Tools must exist in the system:  
-
-- Install the full Xcode package
-- install Xcode Command Line Tools when triggered by a command or run xcode-select command: 
-
-```
-$ xcode-select --install 
-```
-Enter the **`audioFlux`** project **`scripts`** directory and switch to the current directory, run the following script to build and compile:
-
-```
-$ ./build_iOS.sh
-```
-
-Build  and compile successfully, the project build compilation results are in the **`build`** folder
-
-### Android build
-
-The current system development environment needs to be installed [**android NDK**](https://developer.android.com/ndk), ndk version>=16,after installation, set the environment variable ndk path.  
- 
-For example, ndk installation path is `~/Android/android-ndk-r16b`:  
-
-```
-$ export NDK_ROOT=~/Android/android-ndk-r16b
-$ export PATH=$NDK_ROOT:$PATH
-```
-
-Android **`audioFlux`** build uses [**fftw**](https://www.fftw.org/) library to accelerate performance, compile the single-floating point version for android platform. fftw lib successful compilation, copy to  **`audioFlux`** project **`scripts/android/fftw3`** directory.
-
-Enter the **`audioFlux`** project **`scripts`** directory and switch to the current directory, run the following script to build and compile:
-
-```
-$ ./build_android.sh
-```
-
-Build  and compile successfully, the project build compilation results are in the **`build`** folder
-
+* [docs/installing_mobile.md](docs/installing_mobile.md)
 
 ### Compiling from source
 

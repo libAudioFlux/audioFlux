@@ -1136,6 +1136,7 @@ def vqt(X, num=84, samplate=32000, low_fre=note_to_hz('C1'), bin_per_octave=12,
     >>> audio_arr, sr = af.read(audio_path)
 
     Extract spectrogram of dB
+
     >>> low_fre = af.utils.note_to_hz('C1')
     >>> spec_arr, fre_band_arr = af.vqt(audio_arr, samplate=sr, low_fre=low_fre)
     >>> spec_dB_arr = af.utils.power_to_db(spec_arr ** 2)

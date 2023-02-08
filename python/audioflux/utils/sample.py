@@ -15,8 +15,13 @@ def sample_path(name):
     name: str
         sample name
 
-        - '220' - 220hz's audio file
-        - '880' - 880hz's audio file
+        - '220' - guitar 220hz's audio file
+        - '880' - guitar 880hz's audio file
+        - 'guitar_chord1' - Audio files of guitar chords
+        - 'guitar_chord2' - Audio files of guitar chords
+        - 'chord_metronome1' - Audio file of guitar chords with metronome
+        - 'chord_metronome2' - Audio file of guitar chords with metronome
+        - 'voice' - Vocal Scale audio file
 
     Returns
     -------
