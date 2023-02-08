@@ -49,7 +49,7 @@ A library for audio and music analysis, feature extraction.
 	-  [Other examples](#other-examples)
 - [Installation](#installation)
     - [Python Package Intsall](#python-package-intsall)
-    - [Build for mobile](#Build for mobile)
+    - [Build for mobile](#Build-for-mobile)
     - [Compiling from source](#compiling-from-source)
 - [Documentation](#documentation)
 - [Contributing](#contributing)
