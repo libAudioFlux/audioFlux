@@ -1,5 +1,5 @@
 
-## Build for mobile
+## Building for mobile
 
 ### iOS build
 

@@ -23,10 +23,10 @@
 ![language](https://img.shields.io/badge/language-python%20|%20c%20-blue.svg)
 [![PyPI - Version](https://img.shields.io/pypi/v/audioflux)](https://pypi.org/project/audioflux/)
 [![PyPI - Python Version](https://img.shields.io/badge/python-%3E%3D3.6-brightgreen)](https://pypi.org/project/audioflux/)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/audioflux.svg?label=Pypi%20downloads)](https://pypi.org/project/audioflux/)
 
 [![Docs](https://img.shields.io/badge/Docs-passing-brightgreen)](https://audioflux.top/index.html)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7548289.svg)](https://doi.org/10.5281/zenodo.7548289)
-<!--[![PyPI Downloads](https://img.shields.io/pypi/dm/audioflux.svg?label=Pypi%20downloads)](https://pypi.org/project/audioflux/)-->
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7548288.svg)](https://doi.org/10.5281/zenodo.7548288)
 
 <!--[![codebeat badge](https://codebeat.co/badges/0e21a344-0928-4aee-8262-be9a41fa488b)](https://codebeat.co/projects/github-com-libaudioflux-audioflux-master)
 ![](https://img.shields.io/badge/pod-v0.1.1-blue.svg)-->
@@ -40,17 +40,20 @@ A library for audio and music analysis, feature extraction.
 - [Overview](#overview)
   - [Description](#description)
   - [Functionality](#functionality)
-    - [transform](#1-transform)
-    - [feature](#2-feature)
-    - [mir](#3-mir)
+    - [Transform](#1-transform)
+    - [Feature](#2-feature)
+    - [MIR](#3-mir)
 - [Quickstart](#quickstart)
 	-  [Mel & MFCC](#mel--mfcc)
 	-  [CWT & Synchrosqueezing](#cwt--synchrosqueezing)
 	-  [Other examples](#other-examples)
 - [Installation](#installation)
     - [Python Package Intsall](#python-package-intsall)
-    - [Build for mobile](#Build-for-mobile)
-    - [Compiling from source](#compiling-from-source)
+    - [Building for mobile](#Building-for-mobile)
+    - [Building from source](#building-from-source)
+- [Benchmark](#benchmark)
+    - [Server performance](#server-performance)
+    - [Mobile performance](#mobile-performance)
 - [Documentation](#documentation)
 - [Contributing](#contributing)
 - [Citing](#citing)
@@ -77,7 +80,7 @@ Can be used for deep learning, pattern recognition, signal processing, bioinform
 <!--<img src='./feature_all.pdf'>-->
 
 The main functions of **`audioFlux`** include **transform**, **feature** and **mir** modules. 
-#### 1. transform
+#### 1. Transform
 In the time–frequency representation, main transform algorithm: 
 
 - **`BFT`**&nbsp;&nbsp; -  &nbsp;&nbsp;Based Fourier Transform, similar short-time Fourier transform.
@@ -111,31 +114,36 @@ Detailed transform function, description, and use view the documentation.
 
 The *_synchrosqueezing_* or *_reassignment_* is a technique for sharpening a time-frequency representation, contains the following algorithms:
 
-- `reassign` - reassign transform for `STFT`.
-- `synsq` - reassign data use `STFT` data. 
-- `wsst` - reassign transform for `CWT`.
+- **`reassign`** - reassign transform for `STFT`.
+- **`synsq`** - reassign data use `CWT` data. 
+- **`wsst`** - reassign transform for `CWT`.
 
-#### 2. feature
+#### 2. Feature
 The feature module contains the following algorithms:
 
-- `spectral ` - Spectrum feature, supports all spectrum types.
-- `xxcc` -  Cepstrum coefficients, supports all spectrum types.
-- `deconv` - Deconvolution for spectrum, supports all spectrum types.
-- `chroma` - Chroma feature, only supports `CQT` spectrum, Linear/Octave spectrum based on `BFT`. 
+- **`spectral`** - Spectrum feature, supports all spectrum types.
+- **`xxcc`** -  Cepstrum coefficients, supports all spectrum types.
+- **`deconv`** - Deconvolution for spectrum, supports all spectrum types.
+- **`chroma`** - Chroma feature, only supports `CQT` spectrum, Linear/Octave spectrum based on `BFT`. 
 
 <!-- harmonic pitch class profiles(HPCP) -->
 
-#### 3. mir 
+#### 3. MIR 
 The mir module contains the following algorithms:
 
-- `pitch` - YIN, STFT, etc algorithm.
-- `onset` - Spectrum flux, novelty, etc algorithm. 
-- `hpss` - Median filtering, NMF algorithm.
+- **`pitch`** - YIN, STFT, etc algorithm.
+- **`onset`** - Spectrum flux, novelty, etc algorithm. 
+- **`hpss`** - Median filtering, NMF algorithm.
 
 
 ## Quickstart
+To install the **`audioFlux`** package, Python >=3.6, using the released python package:
 
-### Mel & MFCC
+ ```bash
+ pip install audioflux
+ ```
+ 
+ ### Mel & MFCC
 
 Mel spectrogram and Mel-frequency cepstral coefficients 
 
@@ -273,17 +281,47 @@ $ conda install -c conda-forge audioflux
 <!--Read installation instructions:
 https://audioflux.top/install-->
 
-### Build for mobile
+### Building for mobile
 
 For iOS, Android. Read installation instructions:
 
 * [docs/installing_mobile.md](docs/installing_mobile.md)
 
-### Compiling from source
+### Building from source
 
 For Linux, macOS, Windows systems. Read installation instructions:
 
 * [docs/installing.md](docs/installing.md)
+
+## Benchmark
+### Server performance
+server hardware:
+
+    - CPU: AMD Ryzen Threadripper 3970X 32-Core Processor
+    - Memory: 128GB
+    
+Each sample data is 128ms(sampling rate: 32000, data length: 4096).
+
+The total time spent on extracting features for 1000 sample data.
+
+| Package    | [audioFlux](https://github.com/libAudioFlux/audioFlux) | [librosa](https://github.com/librosa/librosa) | [pyAudioAnalysis](https://github.com/tyiannak/pyAudioAnalysis) | [python\_speech\_features](https://github.com/jameslyons/python_speech_features) |
+| ------ |  ------ |  ------ |  ------ |  ------ | 
+| Mel    | 0.777s    | 2.967s  | --              | --                       |
+| MFCC   | 0.797s    | 2.963s  | 0.805s          | 2.150s                   |
+| CQT    | 5.743s    | 21.477s | --              | --                       |
+| Chroma | 0.155s    | 2.174s  | 1.287s          | --                       |
+ 
+### Mobile performance
+For 128ms audio data per frame(sampling rate: 32000, data length: 4096).
+
+The time spent on extracting features for 1 frame data.
+
+| Mobile | iPhone 13 Pro | iPhone X | Honor V40 | OPPO Reno4 SE 5G |
+| ------ |  ------ |  ------ |  ------ |  ------ | 
+| Mel    | 0.249ms       | 0.359ms  | 0.313ms   | 0.891ms          |
+| MFCC   | 0.249ms       | 0.361ms  | 0.315ms   | 1.116ms          |
+| CQT    | 0.350ms       | 0.609ms  | 0.786ms   | 1.779ms          |
+| Chroma | 0.354ms       | 0.615ms  | 0.803ms   | 1.775ms          |
 
 ## Documentation
 
@@ -292,10 +330,9 @@ Documentation of the package can be found online:
 [https://audioflux.top](https://audioflux.top/)
 
 ## Contributing
-We are more than happy to collaborate and receive your contributions to **`audioFlux`**. If you want to contribute, the best way is is to submit your code. <a href="https://github.com/libAudioFlux/audioFlux/pulls">Create a pull request</a>
+We are more than happy to collaborate and receive your contributions to **`audioFlux`**. If you want to contribute, please fork the latest git repository and create a feature branch. Submitted requests should pass all continuous integration tests.
 
 You are also more than welcome to suggest any improvements, including proposals for need help, find a bug, have a feature request, ask a general question, new algorithms. <a href="https://github.com/libAudioFlux/audioFlux/issues/new">Open an issue</a>
-
 
 ## Citing
 
@@ -304,7 +341,9 @@ If you want to cite **`audioFlux`** in a scholarly work, there are two ways to d
 - If you are using the library for your work, for the sake of reproducibility, please cite
   the version you used as indexed at Zenodo:
 
-    [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7548289.svg)](https://doi.org/10.5281/zenodo.7548289)
+    [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7548288.svg)](https://doi.org/10.5281/zenodo.7548288)
 
 ## License
 audioFlux project is available MIT License.
+
+

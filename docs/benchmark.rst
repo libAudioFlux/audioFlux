@@ -9,9 +9,9 @@ server hardware::
     - CPU: AMD Ryzen Threadripper 3970X 32-Core Processor
     - Memory: 128GB
 
-Using 128ms audio data(sampling rate: 32000).
+Each sample data is 128ms(sampling rate: 32000, data length: 4096).
 
-The total time spent on extracting features for 1000 times.
+The total time spent on extracting features for 1000 sample data.
 
 +--------+-----------+---------+-----------------+--------------------------+
 | Lib    | audioFlux | librosa | pyAudioAnalysis | python\_speech\_features |
@@ -29,12 +29,12 @@ The total time spent on extracting features for 1000 times.
 Mobile performance
 ------------------
 
-Using 128ms audio data(sampling rate: 32000).
+For 128ms audio data per frame(sampling rate: 32000, data length: 4096).
 
-The time spent on extracting features each time.
+The time spent on extracting features for 1 frame data.
 
 +--------+---------------+----------+-----------+------------------+
-| Method | iPhone 13 Pro | iPhone X | Honor V40 | OPPO Reno4 SE 5G |
+| Mobile | iPhone 13 Pro | iPhone X | Honor V40 | OPPO Reno4 SE 5G |
 +========+===============+==========+===========+==================+
 | Mel    | 0.249ms       | 0.359ms  | 0.313ms   | 0.891ms          |
 +--------+---------------+----------+-----------+------------------+
