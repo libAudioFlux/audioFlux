@@ -8,12 +8,20 @@ Python Package Install
 
 To install the ``audioFlux`` package, you must have Python 3.6 or newer
 
+We recommend installing using the released python package:
+
 Using PyPI
 ^^^^^^^^^^
-
-We recommend installing using the released python package::
+ ::
 
     $ pip install audioflux
+
+
+Using conda
+^^^^^^^^^^^
+ ::
+
+    $ conda install -c tanky25 -c conda-forge audioflux
 
 
 Building for mobile

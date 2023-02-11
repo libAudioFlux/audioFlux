@@ -35,7 +35,7 @@ class BuildPyCommand(setuptools.command.build_py.build_py):
         print('Compile audioFlux successful.')
 
         import shutil
-        dst_lib_path = 'python/audioflux/lib'
+        dst_lib_path = 'audioflux/lib'
         if not os.path.exists(dst_lib_path):
             os.makedirs(dst_lib_path)
 
@@ -70,7 +70,7 @@ class BuildPyWinCommand(setuptools.command.build_py.build_py):
         print('Compile audioFlux successful.')
 
         import shutil
-        dst_lib_path = 'python/audioflux/lib'
+        dst_lib_path = 'audioflux/lib'
         if not os.path.exists(dst_lib_path):
             os.makedirs(dst_lib_path)
 
@@ -84,7 +84,7 @@ class BuildPyWinCommand(setuptools.command.build_py.build_py):
 
 about = {}
 here = os.path.abspath(os.path.dirname(__file__))
-with open(os.path.join(here, "python", "audioflux", "__version__.py"), "r") as f:
+with open(os.path.join(here, "audioflux", "__version__.py"), "r") as f:
     exec(f.read(), about)
 
 with open("README.md", "r") as f:
@@ -120,8 +120,17 @@ setup(
     long_description_content_type="text/markdown",
     keywords=[about['__title__']],
     version=about['__version__'],
-    package_dir={"": "python"},
-    packages=find_packages("python"),
+    packages=find_packages(
+        include=[
+            "audioflux",
+            "audioflux.dsp",
+            "audioflux.feature",
+            "audioflux.mir",
+            "audioflux.type",
+            "audioflux.utils",
+            "audioflux.display",
+        ]
+    ),
     package_data=get_package_data(),
     author="immusician",
     url='https://audioflux.top',
