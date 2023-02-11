@@ -51,7 +51,7 @@ class Onset(Base):
     Examples
     --------
     >>> import audioflux as af
-    >>> audio_arr, sr = af.read(af.utils.sample_path('chord'))
+    >>> audio_arr, sr = af.read(af.utils.sample_path('guitar_chord1'))
 
     >>> from audioflux.type import SpectralFilterBankScaleType, SpectralDataType
     >>> import numpy as np

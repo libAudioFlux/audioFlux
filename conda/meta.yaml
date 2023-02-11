@@ -1,0 +1,36 @@
+{% set version = "0.1.2" %}
+
+package:
+  name: audioflux
+  version: {{ version }}
+
+source:
+  path: ..
+
+build:
+  noarch: python
+  number: 4
+#  script: "{{ PYTHON }} -m pip install . --no-deps -vv "
+
+requirements:
+  host:
+    - pip
+    - python >=3.6
+    - setuptools >=48
+    - wheel >=0.29.0
+  run:
+    - python >=3.6
+    - numpy >=1.17.0
+    - matplotlib-base >=3.3.0
+    - pysoundfile >=0.10.2
+
+about:
+  home: https://audioflux.top
+  license: MIT License
+  summary: A library for audio and music analysis, feature extraction.
+  dev_url: https://github.com/libAudioFlux/audioFlux
+
+test:
+  imports:
+    - audioflux
+

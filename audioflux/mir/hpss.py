@@ -40,7 +40,7 @@ class HPSS(Base):
     Get a chord audio file with a metronome
 
     >>> import audioflux as af
-    >>> audio_arr, sr = af.read(af.utils.sample_path('chord_metronome'))
+    >>> audio_arr, sr = af.read(af.utils.sample_path('chord_metronome1'))
 
     Create HPSS object and extrct h/p data
 

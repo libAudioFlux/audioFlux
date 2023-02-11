@@ -136,7 +136,7 @@ class Spectral(Base):
         Read chord audio data
 
         >>> import audioflux as af
-        >>> audio_path = af.utils.sample_path('chord')
+        >>> audio_path = af.utils.sample_path('guitar_chord1')
         >>> audio_arr, sr = af.read(audio_path)
 
         Create BFT-Linear object and extract spectrogram
@@ -221,7 +221,7 @@ class Spectral(Base):
         Read chord audio data
 
         >>> import audioflux as af
-        >>> audio_path = af.utils.sample_path('chord')
+        >>> audio_path = af.utils.sample_path('guitar_chord1')
         >>> audio_arr, sr = af.read(audio_path)
 
         Create BFT-Linear object and extract spectrogram
@@ -302,7 +302,7 @@ class Spectral(Base):
         Read chord audio data
 
         >>> import audioflux as af
-        >>> audio_path = af.utils.sample_path('chord')
+        >>> audio_path = af.utils.sample_path('guitar_chord1')
         >>> audio_arr, sr = af.read(audio_path)
 
         Create BFT-Linear object and extract spectrogram
@@ -375,7 +375,7 @@ class Spectral(Base):
         Read chord audio data
 
         >>> import audioflux as af
-        >>> audio_path = af.utils.sample_path('chord')
+        >>> audio_path = af.utils.sample_path('guitar_chord1')
         >>> audio_arr, sr = af.read(audio_path)
 
         Create BFT-Linear object and extract spectrogram
@@ -445,7 +445,7 @@ class Spectral(Base):
         Read chord audio data
 
         >>> import audioflux as af
-        >>> audio_path = af.utils.sample_path('chord')
+        >>> audio_path = af.utils.sample_path('guitar_chord1')
         >>> audio_arr, sr = af.read(audio_path)
 
         Create BFT-Linear object and extract spectrogram
@@ -516,7 +516,7 @@ class Spectral(Base):
         Read chord audio data
 
         >>> import audioflux as af
-        >>> audio_path = af.utils.sample_path('chord')
+        >>> audio_path = af.utils.sample_path('guitar_chord1')
         >>> audio_arr, sr = af.read(audio_path)
 
         Create BFT-Linear object and extract spectrogram
@@ -587,7 +587,7 @@ class Spectral(Base):
         Read chord audio data
 
         >>> import audioflux as af
-        >>> audio_path = af.utils.sample_path('chord')
+        >>> audio_path = af.utils.sample_path('guitar_chord1')
         >>> audio_arr, sr = af.read(audio_path)
 
         Create BFT-Linear object and extract spectrogram
@@ -664,7 +664,7 @@ class Spectral(Base):
         Read chord audio data
 
         >>> import audioflux as af
-        >>> audio_path = af.utils.sample_path('chord')
+        >>> audio_path = af.utils.sample_path('guitar_chord1')
         >>> audio_arr, sr = af.read(audio_path)
 
         Create BFT-Linear object and extract spectrogram
@@ -733,7 +733,7 @@ class Spectral(Base):
         Read chord audio data
 
         >>> import audioflux as af
-        >>> audio_path = af.utils.sample_path('chord')
+        >>> audio_path = af.utils.sample_path('guitar_chord1')
         >>> audio_arr, sr = af.read(audio_path)
 
         Create BFT-Linear object and extract spectrogram
@@ -804,7 +804,7 @@ class Spectral(Base):
         Read chord audio data
 
         >>> import audioflux as af
-        >>> audio_path = af.utils.sample_path('chord')
+        >>> audio_path = af.utils.sample_path('guitar_chord1')
         >>> audio_arr, sr = af.read(audio_path)
 
         Create BFT-Linear object and extract spectrogram
@@ -872,7 +872,7 @@ class Spectral(Base):
         Read chord audio data
 
         >>> import audioflux as af
-        >>> audio_path = af.utils.sample_path('chord')
+        >>> audio_path = af.utils.sample_path('guitar_chord1')
         >>> audio_arr, sr = af.read(audio_path)
 
         Create BFT-Linear object and extract spectrogram
@@ -945,7 +945,7 @@ class Spectral(Base):
         Read chord audio data
 
         >>> import audioflux as af
-        >>> audio_path = af.utils.sample_path('chord')
+        >>> audio_path = af.utils.sample_path('guitar_chord1')
         >>> audio_arr, sr = af.read(audio_path)
 
         Create BFT-Linear object and extract spectrogram
@@ -1011,7 +1011,7 @@ class Spectral(Base):
         Read chord audio data
 
         >>> import audioflux as af
-        >>> audio_path = af.utils.sample_path('chord')
+        >>> audio_path = af.utils.sample_path('guitar_chord1')
         >>> audio_arr, sr = af.read(audio_path)
 
         Create BFT-Linear object and extract spectrogram
@@ -1082,7 +1082,7 @@ class Spectral(Base):
         Read chord audio data
 
         >>> import audioflux as af
-        >>> audio_path = af.utils.sample_path('chord')
+        >>> audio_path = af.utils.sample_path('guitar_chord1')
         >>> audio_arr, sr = af.read(audio_path)
 
         Create BFT-Linear object and extract spectrogram
@@ -1152,7 +1152,7 @@ class Spectral(Base):
         Read chord audio data
 
         >>> import audioflux as af
-        >>> audio_path = af.utils.sample_path('chord')
+        >>> audio_path = af.utils.sample_path('guitar_chord1')
         >>> audio_arr, sr = af.read(audio_path)
 
         Create BFT-Linear object and extract spectrogram
@@ -1228,7 +1228,7 @@ class Spectral(Base):
         Read chord audio data
 
         >>> import audioflux as af
-        >>> audio_path = af.utils.sample_path('chord')
+        >>> audio_path = af.utils.sample_path('guitar_chord1')
         >>> audio_arr, sr = af.read(audio_path)
 
         Create BFT-Linear object and extract spectrogram
@@ -1306,7 +1306,7 @@ class Spectral(Base):
         Read chord audio data
 
         >>> import audioflux as af
-        >>> audio_path = af.utils.sample_path('chord')
+        >>> audio_path = af.utils.sample_path('guitar_chord1')
         >>> audio_arr, sr = af.read(audio_path)
 
         Create BFT-Linear object and extract spectrogram
@@ -1379,7 +1379,7 @@ class Spectral(Base):
         Read chord audio data
 
         >>> import audioflux as af
-        >>> audio_path = af.utils.sample_path('chord')
+        >>> audio_path = af.utils.sample_path('guitar_chord1')
         >>> audio_arr, sr = af.read(audio_path)
 
         Create BFT-Linear object and extract spectrogram
@@ -1456,7 +1456,7 @@ class Spectral(Base):
         Read chord audio data
 
         >>> import audioflux as af
-        >>> audio_path = af.utils.sample_path('chord')
+        >>> audio_path = af.utils.sample_path('guitar_chord1')
         >>> audio_arr, sr = af.read(audio_path)
 
         Create BFT-Linear object and extract spectrogram
@@ -1527,7 +1527,7 @@ class Spectral(Base):
         Read chord audio data
 
         >>> import audioflux as af
-        >>> audio_path = af.utils.sample_path('chord')
+        >>> audio_path = af.utils.sample_path('guitar_chord1')
         >>> audio_arr, sr = af.read(audio_path)
 
         Create BFT-Linear object and extract spectrogram
@@ -1602,7 +1602,7 @@ class Spectral(Base):
         Read chord audio data
 
         >>> import audioflux as af
-        >>> audio_path = af.utils.sample_path('chord')
+        >>> audio_path = af.utils.sample_path('guitar_chord1')
         >>> audio_arr, sr = af.read(audio_path)
 
         Create BFT-Linear object and extract spectrogram
@@ -1673,7 +1673,7 @@ class Spectral(Base):
         Read chord audio data
 
         >>> import audioflux as af
-        >>> audio_path = af.utils.sample_path('chord')
+        >>> audio_path = af.utils.sample_path('guitar_chord1')
         >>> audio_arr, sr = af.read(audio_path)
 
         Create BFT-Linear object and extract spectrogram
@@ -1749,7 +1749,7 @@ class Spectral(Base):
         Read chord audio data
 
         >>> import audioflux as af
-        >>> audio_path = af.utils.sample_path('chord')
+        >>> audio_path = af.utils.sample_path('guitar_chord1')
         >>> audio_arr, sr = af.read(audio_path)
 
         Create BFT-Linear object and extract spectrogram
@@ -1818,7 +1818,7 @@ class Spectral(Base):
         Read chord audio data
 
         >>> import audioflux as af
-        >>> audio_path = af.utils.sample_path('chord')
+        >>> audio_path = af.utils.sample_path('guitar_chord1')
         >>> audio_arr, sr = af.read(audio_path)
 
         Create BFT-Linear object and extract spectrogram
@@ -1899,7 +1899,7 @@ class Spectral(Base):
         Read chord audio data
 
         >>> import audioflux as af
-        >>> audio_path = af.utils.sample_path('chord')
+        >>> audio_path = af.utils.sample_path('guitar_chord1')
         >>> audio_arr, sr = af.read(audio_path)
 
         Create BFT-Linear object and extract spectrogram
@@ -1982,7 +1982,7 @@ class Spectral(Base):
         Read chord audio data
 
         >>> import audioflux as af
-        >>> audio_path = af.utils.sample_path('chord')
+        >>> audio_path = af.utils.sample_path('guitar_chord1')
         >>> audio_arr, sr = af.read(audio_path)
 
         Create BFT-Linear object and extract spectrogram
@@ -2064,7 +2064,7 @@ class Spectral(Base):
         Read chord audio data
 
         >>> import audioflux as af
-        >>> audio_path = af.utils.sample_path('chord')
+        >>> audio_path = af.utils.sample_path('guitar_chord1')
         >>> audio_arr, sr = af.read(audio_path)
 
         Create BFT-Linear object and extract spectrogram
@@ -2132,7 +2132,7 @@ class Spectral(Base):
         Read chord audio data
 
         >>> import audioflux as af
-        >>> audio_path = af.utils.sample_path('chord')
+        >>> audio_path = af.utils.sample_path('guitar_chord1')
         >>> audio_arr, sr = af.read(audio_path)
 
         Create BFT-Linear object and extract spectrogram
@@ -2200,7 +2200,7 @@ class Spectral(Base):
         Read chord audio data
 
         >>> import audioflux as af
-        >>> audio_path = af.utils.sample_path('chord')
+        >>> audio_path = af.utils.sample_path('guitar_chord1')
         >>> audio_arr, sr = af.read(audio_path)
 
         Create BFT-Linear object and extract spectrogram
@@ -2268,7 +2268,7 @@ class Spectral(Base):
         Read chord audio data
 
         >>> import audioflux as af
-        >>> audio_path = af.utils.sample_path('chord')
+        >>> audio_path = af.utils.sample_path('guitar_chord1')
         >>> audio_arr, sr = af.read(audio_path)
 
         Create BFT-Linear object and extract spectrogram

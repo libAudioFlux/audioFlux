@@ -6,7 +6,6 @@ Simple extraction of mel spectrogram
 .. code-block:: python
     :linenos:
 
-    # Feature extraction example
     import numpy as np
     import audioflux as af
 

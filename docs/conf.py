@@ -13,7 +13,7 @@ import audioflux
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'AudioFlux'
-copyright = '2022, immusician'
+copyright = '2023, immusician'
 author = 'immusician'
 version = release = audioflux.__version__
 
@@ -25,6 +25,7 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinx.ext.mathjax",
     "sphinx.ext.autosectionlabel",
+    "sphinx_rtd_theme",
     "numpydoc",
     "matplotlib.sphinxext.plot_directive",
 ]
@@ -58,6 +59,17 @@ html_static_path = ['_static']
 html_css_files = [
     'css/custom.css',
 ]
+
+html_js_files = [
+    'js/edit_github_url.js',
+]
+
+html_context = {
+    "display_github": True,  # Integrate GitHub
+    "github_repo": "libAudioFlux/audioflux",  # Repo name
+    "github_version": "master",  # Version
+    "conf_py_path": "/docs/",  # Path in the checkout to the docs root
+}
 
 autodoc_member_order = 'bysource'
 

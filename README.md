@@ -149,13 +149,11 @@ To install the **`audioFlux`** package, Python >=3.6, using the released python 
 Mel spectrogram and Mel-frequency cepstral coefficients 
 
 ```python
-# Feature extraction example
 import numpy as np
-import matplotlib.pyplot as plt
-
 import audioflux as af
+
+import matplotlib.pyplot as plt
 from audioflux.display import fill_spec
-from audioflux.type import SpectralFilterBankScaleType
 
 # Get a 220Hz's audio file path
 sample_path = af.utils.sample_path('220')
@@ -164,29 +162,28 @@ sample_path = af.utils.sample_path('220')
 audio_arr, sr = af.read(sample_path)
 
 # Extract mel spectrogram
-bft_obj = af.BFT(num=128, radix2_exp=12, samplate=sr,
-                 scale_type=SpectralFilterBankScaleType.MEL)
-spec_arr = bft_obj.bft(audio_arr)
+spec_arr, mel_fre_band_arr = af.mel_spectrogram(audio_arr, num=128, radix2_exp=12, samplate=sr)
 spec_arr = np.abs(spec_arr)
 
-# Create XXCC object and extract mfcc
-xxcc_obj = af.XXCC(bft_obj.num)
-xxcc_obj.set_time_length(time_length=spec_arr.shape[1])
-mfcc_arr = xxcc_obj.xxcc(spec_arr)
+# Extract mfcc
+mfcc_arr, _ = af.mfcc(audio_arr, cc_num=13, mel_num=128, radix2_exp=12, samplate=sr)
 
+# Display
 audio_len = audio_arr.shape[0]
+# calculate x/y-coords
+x_coords = np.linspace(0, audio_len / sr, spec_arr.shape[1] + 1)
+y_coords = np.insert(mel_fre_band_arr, 0, 0)
 fig, ax = plt.subplots()
 img = fill_spec(spec_arr, axes=ax,
-          x_coords=bft_obj.x_coords(audio_len),
-          y_coords=bft_obj.y_coords(),
-          x_axis='time', y_axis='log',
-          title='Mel Spectrogram')
+                x_coords=x_coords, y_coords=y_coords,
+                x_axis='time', y_axis='log',
+                title='Mel Spectrogram')
 fig.colorbar(img, ax=ax)
 
 fig, ax = plt.subplots()
 img = fill_spec(mfcc_arr, axes=ax,
-          x_coords=bft_obj.x_coords(audio_len), x_axis='time',
-          title='MFCC')
+                x_coords=x_coords, x_axis='time',
+                title='MFCC')
 fig.colorbar(img, ax=ax)
 
 plt.show()
@@ -199,14 +196,13 @@ plt.show()
 Continuous Wavelet Transform spectrogram and its corresponding synchrosqueezing reassignment spectrogram
 
 ```python
-# Feature extraction example
 import numpy as np
-import matplotlib.pyplot as plt
-
 import audioflux as af
-from audioflux.display import fill_spec
 from audioflux.type import SpectralFilterBankScaleType, WaveletContinueType
 from audioflux.utils import note_to_hz
+
+import matplotlib.pyplot as plt
+from audioflux.display import fill_spec
 
 # Get a 220Hz's audio file path
 sample_path = af.utils.sample_path('220')
@@ -230,7 +226,7 @@ synsq_arr = synsq_obj.synsq(cwt_spec_arr,
                             fre_arr=cwt_obj.get_fre_band_arr())
 
 # Show CWT
-fig, ax = plt.subplots(figsize=(7,4))
+fig, ax = plt.subplots(figsize=(7, 4))
 img = fill_spec(np.abs(cwt_spec_arr), axes=ax,
                 x_coords=cwt_obj.x_coords(),
                 y_coords=cwt_obj.y_coords(),
@@ -238,7 +234,7 @@ img = fill_spec(np.abs(cwt_spec_arr), axes=ax,
                 title='CWT')
 fig.colorbar(img, ax=ax)
 # Show Synsq
-fig, ax = plt.subplots(figsize=(7,4))
+fig, ax = plt.subplots(figsize=(7, 4))
 img = fill_spec(np.abs(synsq_arr), axes=ax,
                 x_coords=cwt_obj.x_coords(),
                 y_coords=cwt_obj.y_coords(),
@@ -276,11 +272,11 @@ Using PyPI:
 $ pip install audioflux 
 ```
 
-<!--Using Anaconda: 
+Using Anaconda: 
 
 ```
-$ conda install -c conda-forge audioflux
-```-->
+$ conda install -c tanky25 -c conda-forge audioflux
+```
 
 
 <!--Read installation instructions:
@@ -303,7 +299,7 @@ Enter the **`audioFlux`** project **`scripts`** directory and switch to the curr
 $ ./build_iOS.sh
 ```
 
-Build  and compile successfully, the project build compilation results are in the **`build`** folder
+Build and compile successfully, the project build compilation results are in the **`build`** folder
 
 ### Android build
 
@@ -324,7 +320,7 @@ Enter the **`audioFlux`** project **`scripts`** directory and switch to the curr
 $ ./build_android.sh
 ```
 
-Build  and compile successfully, the project build compilation results are in the **`build`** folder
+Build and compile successfully, the project build compilation results are in the **`build`** folder
 
 
 ### Building from source
