@@ -29,7 +29,7 @@
 ![](https://img.shields.io/badge/pod-v0.1.1-blue.svg)-->
 
 
-**audioflux** is a deep learning tool library for audio and music analysis, feature extraction. It supports dozens of
+**`audioflux`** is a deep learning tool library for audio and music analysis, feature extraction. It supports dozens of
 time-frequency analysis transformation methods and hundreds of corresponding time-domain and frequency-domain feature
 combinations. It can be provided to deep learning networks for training, and is used to study various tasks in the audio
 field such as classification, separation, Music Information Retrieval(MIR) and ASR etc.
