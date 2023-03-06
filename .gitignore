@@ -2,7 +2,7 @@
 build/
 scripts/android
 scripts/windows
-audioflux/lib
+python/audioflux/lib
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
