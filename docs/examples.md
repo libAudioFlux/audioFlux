@@ -1,11 +1,118 @@
 # Examples
 
+- [Mel & MFCC](#mel--mfcc)
+- [CWT & Synchrosqueezing](#cwt--synchrosqueezing)
 - [CQT & Chroma](#cqt--chroma)
 - [Different Wavelet Type](#different-wavelet-type)
 - [Spectral Features](#spectral-features)
 - [Pitch Estimate](#pitch-estimate)
 - [Onset Detection](#onset-detection)
 - [Harmonic Percussive Source Separation](#harmonic-percussive-source-separation)
+
+## Mel & MFCC
+
+Mel spectrogram and Mel-frequency cepstral coefficients
+
+```python
+import numpy as np
+import audioflux as af
+
+import matplotlib.pyplot as plt
+from audioflux.display import fill_spec
+
+# Get a 220Hz's audio file path
+sample_path = af.utils.sample_path('220')
+
+# Read audio data and sample rate
+audio_arr, sr = af.read(sample_path)
+
+# Extract mel spectrogram
+spec_arr, mel_fre_band_arr = af.mel_spectrogram(audio_arr, num=128, radix2_exp=12, samplate=sr)
+spec_arr = np.abs(spec_arr)
+
+# Extract mfcc
+mfcc_arr, _ = af.mfcc(audio_arr, cc_num=13, mel_num=128, radix2_exp=12, samplate=sr)
+
+# Display
+audio_len = audio_arr.shape[0]
+# calculate x/y-coords
+x_coords = np.linspace(0, audio_len / sr, spec_arr.shape[1] + 1)
+y_coords = np.insert(mel_fre_band_arr, 0, 0)
+fig, ax = plt.subplots()
+img = fill_spec(spec_arr, axes=ax,
+                x_coords=x_coords, y_coords=y_coords,
+                x_axis='time', y_axis='log',
+                title='Mel Spectrogram')
+fig.colorbar(img, ax=ax)
+
+fig, ax = plt.subplots()
+img = fill_spec(mfcc_arr, axes=ax,
+                x_coords=x_coords, x_axis='time',
+                title='MFCC')
+fig.colorbar(img, ax=ax)
+
+plt.show()
+```
+
+<img src='../image/demo_mel.png'  width="800"  />
+<img src='../image/demo_mfcc.png'  width="800"  />
+
+## CWT & Synchrosqueezing
+
+Continuous Wavelet Transform spectrogram and its corresponding synchrosqueezing reassignment spectrogram
+
+```python
+import numpy as np
+import audioflux as af
+from audioflux.type import SpectralFilterBankScaleType, WaveletContinueType
+from audioflux.utils import note_to_hz
+
+import matplotlib.pyplot as plt
+from audioflux.display import fill_spec
+
+# Get a 220Hz's audio file path
+sample_path = af.utils.sample_path('220')
+
+# Read audio data and sample rate
+audio_arr, sr = af.read(sample_path)
+audio_arr = audio_arr[:4096]
+
+cwt_obj = af.CWT(num=84, radix2_exp=12, samplate=sr, low_fre=note_to_hz('C1'),
+                 bin_per_octave=12, wavelet_type=WaveletContinueType.MORSE,
+                 scale_type=SpectralFilterBankScaleType.OCTAVE)
+
+cwt_spec_arr = cwt_obj.cwt(audio_arr)
+
+synsq_obj = af.Synsq(num=cwt_obj.num,
+                     radix2_exp=cwt_obj.radix2_exp,
+                     samplate=cwt_obj.samplate)
+
+synsq_arr = synsq_obj.synsq(cwt_spec_arr,
+                            filter_bank_type=cwt_obj.scale_type,
+                            fre_arr=cwt_obj.get_fre_band_arr())
+
+# Show CWT
+fig, ax = plt.subplots(figsize=(7, 4))
+img = fill_spec(np.abs(cwt_spec_arr), axes=ax,
+                x_coords=cwt_obj.x_coords(),
+                y_coords=cwt_obj.y_coords(),
+                x_axis='time', y_axis='log',
+                title='CWT')
+fig.colorbar(img, ax=ax)
+# Show Synsq
+fig, ax = plt.subplots(figsize=(7, 4))
+img = fill_spec(np.abs(synsq_arr), axes=ax,
+                x_coords=cwt_obj.x_coords(),
+                y_coords=cwt_obj.y_coords(),
+                x_axis='time', y_axis='log',
+                title='Synsq')
+fig.colorbar(img, ax=ax)
+
+plt.show()
+```
+
+<img src='../image/demo_cwt.png'  width="800"  />
+<img src='../image/demo_synsq.png'  width="800"  />
 
 ## CQT & Chroma
 
