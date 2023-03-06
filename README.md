@@ -34,6 +34,11 @@ time-frequency analysis transformation methods and hundreds of corresponding tim
 combinations. It can be provided to deep learning networks for training, and is used to study various tasks in the audio
 field such as Classification, Separation, Music Information Retrieval(MIR) and ASR etc.
 
+<!-- **`audioflux`** has the following features: 
+- Systematic and multi-dimensional feature extraction and combination can be flexibly used for various task research and analysis.
+- High performance, core part C implementation, FFT hardware acceleration based on different platforms, convenient for large-scale data feature extraction.
+- It supports the mobile end and meets the real-time calculation of audio stream at the mobile end. -->
+
 ### Table of Contents
 
 - [Overview](#overview)
