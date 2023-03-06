@@ -16,7 +16,7 @@
 <!-- shields.io -->
 ![GitHub Workflow Status (with branch)](https://img.shields.io/github/actions/workflow/status/libAudioFlux/audioFlux/build.yml?branch=master)
 ![example branch parameter](https://github.com/libAudioFlux/audioFlux/actions/workflows/build.yml/badge.svg?branch=master)
-![language](https://img.shields.io/badge/language-c%20|%20python%20-blue.svg)
+![language](https://img.shields.io/badge/language-C%20|%20Python%20-blue.svg)
 [![PyPI - Version](https://img.shields.io/pypi/v/audioflux)](https://pypi.org/project/audioflux/)
 [![PyPI - Python Version](https://img.shields.io/badge/python-%3E%3D3.6-brightgreen)](https://pypi.org/project/audioflux/)
 [![Docs](https://img.shields.io/badge/Docs-passing-brightgreen)](https://audioflux.top/index.html)
@@ -32,18 +32,18 @@
 **`audioflux`** is a deep learning tool library for audio and music analysis, feature extraction. It supports dozens of
 time-frequency analysis transformation methods and hundreds of corresponding time-domain and frequency-domain feature
 combinations. It can be provided to deep learning networks for training, and is used to study various tasks in the audio
-field such as classification, separation, Music Information Retrieval(MIR) and ASR etc.
+field such as Classification, Separation, Music Information Retrieval(MIR) and ASR etc.
 
 ### Table of Contents
 
 - [Overview](#overview)
 - [Installation](#installation)
     - [Python Package Install](#python-package-install)
-    - [Other installation methods](#other-installation-methods)
+    - [Other Build](#other-build)
 - [Quickstart](#quickstart)
 - [Benchmark](#benchmark)
-    - [Server performance](#server-performance)
-    - [Mobile performance](#mobile-performance)
+    - [Server Performance](#server-performance)
+    - [Mobile Performance](#mobile-performance)
 - [Documentation](#documentation)
 - [Contributing](#contributing)
 - [Citing](#citing)
@@ -121,7 +121,7 @@ The mir module contains the following algorithms:
 
 ## Installation
 
-![language](https://img.shields.io/badge/platform-iOS%20|%20android%20|%20macOS%20|%20linux%20|%20windows%20-lyellow.svg)
+![language](https://img.shields.io/badge/platform-%20Linux%20|%20macOS%20|%20Windows%20|%20iOS%20|%20Android%20-lyellow.svg)
 
 The library is cross-platform and currently supports Linux, macOS, Windows, iOS and Android systems.
 
@@ -144,7 +144,7 @@ $ conda install -c tanky25 -c conda-forge audioflux
 <!--Read installation instructions:
 https://audioflux.top/install-->
 
-### Other installation methods
+### Other Build
 
 - [iOS build](docs/installing.md#ios-build)
 - [Android build](docs/installing.md#android-build)
@@ -165,7 +165,7 @@ More example scripts are provided in the [Documentation](https://audioflux.top/)
 
 ## Benchmark
 
-### Server performance
+### Server Performance
 
 server hardware:
 
@@ -183,7 +183,7 @@ The total time spent on extracting features for 1000 sample data.
 | CQT    | 5.743s    | 21.477s | --              | --                       |
 | Chroma | 0.155s    | 2.174s  | 1.287s          | --                       |
 
-### Mobile performance
+### Mobile Performance
 
 For 128ms audio data per frame(sampling rate: 32000, data length: 4096).
 

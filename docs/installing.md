@@ -1,6 +1,6 @@
 # Installation
 
-![language](https://img.shields.io/badge/platform-iOS%20|%20android%20|%20macOS%20|%20linux%20|%20windows%20-lyellow.svg)
+![language](https://img.shields.io/badge/platform-%20Linux%20|%20macOS%20|%20Windows%20|%20iOS%20|%20Android%20-lyellow.svg)
 
 The library is cross-platform and currently supports Linux, macOS, Windows, iOS and Android systems.
 
