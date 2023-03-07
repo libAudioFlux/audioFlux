@@ -56,12 +56,15 @@ field such as Classification, Separation, Music Information Retrieval(MIR) and A
 
 ## Overview
 
-**`audioFlux`** is based on the design of data flow. It decouples each algorithm module structurally, and it is
-convenient, fast and efficient to extract features from large batches.The following are the main feature architecture
-diagrams, specific and detailed description view the documentation.
+**`audioFlux`** is based on data stream design. It decouples each algorithm module in structure, and can quickly and efficiently extract features of multiple dimensions. The following is the main feature architecture diagram.
 
 <img src='./image/feature_all.png'>
 <!--<img src='./feature_all.pdf'>-->
+
+You can use multiple dimensional feature combinations, select different deep learning networks training,  study various tasks in the audio field such as Classification, Separation, MIR etc.
+
+<img src='./image/flow.png'>
+
 
 The main functions of **`audioFlux`** include **transform**, **feature** and **mir** modules.
 
@@ -123,6 +126,7 @@ The mir module contains the following algorithms:
 - **`pitch`** - YIN, STFT, etc algorithm.
 - **`onset`** - Spectrum flux, novelty, etc algorithm.
 - **`hpss`** - Median filtering, NMF algorithm.
+
 
 ## Installation
 
