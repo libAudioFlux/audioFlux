@@ -1,4 +1,5 @@
 import os
+import sys
 import platform
 import ctypes
 import hashlib
@@ -109,6 +110,13 @@ def set_fft_lib(system=None, *, lib_ext=None):
     else:
         load_library = ctypes.cdll.LoadLibrary
     lib_path = os.path.join(os.path.split(os.path.realpath(__file__))[0], 'lib')
+
+    if system.startswith('win') and (sys.version_info.major == 3 and sys.version_info.minor <= 7):
+        fft_path = os.path.join(lib_path, 'libfftw3f-3.dll')
+        if os.path.exists(fft_path):
+            load_library(fft_path)
+        else:
+            print(f'not found {fft_path}')
 
     # load c lib
     lib_name = get_fft_lib_name(system, lib_ext)
