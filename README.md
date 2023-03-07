@@ -63,66 +63,7 @@ diagrams, specific and detailed description view the documentation.
 <img src='./image/feature_all.png'>
 <!--<img src='./feature_all.pdf'>-->
 
-The main functions of **`audioFlux`** include **transform**, **feature** and **mir** modules.
-
-#### 1. Transform
-
-In the time–frequency representation, main transform algorithm:
-
-- **`BFT`**&nbsp;&nbsp; - &nbsp;&nbsp;Based Fourier Transform, similar short-time Fourier transform.
-- **`NSGT`** - &nbsp; Non-Stationary Gabor Transform.
-- **`CWT`**&nbsp;&nbsp; - &nbsp;&nbsp;Continuous Wavelet Transform.
-- **`PWT`**&nbsp;&nbsp; - &nbsp;&nbsp;Pseudo Wavelet Transform.
-
-<!-- &emsp -->
-
-The above transform supports all the following frequency scale types:
-
-- Linear - Short-time Fourier transform spectrogram.
-- Linspace - Linspace-scale spectrogram.
-- Mel - Mel-scale spectrogram.
-- Bark - Bark-scale spectrogram.
-- Erb - Erb-scale spectrogram.
-- Octave - Octave-scale spectrogram.
-- Log - Logarithmic-scale spectrogram.
-
-The following transform are not supports multiple frequency scale types, only used as independent transform:
-
-- **`CQT`** - &nbsp;&nbsp;Constant-Q Transform.
-- **`VQT`** - &nbsp;&nbsp;Variable-Q Transform.
-- **`ST`**&nbsp;&nbsp; - &nbsp;&nbsp;S-Transform/Stockwell Transform.
-- **`FST`** - &nbsp;&nbsp;Fast S-Transform.
-- **`DWT`** - &nbsp;&nbsp;Discrete Wavelet Transform.
-- **`WPT`** - &nbsp;&nbsp;Wave Packet Transform.
-- **`SWT`** - &nbsp;&nbsp;Stationary Wavelet Transform.
-
-Detailed transform function, description, and use view the documentation.
-
-The *_synchrosqueezing_* or *_reassignment_* is a technique for sharpening a time-frequency representation, contains the
-following algorithms:
-
-- **`reassign`** - reassign transform for `STFT`.
-- **`synsq`** - reassign data use `CWT` data.
-- **`wsst`** - reassign transform for `CWT`.
-
-#### 2. Feature
-
-The feature module contains the following algorithms:
-
-- **`spectral`** - Spectrum feature, supports all spectrum types.
-- **`xxcc`** - Cepstrum coefficients, supports all spectrum types.
-- **`deconv`** - Deconvolution for spectrum, supports all spectrum types.
-- **`chroma`** - Chroma feature, only supports `CQT` spectrum, Linear/Octave spectrum based on `BFT`.
-
-<!-- harmonic pitch class profiles(HPCP) -->
-
-#### 3. MIR
-
-The mir module contains the following algorithms:
-
-- **`pitch`** - YIN, STFT, etc algorithm.
-- **`onset`** - Spectrum flux, novelty, etc algorithm.
-- **`hpss`** - Median filtering, NMF algorithm.
+<img src='./image/flow.png'>
 
 ## Installation
 
