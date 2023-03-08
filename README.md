@@ -1,17 +1,5 @@
 <img src='./image/logo.png'  width="400"  style="max-width: 100%;" > 
 
-# audioFlux
-
-<!--<p align="center">
-<img src='./image/logo.png'  width="380"  style="max-width: 100%;" > 
-</p>-->
-
-
-<!-- 
-[![Pypi Downloads](https://img.shields.io/pypi/dm/aubio.svg?label=Pypi%20downloads)](https://pypi.org/project/aubio/)
-[![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/aubio.svg?label=Conda%20downloads)](https://anaconda.org/conda-forge/aubio)
-[![Documentation](https://readthedocs.org/projects/aubio/badge/?version=latest)](http://aubio.readthedocs.io/en/latest/?badge=latest "Latest documentation") -->
-<!--![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/libAudioFlux/audioFlux)-->
 
 <!-- shields.io -->
 ![GitHub Workflow Status (with branch)](https://img.shields.io/github/actions/workflow/status/libAudioFlux/audioFlux/build.yml?branch=master)
@@ -25,108 +13,138 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7548288.svg)](https://doi.org/10.5281/zenodo.7548288)
 
-<!--[![codebeat badge](https://codebeat.co/badges/0e21a344-0928-4aee-8262-be9a41fa488b)](https://codebeat.co/projects/github-com-libaudioflux-audioflux-master)
-![](https://img.shields.io/badge/pod-v0.1.1-blue.svg)-->
+### Continuous Wavelet Transform
 
 
-**`audioflux`** is a deep learning tool library for audio and music analysis, feature extraction. It supports dozens of
-time-frequency analysis transformation methods and hundreds of corresponding time-domain and frequency-domain feature
-combinations. It can be provided to deep learning networks for training, and is used to study various tasks in the audio
-field such as Classification, Separation, Music Information Retrieval(MIR) and ASR etc.
+#### $$X_\omega(a,b)=\int_{-\infty}^\infty x(t)\psi_{a,b}(t) \mathrm{d}t $$
 
-<!-- **`audioflux`** has the following features: 
-- Systematic and multi-dimensional feature extraction and combination can be flexibly used for various task research and analysis.
-- High performance, core part C implementation, FFT hardware acceleration based on different platforms, convenient for large-scale data feature extraction.
-- It supports the mobile end and meets the real-time calculation of audio stream at the mobile end. -->
+Where, $\psi_{a,b}(t)=\frac{1}{\sqrt{a}}\psi(\frac{t-b}{a})$, $a$ determines the frequency domain scaling scale, $b$ time translation scale, and when $a=1,2,4,\cdots $ is expressed as discrete wavelet transform($dwt$).
 
-### Table of Contents
+There are two ways to implement the $cwt $ algorithm:   
 
-- [Overview](#overview)
-- [Installation](#installation)
-    - [Python Package Install](#python-package-install)
-    - [Other Build](#other-build)
-- [Quickstart](#quickstart)
-- [Benchmark](#benchmark)
-    - [Server Performance](#server-performance)
-    - [Mobile Performance](#mobile-performance)
-- [Documentation](#documentation)
-- [Contributing](#contributing)
-- [Citing](#citing)
-- [License](#license)
+1. Perform the '$* $' convolution operation of time-domain data and time-domain wavelet function according to the formula.   
+2. Calculate $filterBank $ and perform  $dot $ operations based on the frequency domain wavelet function. Under the same effect, the performance of mode 2 is much better than that of mode 1
 
-## Overview
+Based on the implementation method of 2, $k $ $scale $ scales are $k $ times of $FFT $ operations. The complexity is about $ {O} (kN log N) $ , but the frequency domain form of the $ \psi(t) $  function is required, while some $ \psi(t) $ function frequency domain forms may not have effective derivation formulas. In actual business, some $ \Psi(\omega) $ commonly used in the industry can meet the analysis effects of other $ \psi(t) $ scales. Based on this, the $cwt $ module in this project is implemented based on the method of 2, No longer consider the implementation based on 1.
 
-**`audioFlux`** is based on data stream design. It decouples each algorithm module in structure, and can quickly and efficiently extract features of multiple dimensions. The following is the main feature architecture diagram.
+Support Morlet Wavelet, Morse Wavelet, Bump Wavelet, and Pual Wavelet etc.  
 
-<img src='./image/feature_all.png'>
-<!--<img src='./feature_all.pdf'>-->
+$$ \Psi(\omega)=\pi^{-1/4}e^{-(\omega-\omega_0)^2/\sigma} $$
+$$\Psi_{\beta, \gamma}(\omega) = U(\omega)a_{\beta,\gamma}  \omega^{\beta}e^{-\omega^{\gamma}} $$
+$$ \Psi(\omega)=e^{(1-\frac{1}{1-(\omega-\omega_0)^2/\sigma^2}) }I(\omega) $$
+$$\Psi(\omega)=U(\omega)\frac{2^m}{\sqrt{m(2m-1)!}}\omega^{m}e^{-\omega}$$
 
-You can use multiple dimensional feature combinations, select different deep learning networks training,  study various tasks in the audio field such as Classification, Separation, MIR etc.
+The use of CWT is as follows:
 
-<img src='./image/flow.png'>
+```python
+import audioflux as af
+# Create CWT Obj
+cwt_obj = af.CWT(num=84, wavelet_type =WaveletContinueType.MORSE)
+# Cal cwt for audio data
+spec_arr = cwt_obj.cwt(audio_arr)
+```
 
+### Synchrosqueezing
 
-The main functions of **`audioFlux`** include **transform**, **feature** and **mir** modules.
+> $W(f,t)$ is cwt time-frequency function   
 
-#### 1. Transform
+#### $$ \hat{\omega}(f,t)=\frac1{2\pi} \partial_t \mathrm{arg}W(f,t) $$
 
-In the time–frequency representation, main transform algorithm:
+Rearrangement of cwt results, API usage is as follows:
 
-- **`BFT`**&nbsp;&nbsp; - &nbsp;&nbsp;Based Fourier Transform, similar short-time Fourier transform.
-- **`NSGT`** - &nbsp; Non-Stationary Gabor Transform.
-- **`CWT`**&nbsp;&nbsp; - &nbsp;&nbsp;Continuous Wavelet Transform.
-- **`PWT`**&nbsp;&nbsp; - &nbsp;&nbsp;Pseudo Wavelet Transform.
+```python 
+# Create Synchrosqueezing Obj
+synsq_obj = synsq_obj = af.Synsq(num=cwt_obj.num)
+# Synchrosqueezing cwt spectrogram
+synsq_arr = synsq_obj.synsq(cwt_spec_arr)
+```
 
-<!-- &emsp -->
+### Reassign 
+> $h(t)$ is window function  
+>
+> $X(t,\omega)=\int_{-\infty}^\infty x(\tau)h(\tau-t)e^{-j\omega \tau}\mathrm{d}\tau $
+> 
+> $ h_\tau(t)=t\cdot h(t) \quad h_{\mathcal{D} }=\frac{\mathrm{d}}{\mathrm{d}t} h(t) $ 
+> 
+> $ X_{\tau}(t,\omega)=\int_{-\infty}^\infty x(\tau)h_\tau(\tau-t)e^{-j\omega \tau}\mathrm{d}\tau \quad X_\mathcal{D}(t,\omega)=\int_{-\infty}^\infty x(\tau)h_{\mathcal{D}}(\tau-t)e^{-j\omega \tau}\mathrm{d}\tau $
 
-The above transform supports all the following frequency scale types:
+#### $$ \hat{\omega}(t,\omega)=\omega- \Im \left\{ \frac{X_\mathcal{D}(t,\omega) } { X(t,\omega)  } \right\} $$
 
-- Linear - Short-time Fourier transform spectrogram.
-- Linspace - Linspace-scale spectrogram.
-- Mel - Mel-scale spectrogram.
-- Bark - Bark-scale spectrogram.
-- Erb - Erb-scale spectrogram.
-- Octave - Octave-scale spectrogram.
-- Log - Logarithmic-scale spectrogram.
+#### $$ \hat{t}(t,\omega)=t+\Re \left\{ \frac{X_\tau(t,\omega) } { X(t,\omega) }  \right\} $$
 
-The following transform are not supports multiple frequency scale types, only used as independent transform:
+$\hat{t}$ and $ \hat{\omega}$ calculate the corresponding mapping index $\alpha_I$ and $\beta_ I$, joint filtering generates $\gamma_ I$ , set 
 
-- **`CQT`** - &nbsp;&nbsp;Constant-Q Transform.
-- **`VQT`** - &nbsp;&nbsp;Variable-Q Transform.
-- **`ST`**&nbsp;&nbsp; - &nbsp;&nbsp;S-Transform/Stockwell Transform.
-- **`FST`** - &nbsp;&nbsp;Fast S-Transform.
-- **`DWT`** - &nbsp;&nbsp;Discrete Wavelet Transform.
-- **`WPT`** - &nbsp;&nbsp;Wave Packet Transform.
-- **`SWT`** - &nbsp;&nbsp;Stationary Wavelet Transform.
+$(i,j)=(\alpha_i(\gamma_i), \beta_ i(\gamma_i) )$
 
-Detailed transform function, description, and use view the documentation.
+Use $\overrightarrow {\| X(t,\omega) \|} $ as the data source and $(i, j) $ as the index accumulation to finally get the rearrangement result $\hat{X} (t, omega)$.
 
-The *_synchrosqueezing_* or *_reassignment_* is a technique for sharpening a time-frequency representation, contains the
-following algorithms:
+$reassign$ is supports STFT and CWT, rearrange API(wsst) for cwt in the same way:
 
-- **`reassign`** - reassign transform for `STFT`.
-- **`synsq`** - reassign data use `CWT` data.
-- **`wsst`** - reassign transform for `CWT`.
+```python
+# Create WSST Obj
+wsst_obj = af.WSST(num=84, wavelet_type =WaveletContinueType.MORSE)
+# Reassign cwt spectrogram
+spec_arr = wsst_obj.wsst(audio_arr)
+```
 
-#### 2. Feature
+### Demo 
 
-The feature module contains the following algorithms:
+```python
+import numpy as np
 
-- **`spectral`** - Spectrum feature, supports all spectrum types.
-- **`xxcc`** - Cepstrum coefficients, supports all spectrum types.
-- **`deconv`** - Deconvolution for spectrum, supports all spectrum types.
-- **`chroma`** - Chroma feature, only supports `CQT` spectrum, Linear/Octave spectrum based on `BFT`.
+import audioflux as af
+from audioflux.type import SpectralFilterBankScaleType, WaveletContinueType
+from audioflux.utils import note_to_hz
 
-<!-- harmonic pitch class profiles(HPCP) -->
+import matplotlib.pyplot as plt
+from audioflux.display import fill_spec
 
-#### 3. MIR
+# Get a 220Hz's audio file path
+sample_path = af.utils.sample_path('220')
 
-The mir module contains the following algorithms:
+# Read audio data and sample rate
+audio_arr, sr = af.read(sample_path)
+audio_arr = audio_arr[:4096]
 
-- **`pitch`** - YIN, STFT, etc algorithm.
-- **`onset`** - Spectrum flux, novelty, etc algorithm.
-- **`hpss`** - Median filtering, NMF algorithm.
+# Create CWT Obj
+cwt_obj = af.CWT(num=84, radix2_exp=12, samplate=sr, low_fre=note_to_hz('C1'),
+                 bin_per_octave=12, wavelet_type=WaveletContinueType.MORSE,
+                 scale_type=SpectralFilterBankScaleType.OCTAVE)
 
+# Extract spectrogram
+cwt_spec_arr = cwt_obj.cwt(audio_arr)
+
+# Create Synchrosqueezing obj
+synsq_obj = af.Synsq(num=cwt_obj.num,
+                     radix2_exp=cwt_obj.radix2_exp,
+                     samplate=cwt_obj.samplate)
+
+# Reassign CWT spectrogram
+synsq_arr = synsq_obj.synsq(cwt_spec_arr,
+                            filter_bank_type=cwt_obj.scale_type,
+                            fre_arr=cwt_obj.get_fre_band_arr())
+
+# Show CWT
+fig, ax = plt.subplots(figsize=(7, 4))
+img = fill_spec(np.abs(cwt_spec_arr), axes=ax,
+                x_coords=cwt_obj.x_coords(),
+                y_coords=cwt_obj.y_coords(),
+                x_axis='time', y_axis='log',
+                title='CWT')
+fig.colorbar(img, ax=ax)
+# Show Synsq
+fig, ax = plt.subplots(figsize=(7, 4))
+img = fill_spec(np.abs(synsq_arr), axes=ax,
+                x_coords=cwt_obj.x_coords(),
+                y_coords=cwt_obj.y_coords(),
+                x_axis='time', y_axis='log',
+                title='Synsq')
+fig.colorbar(img, ax=ax)
+
+plt.show()
+```
+
+<img src='image/demo_cwt.png'  width="415"  /><img src='image/demo_synsq.png'  width="415"  />
 
 ## Installation
 
@@ -158,52 +176,6 @@ https://audioflux.top/install-->
 - [iOS build](docs/installing.md#ios-build)
 - [Android build](docs/installing.md#android-build)
 - [Building from source](docs/installing.md#building-from-source)
-
-## Quickstart
-
-- [Mel & MFCC](docs/examples.md#mel--mfcc)
-- [CWT & Synchrosqueezing](docs/examples.md#cwt--synchrosqueezing)
-- [CQT & Chroma](docs/examples.md#cqt--chroma)
-- [Different Wavelet Type](docs/examples.md#different-wavelet-type)
-- [Spectral Features](docs/examples.md#spectral-features)
-- [Pitch Estimate](docs/examples.md#pitch-estimate)
-- [Onset Detection](docs/examples.md#onset-detection)
-- [Harmonic Percussive Source Separation](docs/examples.md#harmonic-percussive-source-separation)
-
-More example scripts are provided in the [Documentation](https://audioflux.top/) section.
-
-## Benchmark
-
-### Server Performance
-
-server hardware:
-
-    - CPU: AMD Ryzen Threadripper 3970X 32-Core Processor
-    - Memory: 128GB
-
-Each sample data is 128ms(sampling rate: 32000, data length: 4096).
-
-The total time spent on extracting features for 1000 sample data.
-
-| Package    | [audioFlux](https://github.com/libAudioFlux/audioFlux) | [librosa](https://github.com/librosa/librosa) | [pyAudioAnalysis](https://github.com/tyiannak/pyAudioAnalysis) | [python\_speech\_features](https://github.com/jameslyons/python_speech_features) |
-| ------ |  ------ |  ------ |  ------ |  ------ | 
-| Mel    | 0.777s    | 2.967s  | --              | --                       |
-| MFCC   | 0.797s    | 2.963s  | 0.805s          | 2.150s                   |
-| CQT    | 5.743s    | 21.477s | --              | --                       |
-| Chroma | 0.155s    | 2.174s  | 1.287s          | --                       |
-
-### Mobile Performance
-
-For 128ms audio data per frame(sampling rate: 32000, data length: 4096).
-
-The time spent on extracting features for 1 frame data.
-
-| Mobile | iPhone 13 Pro | iPhone X | Honor V40 | OPPO Reno4 SE 5G |
-| ------ |  ------ |  ------ |  ------ |  ------ | 
-| Mel    | 0.249ms       | 0.359ms  | 0.313ms   | 0.891ms          |
-| MFCC   | 0.249ms       | 0.361ms  | 0.315ms   | 1.116ms          |
-| CQT    | 0.350ms       | 0.609ms  | 0.786ms   | 1.779ms          |
-| Chroma | 0.354ms       | 0.615ms  | 0.803ms   | 1.775ms          |
 
 ## Documentation
 
