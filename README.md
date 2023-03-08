@@ -1,6 +1,6 @@
 <img src='./image/logo.png'  width="400"  style="max-width: 100%;" > 
 
-
+# CWT and Synchrosqueezing
 <!-- shields.io -->
 ![GitHub Workflow Status (with branch)](https://img.shields.io/github/actions/workflow/status/libAudioFlux/audioFlux/build.yml?branch=master)
 ![example branch parameter](https://github.com/libAudioFlux/audioFlux/actions/workflows/build.yml/badge.svg?branch=master)
@@ -16,23 +16,31 @@
 ### Continuous Wavelet Transform
 
 
-#### $$X_\omega(a,b)=\int_{-\infty}^\infty x(t)\psi_{a,b}(t) \mathrm{d}t $$
+### $$X_\omega(a,b)=\int_{-\infty}^\infty x(t)\psi_{a,b}(t) \mathrm{d}t$$
 
-Where, $\psi_{a,b}(t)=\frac{1}{\sqrt{a}}\psi(\frac{t-b}{a})$, $a$ determines the frequency domain scaling scale, $b$ time translation scale, and when $a=1,2,4,\cdots $ is expressed as discrete wavelet transform($dwt$).
+Where, $\psi_{a,b}(t)=\frac{1}{\sqrt{a}}\psi(\frac{t-b}{a})$, $a$ determines the frequency domain scaling scale, $b$ time translation scale, and when $a=1,2,4,\cdots$ is expressed as discrete wavelet transform($dwt$).
 
-There are two ways to implement the $cwt $ algorithm:   
+There are two ways to implement the $cwt$ algorithm:   
 
-1. Perform the '$* $' convolution operation of time-domain data and time-domain wavelet function according to the formula.   
-2. Calculate $filterBank $ and perform  $dot $ operations based on the frequency domain wavelet function. Under the same effect, the performance of mode 2 is much better than that of mode 1
+1. Perform the '*' convolution operation of time-domain data and time-domain wavelet function according to the formula.   
+2. Calculate $filterBank$ and perform  $dot$ operations based on the frequency domain wavelet function. Under the same effect, the performance of mode 2 is much better than that of mode 1
 
-Based on the implementation method of 2, $k $ $scale $ scales are $k $ times of $FFT $ operations. The complexity is about $ {O} (kN log N) $ , but the frequency domain form of the $ \psi(t) $  function is required, while some $ \psi(t) $ function frequency domain forms may not have effective derivation formulas. In actual business, some $ \Psi(\omega) $ commonly used in the industry can meet the analysis effects of other $ \psi(t) $ scales. Based on this, the $cwt $ module in this project is implemented based on the method of 2, No longer consider the implementation based on 1.
+Based on the implementation method of 2, $k$ ' $scale$ are $k$ times of $FFT$ operations. The complexity is about ${O} (kN log N)$ , but the frequency domain form of the $\psi(t)$  function is required, while some $\psi(t)$ function frequency domain forms may not have effective derivation formulas. In actual business, some $\Psi(\omega)$ commonly used in the industry can meet the analysis effects of other $\psi(t)$ scales. Based on this, the $cwt$ module in this project is implemented based on the method of 2, No longer consider the implementation based on 1.
 
 Support Morlet Wavelet, Morse Wavelet, Bump Wavelet, and Pual Wavelet etc.  
 
-$$ \Psi(\omega)=\pi^{-1/4}e^{-(\omega-\omega_0)^2/\sigma} $$
-$$\Psi_{\beta, \gamma}(\omega) = U(\omega)a_{\beta,\gamma}  \omega^{\beta}e^{-\omega^{\gamma}} $$
-$$ \Psi(\omega)=e^{(1-\frac{1}{1-(\omega-\omega_0)^2/\sigma^2}) }I(\omega) $$
-$$\Psi(\omega)=U(\omega)\frac{2^m}{\sqrt{m(2m-1)!}}\omega^{m}e^{-\omega}$$
+### $$\Psi(\omega)=\pi^{-1/4}e^{-(\omega-\omega_0)^2/\sigma} \tag{Morlet}$$
+
+### $$\Psi_{\beta, \gamma}(\omega) = U(\omega)a_{\beta,\gamma}  \omega^{\beta}e^{-\omega^{\gamma}} \tag{Morse}$$
+
+### $$\Psi(\omega)=e^{(1-\frac{1}{1-(\omega-\omega_0)^2/\sigma^2}) }I(\omega) \tag{Bump}$$
+
+### $$\Psi(\omega)=U(\omega)\frac{2^m}{\sqrt{m(2m-1)!}}\omega^{m}e^{-\omega} \tag{Pual}$$
+
+for Morse
+> $U(\omega)$ is step function, $\omega$ positive and negative signs, $\omega^{\beta}e^{-\omega^{\gamma}}$ is $e^{\beta\ln\omega -\omega^{\gamma} }$    
+> $a_{\beta,\gamma}=\omega_0^{-\beta} e^{\omega_0^\gamma}=e^{-\beta\ln\omega_0+\omega_0^\gamma}$, $\omega_0$ center peak frequency of wavelet window, $\omega_0=\left( \cfrac\beta\gamma \right)^{\frac1\gamma}$ is $e^{\frac1\gamma(\ln\beta-\ln\gamma)}$   
+> default $\gamma=3,\beta=20$
 
 The use of CWT is as follows:
 
@@ -48,7 +56,7 @@ spec_arr = cwt_obj.cwt(audio_arr)
 
 > $W(f,t)$ is cwt time-frequency function   
 
-#### $$ \hat{\omega}(f,t)=\frac1{2\pi} \partial_t \mathrm{arg}W(f,t) $$
+### $$\hat{\omega}(f,t)=\frac1{2\pi} \partial_t \mathrm{arg}W(f,t)$$
 
 Rearrangement of cwt results, API usage is as follows:
 
@@ -62,21 +70,21 @@ synsq_arr = synsq_obj.synsq(cwt_spec_arr)
 ### Reassign 
 > $h(t)$ is window function  
 >
-> $X(t,\omega)=\int_{-\infty}^\infty x(\tau)h(\tau-t)e^{-j\omega \tau}\mathrm{d}\tau $
+> $X(t,\omega)=\int_{-\infty}^\infty x(\tau)h(\tau-t)e^{-j\omega \tau}\mathrm{d}\tau$
 > 
-> $ h_\tau(t)=t\cdot h(t) \quad h_{\mathcal{D} }=\frac{\mathrm{d}}{\mathrm{d}t} h(t) $ 
+> $h_\tau(t)=t\cdot h(t) \quad h_{\mathcal{D} }=\frac{\mathrm{d}}{\mathrm{d}t} h(t)$ 
 > 
-> $ X_{\tau}(t,\omega)=\int_{-\infty}^\infty x(\tau)h_\tau(\tau-t)e^{-j\omega \tau}\mathrm{d}\tau \quad X_\mathcal{D}(t,\omega)=\int_{-\infty}^\infty x(\tau)h_{\mathcal{D}}(\tau-t)e^{-j\omega \tau}\mathrm{d}\tau $
+> $X_{\tau}(t,\omega)=\int_{-\infty}^\infty x(\tau)h_\tau(\tau-t)e^{-j\omega \tau}\mathrm{d}\tau \quad X_\mathcal{D}(t,\omega)=\int_{-\infty}^\infty x(\tau)h_{\mathcal{D}}(\tau-t)e^{-j\omega \tau}\mathrm{d}\tau$
 
-#### $$ \hat{\omega}(t,\omega)=\omega- \Im \left\{ \frac{X_\mathcal{D}(t,\omega) } { X(t,\omega)  } \right\} $$
+### $$\hat{\omega}(t,\omega)=\omega- \Im { \frac{X_\mathcal{D}(t,\omega) } { X(t,\omega)  } \}$$
 
-#### $$ \hat{t}(t,\omega)=t+\Re \left\{ \frac{X_\tau(t,\omega) } { X(t,\omega) }  \right\} $$
+### $$\hat{t}(t,\omega)=t+\Re \{ \frac{X_\tau(t,\omega) } { X(t,\omega) }  \}$$
 
-$\hat{t}$ and $ \hat{\omega}$ calculate the corresponding mapping index $\alpha_I$ and $\beta_ I$, joint filtering generates $\gamma_ I$ , set 
+$\hat{t}$ and $\hat{\omega}$ calculate the corresponding mapping index $\alpha_I$ and $\beta_ I$, joint filtering generates $\gamma_ I$ , set 
 
 $(i,j)=(\alpha_i(\gamma_i), \beta_ i(\gamma_i) )$
 
-Use $\overrightarrow {\| X(t,\omega) \|} $ as the data source and $(i, j) $ as the index accumulation to finally get the rearrangement result $\hat{X} (t, omega)$.
+Use $\overrightarrow {\| X(t,\omega) \|}$ as the data source and $(i, j)$ as the index accumulation to finally get the rearrangement result $\hat{X} (t, omega)$.
 
 $reassign$ is supports STFT and CWT, rearrange API(wsst) for cwt in the same way:
 
