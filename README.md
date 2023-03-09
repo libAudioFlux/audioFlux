@@ -34,6 +34,11 @@ time-frequency analysis transformation methods and hundreds of corresponding tim
 combinations. It can be provided to deep learning networks for training, and is used to study various tasks in the audio
 field such as Classification, Separation, Music Information Retrieval(MIR) and ASR etc.
 
+<!-- **`audioflux`** has the following features: 
+- Systematic and multi-dimensional feature extraction and combination can be flexibly used for various task research and analysis.
+- High performance, core part C implementation, FFT hardware acceleration based on different platforms, convenient for large-scale data feature extraction.
+- It supports the mobile end and meets the real-time calculation of audio stream at the mobile end. -->
+
 ### Table of Contents
 
 - [Overview](#overview)
@@ -51,12 +56,15 @@ field such as Classification, Separation, Music Information Retrieval(MIR) and A
 
 ## Overview
 
-**`audioFlux`** is based on the design of data flow. It decouples each algorithm module structurally, and it is
-convenient, fast and efficient to extract features from large batches.The following are the main feature architecture
-diagrams, specific and detailed description view the documentation.
+**`audioFlux`** is based on data stream design. It decouples each algorithm module in structure, and can quickly and efficiently extract features of multiple dimensions. The following is the main feature architecture diagram.
 
 <img src='./image/feature_all.png'>
 <!--<img src='./feature_all.pdf'>-->
+
+You can use multiple dimensional feature combinations, select different deep learning networks training,  study various tasks in the audio field such as Classification, Separation, MIR etc.
+
+<img src='./image/flow.png'>
+
 
 The main functions of **`audioFlux`** include **transform**, **feature** and **mir** modules.
 
@@ -118,6 +126,7 @@ The mir module contains the following algorithms:
 - **`pitch`** - YIN, STFT, etc algorithm.
 - **`onset`** - Spectrum flux, novelty, etc algorithm.
 - **`hpss`** - Median filtering, NMF algorithm.
+
 
 ## Installation
 
