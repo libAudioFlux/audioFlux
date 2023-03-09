@@ -1,7 +1,7 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath(".."))  # NOQA
+sys.path.insert(0, os.path.abspath("../python"))  # NOQA
 import audioflux
 
 # Configuration file for the Sphinx documentation builder.
@@ -13,8 +13,8 @@ import audioflux
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'AudioFlux'
-copyright = '2023, immusician'
-author = 'immusician'
+copyright = '2023, AudioFluxLib'
+author = 'AudioFlux'
 version = release = audioflux.__version__
 
 # -- General configuration ---------------------------------------------------
@@ -69,6 +69,11 @@ html_context = {
     "github_repo": "libAudioFlux/audioflux",  # Repo name
     "github_version": "master",  # Version
     "conf_py_path": "/docs/",  # Path in the checkout to the docs root
+}
+
+html_theme_options = {
+    'analytics_id': 'G-PJ9LYQR6FG',
+    'analytics_anonymize_ip': True,
 }
 
 autodoc_member_order = 'bysource'
