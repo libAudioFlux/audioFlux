@@ -13,8 +13,8 @@ import audioflux
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'AudioFlux'
-copyright = '2023, immusician'
-author = 'immusician'
+copyright = '2023, AudioFluxLib'
+author = 'AudioFlux'
 version = release = audioflux.__version__
 
 # -- General configuration ---------------------------------------------------
