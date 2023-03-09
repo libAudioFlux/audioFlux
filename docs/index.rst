@@ -5,6 +5,7 @@
 
 .. |audioFlux| image:: ../image/logo.png
     :alt: audioFlux
+    :width: 300
 
 
 A library for audio and music analysis, feature extraction.
