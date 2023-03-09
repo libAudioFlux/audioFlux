@@ -1,6 +1,10 @@
 <img src='./image/logo.png'  width="400"  style="max-width: 100%;" > 
 
-# audioFlux
+
+
+[![Github](https://img.shields.io/github/stars/libAudioFlux/audioFlux?label=GitHub&style=social)](https://github.com/libAudioFlux/audioFlux)
+
+ 
 
 <!--<p align="center">
 <img src='./image/logo.png'  width="380"  style="max-width: 100%;" > 
@@ -29,12 +33,12 @@
 ![](https://img.shields.io/badge/pod-v0.1.1-blue.svg)-->
 
 
-**`audioflux`** is a deep learning tool library for audio and music analysis, feature extraction. It supports dozens of
+**[`audioFlux`](https://github.com/libAudioFlux/audioFlux)** is a deep learning tool library for audio and music analysis, feature extraction. It supports dozens of
 time-frequency analysis transformation methods and hundreds of corresponding time-domain and frequency-domain feature
 combinations. It can be provided to deep learning networks for training, and is used to study various tasks in the audio
 field such as Classification, Separation, Music Information Retrieval(MIR) and ASR etc.
 
-<!-- **`audioflux`** has the following features: 
+<!-- **[`audioFlux`](https://github.com/libAudioFlux/audioFlux)** has the following features: 
 - Systematic and multi-dimensional feature extraction and combination can be flexibly used for various task research and analysis.
 - High performance, core part C implementation, FFT hardware acceleration based on different platforms, convenient for large-scale data feature extraction.
 - It supports the mobile end and meets the real-time calculation of audio stream at the mobile end. -->
@@ -56,7 +60,7 @@ field such as Classification, Separation, Music Information Retrieval(MIR) and A
 
 ## Overview
 
-**`audioFlux`** is based on data stream design. It decouples each algorithm module in structure, and can quickly and efficiently extract features of multiple dimensions. The following is the main feature architecture diagram.
+**[`audioFlux`](https://github.com/libAudioFlux/audioFlux)** is based on data stream design. It decouples each algorithm module in structure, and can quickly and efficiently extract features of multiple dimensions. The following is the main feature architecture diagram.
 
 <img src='./image/feature_all.png'>
 <!--<img src='./feature_all.pdf'>-->
@@ -66,7 +70,7 @@ You can use multiple dimensional feature combinations, select different deep lea
 <img src='./image/flow.png'>
 
 
-The main functions of **`audioFlux`** include **transform**, **feature** and **mir** modules.
+The main functions of **[`audioFlux`](https://github.com/libAudioFlux/audioFlux)** include **transform**, **feature** and **mir** modules.
 
 #### 1. Transform
 
@@ -136,7 +140,7 @@ The library is cross-platform and currently supports Linux, macOS, Windows, iOS 
 
 ### Python Package Install
 
-To install the **audioFlux** package, Python >=3.6, using the released python package.
+To install the **[`audioFlux`](https://github.com/libAudioFlux/audioFlux)** package, Python >=3.6, using the released python package.
 
 Using PyPI:
 
@@ -213,7 +217,7 @@ Documentation of the package can be found online:
 
 ## Contributing
 
-We are more than happy to collaborate and receive your contributions to **`audioFlux`**. If you want to contribute,
+We are more than happy to collaborate and receive your contributions to **[`audioFlux`](https://github.com/libAudioFlux/audioFlux)**. If you want to contribute,
 please fork the latest git repository and create a feature branch. Submitted requests should pass all continuous
 integration tests.
 
@@ -223,7 +227,7 @@ Open an issue</a>
 
 ## Citing
 
-If you want to cite **`audioFlux`** in a scholarly work, please use the following ways:
+If you want to cite **[`audioFlux`](https://github.com/libAudioFlux/audioFlux)** in a scholarly work, please use the following ways:
 
 - If you are using the library for your work, for the sake of reproducibility, please cite the version you used as
   indexed at Zenodo:
@@ -234,4 +238,5 @@ If you want to cite **`audioFlux`** in a scholarly work, please use the followin
 
 audioFlux project is available MIT License.
 
+[https://github.com/libAudioFlux/audioFlux](https://github.com/libAudioFlux/audioFlux) 
 
