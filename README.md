@@ -16,7 +16,7 @@
 <!-- shields.io -->
 ![GitHub Workflow Status (with branch)](https://img.shields.io/github/actions/workflow/status/libAudioFlux/audioFlux/build.yml?branch=master)
 ![example branch parameter](https://github.com/libAudioFlux/audioFlux/actions/workflows/build.yml/badge.svg?branch=master)
-![language](https://img.shields.io/badge/language-C%20|%20Python%20-blue.svg)
+![language](https://img.shields.io/badge/language-C%20%7C%20Python%20-blue.svg)
 [![PyPI - Version](https://img.shields.io/pypi/v/audioflux)](https://pypi.org/project/audioflux/)
 [![PyPI - Python Version](https://img.shields.io/badge/python-%3E%3D3.6-brightgreen)](https://pypi.org/project/audioflux/)
 [![Docs](https://img.shields.io/badge/Docs-passing-brightgreen)](https://audioflux.top/index.html)
@@ -130,7 +130,7 @@ The mir module contains the following algorithms:
 
 ## Installation
 
-![language](https://img.shields.io/badge/platform-%20Linux%20|%20macOS%20|%20Windows%20|%20iOS%20|%20Android%20-lyellow.svg)
+![language](https://img.shields.io/badge/platform-%20Linux%20%7C%20macOS%20%7C%20Windows%20%7C%20iOS%20%7C%20Android%20-lyellow.svg)
 
 The library is cross-platform and currently supports Linux, macOS, Windows, iOS and Android systems.
 
