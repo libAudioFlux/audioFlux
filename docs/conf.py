@@ -28,7 +28,6 @@ extensions = [
     "sphinx_rtd_theme",
     "numpydoc",
     "matplotlib.sphinxext.plot_directive",
-    "sphinx-multiversion",
 ]
 
 plot_include_source = True
@@ -65,8 +64,6 @@ html_js_files = [
     'js/edit_github_url.js',
 ]
 
-html_sidebars = {"*": ["versioning.html"]}
-
 html_context = {
     "display_github": True,  # Integrate GitHub
     "github_repo": "libAudioFlux/audioflux",  # Repo name
@@ -82,13 +79,3 @@ html_theme_options = {
 autodoc_member_order = 'bysource'
 
 autosectionlabel_prefix_document = True
-
-smv_latest_version = 'master'
-
-# smv_tag_whitelist = (
-#     r"^((v0\.1\.\d+))$"
-# )
-# smv_released_pattern = r".*tags.*"
-# smv_remote_whitelist = r"^origin$"
-# smv_prefer_remote_refs = True
-# smv_latest_version = version
