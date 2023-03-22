@@ -172,11 +172,6 @@ class HPSS(Base):
         fn(self._obj, data_arr, c_int(data_len), h_arr, p_arr)
         return h_arr, p_arr
 
-    def debug(self):
-        fn = self._lib['hpssObj_debug']
-        fn.argtypes = [POINTER(OpaqueHPSS)]
-        fn(self._obj)
-
     def __del__(self):
         if self._is_created:
             fn = self._lib['hpssObj_free']

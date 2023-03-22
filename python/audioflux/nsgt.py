@@ -318,25 +318,6 @@ class NSGT(Base):
 
         return m_data_arr
 
-    def get_cell_data(self):
-        fn = self._lib['nsgtObj_getCellData']
-        fn.argtypes = [
-            POINTER(OpaqueNSGT),
-            POINTER(POINTER(c_float)),
-            POINTER(POINTER(c_float)),
-        ]
-
-        pp_m_real_arr = pointer(pointer(c_float()))
-        pp_m_imag_arr = pointer(pointer(c_float()))
-        fn(self._obj, pp_m_real_arr, pp_m_imag_arr)
-
-        max_time_length = self.get_max_time_length()
-        m_real_arr = np.array([pp_m_real_arr.contents[x] for x in range(self.num * max_time_length)], dtype=np.float32)
-        m_imag_arr = np.array([pp_m_imag_arr.contents[x] for x in range(self.num * max_time_length)], dtype=np.float32)
-        m_real_arr = m_real_arr.reshape(self.num, max_time_length)
-        m_imag_arr = m_imag_arr.reshape(self.num, max_time_length)
-        return m_real_arr + m_imag_arr * 1j
-
     def y_coords(self):
         """
         Get the Y-axis coordinate.

@@ -245,54 +245,6 @@ class PWT(Base):
         m_pwt_arr = real_arr + imag_arr * 1j
         return m_pwt_arr
 
-    def enable_det(self, flag):
-        """
-        Enable det
-
-        Parameters
-        ----------
-        flag: bool
-
-        Returns
-        -------
-
-        """
-        fn = self._lib['pwtObj_enableDet']
-        fn.argtypes = [POINTER(OpaquePWT), c_int]
-        fn(self._obj, c_int(int(flag)))
-
-    def pwt_det(self, data_arr):
-        """
-        Get pwt det data
-
-        Parameters
-        ----------
-        data_arr: np.ndarray [shape=(n,)]
-            Audio data array
-
-        Returns
-        -------
-        out: np.ndarray [shape=(fre, time)]
-        """
-
-        data_arr = np.asarray(data_arr, dtype=np.float32, order='C')
-        check_audio(data_arr)
-        data_arr = check_audio_length(data_arr, self.radix2_exp)
-
-        fn = self._lib['pwtObj_pwtDet']
-        fn.argtypes = [POINTER(OpaquePWT),
-                       np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS'),
-                       np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS'),
-                       np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS'),
-                       ]
-
-        real_arr = np.zeros((self.num, self.fft_length), dtype=np.float32)
-        imag_arr = np.zeros((self.num, self.fft_length), dtype=np.float32)
-
-        fn(self._obj, data_arr, real_arr, imag_arr)
-        m_pwt_det_arr = real_arr + imag_arr * 1j
-        return m_pwt_det_arr
-
     def y_coords(self):
         """
         Get the Y-axis coordinate

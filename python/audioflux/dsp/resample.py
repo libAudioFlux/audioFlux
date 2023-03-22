@@ -28,18 +28,6 @@ class ResampleBase(Base):
         fn.argtypes = [POINTER(OpaqueResample), c_int, c_int]
         fn(self._obj, c_int(source_rate), c_int(target_rate))
 
-    def enable_continue(self, flag):
-        """
-        Enable continue
-
-        Parameters
-        ----------
-        flag: int
-        """
-        fn = self._lib['resampleObj_enableContinue']
-        fn.argtypes = [POINTER(OpaqueResample), c_int]
-        fn(self._obj, c_int(flag))
-
     def cal_data_length(self, data_length):
         """
         Compute the data length
@@ -56,11 +44,6 @@ class ResampleBase(Base):
         fn.argtypes = [POINTER(OpaqueResample), c_int]
         fn.restype = c_int
         fn(self._obj, c_int(data_length))
-
-    def debug(self):
-        fn = self._lib['resampleObj_debug']
-        fn.argtypes = [POINTER(OpaqueResample)]
-        fn(self._obj)
 
     def resample(self, data_arr):
         """

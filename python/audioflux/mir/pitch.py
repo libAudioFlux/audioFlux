@@ -169,11 +169,6 @@ class Pitch(Base):
         fn(self._obj, data_arr, c_int(data_len), fre_arr, value1_arr, value2_arr)
         return fre_arr, value1_arr, value2_arr
 
-    def enable_debug(self, is_debug=0):
-        fn = self._lib['pitchObj_enableDebug']
-        fn.argtypes = [POINTER(OpaquePitch), c_int]
-        fn(self._obj, c_int(is_debug))
-
     def __del__(self):
         if self._is_created:
             fn = self._lib['pitchObj_free']

@@ -177,11 +177,6 @@ class Onset(Base):
 
         return point_arr, evn_arr, time_arr, value_arr
 
-    def debug(self):
-        fn = self._lib['onsetObj_debug']
-        fn.argtypes = [POINTER(OpaqueOnset)]
-        fn(self._obj)
-
     def __del__(self):
         if self._is_created:
             fn = self._lib['onsetObj_free']
