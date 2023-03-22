@@ -150,34 +150,6 @@ class Temporal(Base):
 
         return energy_arr, rms_arr, zero_cross_arr, m_arr
 
-    def ezr(self, data_length, gamma):
-        """
-        Get ezr feature
-
-        Parameters
-        ----------
-        data_length: int
-            The length of the data passed in by the temporal method
-
-        gamma: float
-            gamma value
-
-        Returns
-        -------
-        out: np.ndarray [shape=(time,)]
-            ezr feature
-        """
-
-        fn = self._lib['temporalObj_ezr']
-        fn.argtypes = [POINTER(OpaqueTemporal),
-                       c_float,
-                       np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS'),
-                       ]
-        time_len = self.cal_time_length(data_length)
-        ret_arr = np.zeros(time_len, dtype=np.float32)
-        fn(self._obj, c_float(gamma), ret_arr)
-        return ret_arr
-
     def __del__(self):
         if self._is_created:
             free_fn = self._lib['temporal_free']
