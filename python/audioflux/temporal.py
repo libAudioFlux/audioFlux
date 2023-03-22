@@ -59,7 +59,7 @@ class Temporal(Base):
            pointer(c_int(self.frame_length)),
            pointer(c_int(self.slide_length)),
            pointer(c_int(self.window_type.value)))
-        self._is_created = False
+        self._is_created = True
 
     def cal_time_length(self, data_length):
         """
