@@ -180,7 +180,7 @@ class WindowResample(ResampleBase):
         self.is_scale = is_scale
         self.is_continue = False
 
-        fn = self._lib['resampleObj_new']
+        fn = self._lib['resampleObj_newWithWindow']
         fn.argtypes = [POINTER(POINTER(OpaqueResample)),
                        POINTER(c_int),
                        POINTER(c_int),
