@@ -131,7 +131,9 @@ setup(
     license='MIT',
     python_requires=">=3.6",
     install_requires=[
+        "audioread >= 2.1.9",
         "numpy",
+        "scipy >= 1.2.0",
         "soundfile",
         "matplotlib",
     ],

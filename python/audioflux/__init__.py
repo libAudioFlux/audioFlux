@@ -14,7 +14,7 @@ from .synsq import *
 from .temporal import *
 from .wpt import *
 from .wsst import *
-from .utils import read, write, WaveReader, WaveWriter
+from .audio import *
 from .__version__ import (
     __version__,
     __description__,

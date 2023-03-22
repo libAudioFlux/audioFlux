@@ -1,38 +1,131 @@
-import numpy as np
+import os
+import warnings
 from ctypes import Structure, POINTER, pointer, c_int, c_void_p, c_char_p
+import scipy
+import audioread
+import numpy as np
+import soundfile as sf
+
 from audioflux.base import Base
-from soundfile import SoundFile
+from audioflux.utils.util import ascontiguous_T
 
 __all__ = [
     'read',
     'write',
+    'convert_mono',
+    'resample',
     'chirp',
     'WaveReader',
     'WaveWriter'
 ]
 
 
-def read(path):
+def read(path=None, dir=None, is_mono=True, samplate=None, re_type='scipy'):
     """
     Load an audio file as a NumPy array of floats.
 
     Parameters
     ----------
-    path: str
-        audio file path
+    path: str or list
+        Audio file path or path list.
+
+        If `list`, the sampling rate and audio length of all audio files must be the same
+
+    dir: str
+        Audio file directory.
+
+        If you set the directory, the `path` parameters cannot work.
+
+        The sampling rate and audio length in the directory must be the same.
+
+    is_mono: bool
+        Whether to convert it into a single channel
+
+    samplate: int or None
+        Convert audio sampling rate. None defaults to use audio
+
+    re_type: str
+        Resample type
+
+        - scipy: scipy.signal.resample
+        - scipy_poly: scipy.signal.resample_poly
 
     Returns
     -------
-    y: np.ndarray [shape=(n,)]
+    y: np.ndarray [shape=(..., n)]
         audio time series.
 
     sr: number > 0 [scalar]
         sampling rate of y
     """
 
-    with SoundFile(path, 'r') as f:
-        data = f.read(dtype=np.float32)
-    return data, f.samplerate
+    if dir is not None:
+        path = []
+        for filename in os.listdir(dir):
+            path.append(os.path.join(dir, filename))
+
+    if isinstance(path, str):
+        data, sr = __read(path)
+        if is_mono:
+            data = convert_mono(data)
+        elif data.ndim == 1:
+            data = data.reshape(1, -1)
+    else:
+        sr = None
+        data = []
+        audio_shape = None
+        for fp in path:
+            try:
+                _data, _sr = __read(fp)
+            except Exception as e:
+                warnings.warn(f'Load file error, skip: {fp}, {e}')
+                continue
+
+            # check sampling rate
+            if sr is None:
+                sr = _sr
+            elif sr != _sr:
+                raise ValueError('When loading multiple audio files, the sampling rate must be the same')
+
+            # check shape
+            if audio_shape is None:
+                audio_shape = _data.shape
+            elif audio_shape != _data.shape:
+                raise ValueError('When loading multiple audio files, the audio shape must be the same')
+
+            if is_mono:
+                _data = convert_mono(_data)
+            elif _data.ndim == 1:
+                _data = _data.reshape(1, -1)
+
+            data.append(_data)
+        data = np.stack(data, axis=0)
+
+    if samplate is not None and samplate != sr:
+        data = resample(data, source_samplate=sr, target_samplate=samplate, re_type=re_type)
+        sr = samplate
+    return data, sr
+
+
+def __read(fp):
+    try:
+        with sf.SoundFile(fp, 'r') as f:
+            data = f.read(dtype=np.float32)
+            sr = f.samplerate
+    except sf.SoundFileRuntimeError:
+        temp = bytearray()
+        with audioread.audio_open(fp) as f:
+            sr = f.samplerate
+            n_channels = f.channels
+
+            # chunk size can be specified with 'block_samples' (default 1024):
+            for chunk in f.read_data():
+                temp.extend(chunk)
+
+        data = np.frombuffer(temp, dtype='<i2').reshape(-1, n_channels)
+        data = (data * 1.0 / 32768).astype(np.float32)
+    data = ascontiguous_T(data)
+    return data, sr
 
 
 def write(path, data, samplate=32000, subtype='PCM_32', format='WAV'):
@@ -44,7 +137,7 @@ def write(path, data, samplate=32000, subtype='PCM_32', format='WAV'):
     path: str
         Path to save audio file.
 
-    data: np.ndarray [shape=(channel, frames)]
+    data: np.ndarray [shape=(frames,) or (channel, frames)]
         Audio file data
 
     samplate: int
@@ -61,16 +154,87 @@ def write(path, data, samplate=32000, subtype='PCM_32', format='WAV'):
     """
     data = np.asarray(data, dtype=np.float32, order='C')
 
+    if data.ndim > 2:
+        raise ValueError(f'data must be less than equal to 2 dimensions')
+
     channel = 1 if data.ndim == 1 else data.shape[0]
     if channel != 1:
         data = data.T
 
-    with SoundFile(path, 'w', samplerate=samplate, channels=channel,
-                   subtype=subtype, format=format) as f:
+    with sf.SoundFile(path, 'w', samplerate=samplate, channels=channel,
+                      subtype=subtype, format=format) as f:
         f.write(data)
 
 
-def chirp(fmin, fmax, duration, samplate=32000, phi=0, linear=False):
+def convert_mono(x):
+    """
+    Convert audio data from multi-channel to single-channel
+
+    Parameters
+    ----------
+    x: np.ndarray [shape=(channel, frames) or (samples, channel, frames)]
+        Audio file data of multi-channel
+
+    Returns
+    -------
+    out: np.ndarray [shape(=(frames,)]
+        Audio file data of single-channel
+    """
+
+    if x.ndim > 1:
+        x = np.mean(x, axis=-2)
+    return x
+
+
+def resample(x, source_samplate, target_samplate, re_type='scipy'):
+    """
+    Resample audio data from source_sr to target_sr
+
+    Parameters
+    ----------
+    x: np.ndarray [shape=(..., frames)]
+        Audio data
+
+    source_samplate: int
+        Audio's source sampling rate
+
+    target_samplate: int
+        Audio's target sampling rate
+
+    re_type: str
+        Resample type
+
+        - scipy: scipy.signal.resample
+        - scipy_poly: scipy.signal.resample_poly
+
+    Returns
+    -------
+    out: np.ndarray [shape=(..., frames)]
+        Resample audio data
+    """
+    x = np.asarray(x, dtype=np.float32, order='C')
+
+    if target_samplate == source_samplate:
+        return x
+
+    if not 8000 <= target_samplate < source_samplate:
+        raise ValueError(
+            f'target_samplate[{target_samplate}] must be between 8000 to source_samplate[{source_samplate}]')
+
+    if re_type == 'scipy':
+        num = int(np.ceil(x.shape[-1] * (target_samplate * 1.0 / source_samplate)))
+        y = scipy.signal.resample(x, num, axis=-1)
+    elif re_type == 'scipy_poly':
+        gcd = np.gcd(source_samplate, target_samplate)
+        up = target_samplate // gcd
+        down = source_samplate // gcd
+        y = scipy.signal.resample_poly(x, up=up, down=down, axis=-1)
+    else:
+        raise ValueError(f're_type[{re_type}] not supported')
+    return y
+
+
+def chirp(fmin, fmax, duration, samplate=32000, phi=None, method='logarithmic'):
     """
     chirp signal
 
@@ -93,9 +257,12 @@ def chirp(fmin, fmax, duration, samplate=32000, phi=0, linear=False):
     phi: float, optional
         Phase offset, in radians.
 
-    linear: boolean
-        - If is True,  use ``f(t) = f0 + (f1 - f0) * t / t1``
-        - If is False, use ``f(t) = f0 * (f1/f0)**(t/t1)``
+        If None, use `1 / 2 * -np.pi`.
+
+    method: str
+        linear, quadratic, logarithmic, hyperbolic
+
+        See: `scipy.signal.chirp`
 
     Returns
     -------
@@ -104,21 +271,13 @@ def chirp(fmin, fmax, duration, samplate=32000, phi=0, linear=False):
     """
     if fmin <= 0 or fmax <= 0:
         raise ValueError(f'fmax and fmin must be strictly positive')
+
     t = np.arange(duration, step=1. / samplate)
+    if phi is None:
+        phi = 1 / 2 * -np.pi
+    y = scipy.signal.chirp(t, fmin, duration, fmax, method=method, phi=phi / np.pi * 180)
 
-    if linear:
-        k = (fmax - fmin) / duration
-        phase = 2 * np.pi * (fmin * t + 0.5 * k * t * t)
-    else:
-        if fmin == fmax:
-            phase = 2 * np.pi * fmin * t
-        else:
-            beta = duration / np.log(fmax / fmin)
-            phase = 2 * np.pi * beta * fmin * (np.power(fmax / fmin, t / duration) - 1.0)
-
-    phi *= np.pi / 180
-
-    return np.cos(phase + phi)
+    return y
 
 
 class OpaqueWaveRead(Structure):
