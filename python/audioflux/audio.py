@@ -304,8 +304,7 @@ class WaveReader(Base):
 
         fn = self._lib['waveReadObj_new']
         fn.argtypes = [POINTER(POINTER(OpaqueWaveRead)), c_char_p]
-        fn(self._obj,
-               self.file_path.encode())
+        fn(self._obj, self.file_path.encode())
         self._is_created = True
 
     def get_infor(self) -> dict:
@@ -406,10 +405,10 @@ class WaveWriter(Base):
                        POINTER(c_int),
                        POINTER(c_int)]
         fn(self._obj,
-               self.file_path.encode(),
-               pointer(c_int(samplate)),
-               pointer(c_int(bit)),
-               pointer(c_int(channel_num)))
+           self.file_path.encode(),
+           pointer(c_int(samplate)),
+           pointer(c_int(bit)),
+           pointer(c_int(channel_num)))
         self._is_created = True
 
     def write(self, data_arr):
@@ -429,10 +428,10 @@ class WaveWriter(Base):
         data_len = 0
         if data_arr.ndim == 1:
             channel = 1
-            data_len = data_arr.shape[0]
+            data_len = data_arr.shape[-1]
         elif data_arr.ndim == 2:
-            channel = data_arr.shape[0]
-            data_len = data_arr.shape[1]
+            channel = data_arr.shape[-2]
+            data_len = data_arr.shape[-1]
 
         if channel == 0 or channel != self.channel_num:
             raise ValueError(f"Invalid shape: {data_arr.shape}")

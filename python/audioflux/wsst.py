@@ -2,7 +2,7 @@ import numpy as np
 from ctypes import Structure, POINTER, pointer, c_int, c_float, c_void_p
 from audioflux.type import WaveletContinueType, SpectralFilterBankScaleType, get_wavelet_default_gamma_beta
 from audioflux.base import Base
-from audioflux.utils import check_audio, note_to_hz
+from audioflux.utils import check_audio, check_audio_length, format_channel, revoke_channel, note_to_hz
 
 __all__ = ['WSST']
 
@@ -90,7 +90,7 @@ class WSST(Base):
     >>> audio_arr, sr = af.read(audio_path)
     >>> # WSST can only input fft_length data
     >>> # For radix2_exp=12, then fft_length=4096
-    >>> audio_arr = audio_arr[:4096]
+    >>> audio_arr = audio_arr[..., :4096]
 
     Create WSST object of mel
 
@@ -250,10 +250,10 @@ class WSST(Base):
         -------
 
         """
-        self.order = order
         c_fn = self._lib['wsstObj_setOrder']
         c_fn.argtypes = [POINTER(OpaqueWSST), c_int]
-        return c_fn(self._obj, c_int(order))
+        c_fn(self._obj, c_int(order))
+        self.order = order
 
     def wsst(self, data_arr):
         """
@@ -261,19 +261,20 @@ class WSST(Base):
 
         Parameters
         ----------
-        data_arr: np.ndarray [shape=(n,)]
+        data_arr: np.ndarray [shape=(..., 2**radix2_exp)]
             Input audio data
 
         Returns
         -------
-        m_arr1: np.ndarray [shape=(fre, time)]
-            The matrix of wsst
+        m_arr1: np.ndarray [shape=(..., fre, time), dtype=np.complex]
+            The matrix of WSST
 
-        m_arr2: np.ndarray [shape=(fre, time)]
-            The matrix of origin(cwt)
+        m_arr2: np.ndarray [shape=(..., fre, time), dtype=np.complex]
+            The matrix of origin(CWT)
         """
         data_arr = np.asarray(data_arr, dtype=np.float32, order='C')
-        check_audio(data_arr)
+        check_audio(data_arr, is_mono=False)
+        data_arr = check_audio_length(data_arr, self.radix2_exp)
 
         fn = self._lib['wsstObj_wsst']
         fn.argtypes = [POINTER(OpaqueWSST),
@@ -284,17 +285,35 @@ class WSST(Base):
                        np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS'),
                        ]
 
-        fft_length = 1 << self.radix2_exp
-        shape = (self.num, fft_length)
-        m_real_arr1 = np.zeros(shape, dtype=np.float32)
-        m_imag_arr1 = np.zeros(shape, dtype=np.float32)
-        m_real_arr2 = np.zeros(shape, dtype=np.float32)
-        m_imag_arr2 = np.zeros(shape, dtype=np.float32)
+        if data_arr.ndim == 1:
+            shape = (self.num, self.fft_length)
+            m_real_arr1 = np.zeros(shape, dtype=np.float32)
+            m_imag_arr1 = np.zeros(shape, dtype=np.float32)
+            m_real_arr2 = np.zeros(shape, dtype=np.float32)
+            m_imag_arr2 = np.zeros(shape, dtype=np.float32)
 
-        fn(self._obj, data_arr, m_real_arr1, m_imag_arr1, m_real_arr2, m_imag_arr2)
-        m_arr1 = m_real_arr1 + (m_imag_arr1 * 1j)
-        m_arr2 = m_real_arr2 + (m_imag_arr2 * 1j)
-        m_arr2 = m_arr2[::-1, :]
+            fn(self._obj, data_arr, m_real_arr1, m_imag_arr1, m_real_arr2, m_imag_arr2)
+            m_arr1 = m_real_arr1 + m_imag_arr1 * 1j
+            m_arr2 = m_real_arr2 + m_imag_arr2 * 1j
+        else:
+            data_arr, o_channel_shape = format_channel(data_arr, 1)
+            channel_num = data_arr.shape[0]
+
+            shape = (channel_num, self.num, self.fft_length)
+            m_real_arr1 = np.zeros(shape, dtype=np.float32)
+            m_imag_arr1 = np.zeros(shape, dtype=np.float32)
+            m_real_arr2 = np.zeros(shape, dtype=np.float32)
+            m_imag_arr2 = np.zeros(shape, dtype=np.float32)
+
+            for i in range(channel_num):
+                fn(self._obj, data_arr[i], m_real_arr1[i], m_imag_arr1[i], m_real_arr2[i], m_imag_arr2[i])
+            m_arr1 = m_real_arr1 + m_imag_arr1 * 1j
+            m_arr2 = m_real_arr2 + m_imag_arr2 * 1j
+
+            m_arr1 = revoke_channel(m_arr1, o_channel_shape, 2)
+            m_arr2 = revoke_channel(m_arr2, o_channel_shape, 2)
+
+        m_arr2 = np.ascontiguousarray(m_arr2[..., ::-1, :])
         return m_arr1, m_arr2
 
     def y_coords(self):

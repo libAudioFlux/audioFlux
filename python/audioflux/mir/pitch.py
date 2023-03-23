@@ -2,7 +2,7 @@ import numpy as np
 from ctypes import Structure, POINTER, pointer, c_int, c_void_p, c_float
 from audioflux.base import Base
 from audioflux.type import PitchType
-from audioflux.utils import check_audio, note_to_hz
+from audioflux.utils import check_audio, format_channel, revoke_channel, note_to_hz
 
 __all__ = ["Pitch"]
 
@@ -58,7 +58,7 @@ class Pitch(Base):
     >>> import matplotlib.pyplot as plt
     >>> from audioflux.display import fill_wave, fill_plot
     >>> import numpy as np
-    >>> audio_len = audio_arr.shape[0]
+    >>> audio_len = audio_arr.shape[-1]
     >>> fig, axes = plt.subplots(nrows=2)
     >>> fill_wave(audio_arr, samplate=sr, axes=axes[0])
     >>>
@@ -131,23 +131,23 @@ class Pitch(Base):
         fn.restype = c_int
         return fn(self._obj, c_int(data_length))
 
-    def pitch(self, data_arr) -> (np.ndarray, np.ndarray, np.ndarray):
+    def pitch(self, data_arr):
         """
         Compute pitch
 
         Parameters
         ----------
-        data_arr: np.ndarray [shape=(n,)]
+        data_arr: np.ndarray [shape=(..., n)]
             Input audio array
 
         Returns
         -------
-        fre_arr: np.ndarray [shape=(time,)]
-        value1_arr: np.ndarray [shape=(time,)]
-        value2_arr: np.ndarray [shape=(time,)]
+        fre_arr: np.ndarray [shape=(..., time)]
+        value1_arr: np.ndarray [shape=(..., time)]
+        value2_arr: np.ndarray [shape=(..., time)]
         """
         data_arr = np.asarray(data_arr, dtype=np.float32, order='C')
-        check_audio(data_arr)
+        check_audio(data_arr, is_mono=False)
 
         fn = self._lib['pitchObj_pitch']
         fn.argtypes = [POINTER(OpaquePitch),
@@ -158,15 +158,28 @@ class Pitch(Base):
                        np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS'),
                        ]
 
-        data_len = data_arr.size
-
+        data_len = data_arr.shape[-1]
         time_length = self.cal_time_length(data_len)
 
-        fre_arr = np.zeros(time_length, dtype=np.float32)
-        value1_arr = np.zeros(time_length, dtype=np.float32)
-        value2_arr = np.zeros(time_length, dtype=np.float32)
+        if data_arr.ndim == 1:
+            fre_arr = np.zeros(time_length, dtype=np.float32)
+            value1_arr = np.zeros(time_length, dtype=np.float32)
+            value2_arr = np.zeros(time_length, dtype=np.float32)
+            fn(self._obj, data_arr, c_int(data_len), fre_arr, value1_arr, value2_arr)
+        else:
+            data_arr, o_channel_shape = format_channel(data_arr, 1)
+            channel_num = data_arr.shape[0]
 
-        fn(self._obj, data_arr, c_int(data_len), fre_arr, value1_arr, value2_arr)
+            size = (channel_num, time_length)
+            fre_arr = np.zeros(size, dtype=np.float32)
+            value1_arr = np.zeros(size, dtype=np.float32)
+            value2_arr = np.zeros(size, dtype=np.float32)
+            for i in range(channel_num):
+                fn(self._obj, data_arr[i], c_int(data_len), fre_arr[i], value1_arr[i], value2_arr[i])
+
+            fre_arr = revoke_channel(fre_arr, o_channel_shape, 1)
+            value1_arr = revoke_channel(value1_arr, o_channel_shape, 1)
+            value2_arr = revoke_channel(value2_arr, o_channel_shape, 1)
         return fre_arr, value1_arr, value2_arr
 
     def __del__(self):

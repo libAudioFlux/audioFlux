@@ -5,7 +5,7 @@ import numpy as np
 
 from audioflux.base import Base
 from audioflux.type import WaveletContinueType, SpectralFilterBankScaleType, get_wavelet_default_gamma_beta
-from audioflux.utils import check_audio, check_audio_length, note_to_hz
+from audioflux.utils import check_audio, check_audio_length, format_channel, revoke_channel, note_to_hz
 
 __all__ = ["CWT"]
 
@@ -95,7 +95,7 @@ class CWT(Base):
     >>> audio_arr, sr = af.read(audio_path)
     >>> # CWT can only input fft_length data
     >>> # For radix2_exp=12, then fft_length=4096
-    >>> audio_arr = audio_arr[:4096]
+    >>> audio_arr = audio_arr[..., :4096]
 
     Create CWT object of Octave
 
@@ -239,16 +239,16 @@ class CWT(Base):
 
         Parameters
         ----------
-        data_arr: np.ndarray [shape=(2**radix2_exp,)]
+        data_arr: np.ndarray [shape=(..., 2**radix2_exp)]
             Input audio data. The data length must be `2**radix2_exp`.
 
         Returns
         -------
-        out: np.ndarray [shape=(fre, time)]
+        out: np.ndarray [shape=(..., fre, time), dtype=np.complex]
             The matrix of CWT
         """
         data_arr = np.asarray(data_arr, dtype=np.float32, order='C')
-        check_audio(data_arr)
+        check_audio(data_arr, is_mono=False)
         data_arr = check_audio_length(data_arr, self.radix2_exp)
 
         fn = self._lib['cwtObj_cwt']
@@ -258,13 +258,23 @@ class CWT(Base):
                        np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS'),
                        ]
 
-        real_arr = np.zeros((self.num, self.fft_length), dtype=np.float32)
-        imag_arr = np.zeros((self.num, self.fft_length), dtype=np.float32)
+        if data_arr.ndim == 1:
+            m_real_arr = np.zeros((self.num, self.fft_length), dtype=np.float32)
+            m_imag_arr = np.zeros((self.num, self.fft_length), dtype=np.float32)
+            fn(self._obj, data_arr, m_real_arr, m_imag_arr)
+            m_cwt_arr = m_real_arr + m_imag_arr * 1j
+        else:
+            data_arr, o_channel_shape = format_channel(data_arr, 1)
+            channel_num = data_arr.shape[0]
 
-        fn(self._obj, data_arr, real_arr, imag_arr)
+            m_real_arr = np.zeros((channel_num, self.num, self.fft_length), dtype=np.float32)
+            m_imag_arr = np.zeros((channel_num, self.num, self.fft_length), dtype=np.float32)
+            for i in range(channel_num):
+                fn(self._obj, data_arr[i], m_real_arr[i], m_imag_arr[i])
+            m_cwt_arr = m_real_arr + m_imag_arr * 1j
+            m_cwt_arr = revoke_channel(m_cwt_arr, o_channel_shape, 2)
 
-        m_cwt_arr = real_arr + imag_arr * 1j
-        m_cwt_arr = m_cwt_arr[::-1, ]
+        m_cwt_arr = np.ascontiguousarray(m_cwt_arr[..., ::-1, :])
         return m_cwt_arr
 
     def ccwt(self, data_arr):
@@ -277,34 +287,36 @@ class CWT(Base):
 
         Parameters
         ----------
-        data_arr: np.ndarray [shape=((2**radix2_exp)//2,)]
+        data_arr: np.ndarray [shape=((..., n)]
             Input audio data. The data length must be an integer multiple of (2**radix2_exp)//2.
 
         Returns
         -------
-        out: np.ndarray [shape=(fre, time)]
+        out: np.ndarray [shape=(..., fre, time)]
             The matrix of continuous CWT
         """
         data_arr = np.asarray(data_arr, dtype=np.float32, order='C')
-        check_audio(data_arr)
+        check_audio(data_arr, is_mono=False)
 
-        data_len = data_arr.shape[0]
+        data_len = data_arr.shape[-1]
         win_len = self.fft_length // 4
         step = win_len * 2
         win_count = (data_len // step) - 1
 
-        ret_arr = np.array([], dtype=np.float32).reshape(self.num, 0)
+        ret_arr = []
         for i in range(win_count):
-            sample_arr = data_arr[i * step:i * step + self.fft_length].copy()
-            if sample_arr.shape[0] != self.fft_length:
+            sample_arr = data_arr[..., i * step:i * step + self.fft_length]
+            if sample_arr.shape[-1] != self.fft_length:
                 break
             cur_spec_arr = self.cwt(sample_arr)
 
             start_idx = 0 if i == 0 else win_len
             end_idx = self.fft_length if i == (win_count - 1) else (win_len * 3)
 
-            valid_spec_arr = cur_spec_arr[:, start_idx:end_idx]
-            ret_arr = np.hstack((ret_arr, valid_spec_arr))
+            valid_spec_arr = cur_spec_arr[..., start_idx:end_idx]
+            ret_arr.append(valid_spec_arr)
+
+        ret_arr = np.concatenate(tuple(ret_arr), axis=-1)
         return ret_arr
 
     def y_coords(self):

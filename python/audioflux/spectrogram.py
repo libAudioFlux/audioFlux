@@ -6,7 +6,8 @@ from audioflux.base import Base
 from audioflux.type import (WindowType, SpectralDataType, SpectralFilterBankType, SpectralFilterBankStyleType,
                             SpectralFilterBankNormalType, ChromaDataNormalType, CepstralRectifyType, CepstralEnergyType,
                             SpectralNoveltyMethodType, SpectralNoveltyDataType)
-from audioflux.utils import check_audio, ascontiguous_T, note_to_hz
+from audioflux.utils import check_audio, ascontiguous_T, ascontiguous_swapaxex, format_channel, revoke_channel, \
+    note_to_hz
 
 __all__ = [
     'Spectrogram',
@@ -173,11 +174,6 @@ class SpectrogramBase(Base):
         fn.argtypes = [POINTER(OpaqueSpectrogram), c_int]
         return fn(self._obj, c_int(data_length))
 
-    def enable_debug(self, flag):
-        fn = self._lib['spectrogramObj_enableDebug']
-        fn.argtypes = [POINTER(OpaqueSpectrogram), c_int]
-        fn(self._obj, c_int(flag))
-
     def get_fre_band_arr(self):
         """
         Get frequency band array
@@ -243,22 +239,22 @@ class SpectrogramBase(Base):
 
         Parameters
         ----------
-        data_arr: np.ndarray [shape=(n,)]
+        data_arr: np.ndarray [shape=(..., n)]
             Input audio data
         is_phase_arr: bool
             Whether to return phase array
 
         Returns
         -------
-        out: np.ndarray [shape=(fre, time) or (deep, fre, time)]
+        out: np.ndarray [shape=(..., fre, time) or (..., deep, fre, time)]
             Spectrogram matrix array.
 
-            If filter_bank_type is ``DEEP`` or ``DEEP_CHROMA``, the shape is ``(deep, fre, time)``;
-            otherwise the shep is ``(fre, time)``.
+            If filter_bank_type is ``DEEP`` or ``DEEP_CHROMA``, the shape is ``(..., deep, fre, time)``;
+            otherwise the shep is ``(..., fre, time)``.
         """
         data_arr = np.asarray(data_arr, dtype=np.float32, order='C')
-        check_audio(data_arr)
-        data_len = data_arr.shape[0]
+        check_audio(data_arr, is_mono=False)
+        data_len = data_arr.shape[-1]
         if data_len < self.fft_length:
             raise ValueError(f'radix2_exp={self.radix2_exp}(fft_length={self.fft_length}) '
                              f'is too large for data_arr length={data_len}')
@@ -282,7 +278,7 @@ class SpectrogramBase(Base):
         time_len = self.cal_time_length(data_len)
 
         # deep bank need to set 3 dimensions
-        if self.filter_bank_type == SpectralFilterBankType.DEEP:
+        if spec_arr_dim_num == 3:
             # 1/2->3*timeLength*num
             # 3/4->5*timeLength*num
             if self.deep_order in (1, 2):
@@ -293,23 +289,35 @@ class SpectrogramBase(Base):
         else:
             size = (time_len, self.num)
 
-        m_spec_arr = np.zeros(size, dtype=np.float32)
-        m_phase_arr = None
-        if is_phase_arr:
-            m_phase_arr = np.zeros((time_len, int((1 << self.radix2_exp) / 2 + 1)), dtype=np.float32)
+        if data_arr.ndim == 1:
+            m_spec_arr = np.zeros(size, dtype=np.float32)
+            m_phase_arr = None
+            if is_phase_arr:
+                m_phase_arr = np.zeros((time_len, int((1 << self.radix2_exp) / 2 + 1)), dtype=np.float32)
 
-        fn(self._obj, data_arr, c_int(data_len), m_spec_arr, m_phase_arr)
-
-        if self.filter_bank_type == SpectralFilterBankType.DEEP:
-            # (deep, time, fre) -> (deep, fre, time)
-            m_spec_arr = np.transpose(m_spec_arr, axes=[0, 2, 1])
-            m_spec_arr = np.ascontiguousarray(m_spec_arr)
+            fn(self._obj, data_arr, c_int(data_len), m_spec_arr, m_phase_arr)
         else:
-            # (time, fre) -> (fre, time)
-            m_spec_arr = ascontiguous_T(m_spec_arr)
+            data_arr, o_channel_shape = format_channel(data_arr, 1)
+            channel_num = data_arr.shape[0]
+
+            size = (channel_num, *size)
+            m_spec_arr = np.zeros(size, dtype=np.float32)
+            m_phase_arr = None
+            if is_phase_arr:
+                m_phase_arr = np.zeros((channel_num, time_len, int((1 << self.radix2_exp) / 2 + 1)), dtype=np.float32)
+
+            for i in range(channel_num):
+                _m_phase_arr = m_phase_arr[i] if is_phase_arr else None
+                fn(self._obj, data_arr[i], c_int(data_len), m_spec_arr[i], _m_phase_arr)
+
+            m_spec_arr = revoke_channel(m_spec_arr, o_channel_shape, spec_arr_dim_num)
+            if is_phase_arr:
+                m_phase_arr = revoke_channel(m_phase_arr, o_channel_shape, 2)
+
+        m_spec_arr = ascontiguous_swapaxex(m_spec_arr, -1, -2)
 
         if is_phase_arr:
-            m_phase_arr = ascontiguous_T(m_phase_arr)
+            m_phase_arr = ascontiguous_swapaxex(m_phase_arr, -1, -2)
             return m_spec_arr, m_phase_arr
         else:
             return m_spec_arr
@@ -525,7 +533,7 @@ class SpectrogramBase(Base):
 
         Parameters
         ----------
-        index_arr: np.ndarray [shape=(num,)]
+        index_arr: np.ndarray [shape=(num,)] or list
             fre下标
 
         Returns
@@ -1869,7 +1877,7 @@ class Spectrogram(SpectrogramBase):
         Show plot
 
         >>> from audioflux.display import Plot
-        >>> audio_len = audio_arr.shape[0]
+        >>> audio_len = audio_arr.shape[-1]
         >>> pt = Plot()
         >>> pt.add_spec_data(spec_arr,
         ...                  x_coords=spec_obj.x_coords(audio_len),
@@ -1980,7 +1988,7 @@ class Linear(SpectrogramBase):
         Show plot
 
         >>> from audioflux.display import Plot
-        >>> audio_len = audio_arr.shape[0]
+        >>> audio_len = audio_arr.shape[-1]
         >>> pt = Plot()
         >>> pt.add_spec_data(spec_arr,
         ...                  x_coords=spec_obj.x_coords(audio_len),
@@ -2058,7 +2066,7 @@ class Mel(SpectrogramBase):
         Show plot
 
         >>> from audioflux.display import Plot
-        >>> audio_len = audio_arr.shape[0]
+        >>> audio_len = audio_arr.shape[-1]
         >>> pt = Plot()
         >>> pt.add_spec_data(spec_arr,
         ...                  x_coords=spec_obj.x_coords(audio_len),
@@ -2136,7 +2144,7 @@ class Bark(SpectrogramBase):
         Show plot
 
         >>> from audioflux.display import Plot
-        >>> audio_len = audio_arr.shape[0]
+        >>> audio_len = audio_arr.shape[-1]
         >>> pt = Plot()
         >>> pt.add_spec_data(spec_arr,
         ...                  x_coords=spec_obj.x_coords(audio_len),
@@ -2218,7 +2226,7 @@ class Erb(SpectrogramBase):
         Show plot
 
         >>> from audioflux.display import Plot
-        >>> audio_len = audio_arr.shape[0]
+        >>> audio_len = audio_arr.shape[-1]
         >>> pt = Plot()
         >>> pt.add_spec_data(spec_arr,
         ...                  x_coords=spec_obj.x_coords(audio_len),
@@ -2292,7 +2300,7 @@ class Chroma(SpectrogramBase):
         Show plot
 
         >>> from audioflux.display import Plot
-        >>> audio_len = audio_arr.shape[0]
+        >>> audio_len = audio_arr.shape[-1]
         >>> pt = Plot()
         >>> pt.add_spec_data(spec_arr,
         ...                  x_coords=spec_obj.x_coords(audio_len),
@@ -2365,7 +2373,7 @@ class Deep(SpectrogramBase):
         Show plot
 
         >>> from audioflux.display import Plot
-        >>> audio_len = audio_arr.shape[0]
+        >>> audio_len = audio_arr.shape[-1]
         >>> pt = Plot(ncols=3, fig_height=10)
         >>> pt.add_spec_data(spec_arr[0],
         ...                  x_coords=spec_obj.x_coords(audio_len),
@@ -2448,7 +2456,7 @@ class DeepChroma(SpectrogramBase):
         Show plot
 
         >>> from audioflux.display import Plot
-        >>> audio_len = audio_arr.shape[0]
+        >>> audio_len = audio_arr.shape[-1]
         >>> pt = Plot()
         >>> pt.add_spec_data(spec_arr,
         ...                  x_coords=spec_obj.x_coords(audio_len),

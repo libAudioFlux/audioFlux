@@ -1,6 +1,7 @@
 import numpy as np
 from ctypes import Structure, POINTER, pointer, c_int, c_float, c_void_p
 from audioflux.base import Base
+from audioflux.utils import format_channel, revoke_channel
 
 __all__ = ['Synsq']
 
@@ -45,7 +46,7 @@ class Synsq(Base):
     >>> audio_arr, sr = af.read(audio_path)
     >>> # WSST can only input fft_length data
     >>> # For radix2_exp=12, then fft_length=4096
-    >>> audio_arr = audio_arr[:4096]
+    >>> audio_arr = audio_arr[..., :4096]
 
     Create CWT object of octave
 
@@ -128,7 +129,7 @@ class Synsq(Base):
 
         Parameters
         ----------
-        m_data_arr: np.ndarray [shape=(fre, time)]
+        m_data_arr: np.ndarray [shape=(..., fre, time), dtype=np.complex]
             spectrogram data
 
         filter_bank_type: SpectralFilterBankScaleType
@@ -142,11 +143,13 @@ class Synsq(Base):
 
         Returns
         -------
-
+        out: np.ndarray [shape=(..., fre, time), dtype=np.complex]
         """
 
         if not np.iscomplexobj(m_data_arr):
             raise ValueError(f"m_data_arr with dtype={m_data_arr.dtype} is not of complex type")
+        if m_data_arr.ndim < 2:
+            raise ValueError(f"m_data_arr.ndim=[{m_data_arr.ndim}] should be greater than 1")
 
         c_fn = self._lib['synsqObj_synsq']
         c_fn.argtypes = [POINTER(OpaqueSynsq),
@@ -157,15 +160,29 @@ class Synsq(Base):
                          np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS'),
                          np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS')]
 
-        m_real_arr1 = np.ascontiguousarray(m_data_arr.real, dtype=np.float32)
-        m_imag_arr1 = np.ascontiguousarray(m_data_arr.imag, dtype=np.float32)
+        if m_data_arr.ndim == 2:
+            m_real_arr1 = np.ascontiguousarray(m_data_arr.real)
+            m_imag_arr1 = np.ascontiguousarray(m_data_arr.imag)
+            m_real_arr2 = np.zeros_like(m_data_arr, dtype=np.float32)
+            m_imag_arr2 = np.zeros_like(m_data_arr, dtype=np.float32)
+            c_fn(self._obj, fre_arr, c_int(filter_bank_type.value),
+                 m_real_arr1, m_imag_arr1, m_real_arr2, m_imag_arr2)
+            m_synsq_arr = m_real_arr2 + m_imag_arr2 * 1j
+        else:
+            m_data_arr, o_channel_shape = format_channel(m_data_arr, 2)
+            channel_num = m_data_arr.shape[0]
 
-        m_real_arr2 = np.zeros_like(m_real_arr1, dtype=np.float32)
-        m_imag_arr2 = np.zeros_like(m_imag_arr1, dtype=np.float32)
+            m_real_arr1 = np.ascontiguousarray(m_data_arr.real)
+            m_imag_arr1 = np.ascontiguousarray(m_data_arr.imag)
+            m_real_arr2 = np.zeros_like(m_real_arr1, dtype=np.float32)
+            m_imag_arr2 = np.zeros_like(m_imag_arr1, dtype=np.float32)
+            for i in range(channel_num):
+                c_fn(self._obj, fre_arr, c_int(filter_bank_type.value),
+                     m_real_arr1[i], m_imag_arr1[i], m_real_arr2[i], m_imag_arr2[i])
+            m_synsq_arr = m_real_arr2 + m_imag_arr2 * 1j
+            m_synsq_arr = revoke_channel(m_synsq_arr, o_channel_shape, 2)
 
-        c_fn(self._obj, fre_arr, c_int(filter_bank_type.value),
-             m_real_arr1, m_imag_arr1, m_real_arr2, m_imag_arr2)
-        return m_real_arr2 + (m_imag_arr2 * 1j)
+        return m_synsq_arr
 
     def __del__(self):
         if self._is_created:

@@ -1,7 +1,7 @@
 import numpy as np
 from ctypes import Structure, POINTER, pointer, c_int, c_void_p
 from audioflux.base import Base
-from audioflux.utils import ascontiguous_T
+from audioflux.utils import ascontiguous_swapaxex, format_channel, revoke_channel
 
 __all__ = ["Deconv"]
 
@@ -49,7 +49,7 @@ class Deconv(Base):
 
     >>> import matplotlib.pyplot as plt
     >>> from audioflux.display import fill_spec
-    >>> audio_len = audio_arr.shape[0]
+    >>> audio_len = audio_arr.shape[-1]
     >>> fig, ax = plt.subplots()
     >>> img = fill_spec(tone_arr, axes=ax,
     >>>           x_coords=bft_obj.x_coords(audio_len), x_axis='time',
@@ -66,6 +66,8 @@ class Deconv(Base):
         super(Deconv, self).__init__(pointer(OpaqueDeconv()))
 
         self.num = num
+
+        self.time_length = 0
 
         fn = self._lib['deconvObj_new']
         fn.argtypes = [POINTER(POINTER(OpaqueDeconv)), c_int]
@@ -84,6 +86,7 @@ class Deconv(Base):
         fn = self._lib['deconvObj_setTimeLength']
         fn.argtypes = [POINTER(OpaqueDeconv), c_int]
         fn(self._obj, c_int(time_length))
+        self.time_length = time_length
 
     def deconv(self, m_data_arr):
         """
@@ -91,8 +94,8 @@ class Deconv(Base):
 
         Parameters
         ----------
-        m_data_arr: np.ndarray [shape=(fre, time)]
-            Spectrogram data
+        m_data_arr: np.ndarray [shape=(..., fre, time)]
+            Spectrogram data.
 
         Returns
         -------
@@ -102,9 +105,9 @@ class Deconv(Base):
         m_pitch_arr: np.ndarray [shape=(..., time)]
             The matrix of pitch
         """
-        if m_data_arr.ndim != 2:
-            raise ValueError(f'm_data_arr must be 2D array')
-        m_data_arr = ascontiguous_T(m_data_arr)
+        if m_data_arr.ndim < 2:
+            raise ValueError(f"m_data_arr's dimensions must be greater than 1")
+        m_data_arr = ascontiguous_swapaxex(m_data_arr, -1, -2)
 
         fn = self._lib['deconvObj_deconv']
         fn.argtypes = [POINTER(OpaqueDeconv),
@@ -113,13 +116,23 @@ class Deconv(Base):
                        np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS'),
                        ]
 
-        shape = m_data_arr.shape  # (time, fre)
-        m_tone_arr = np.zeros(shape, dtype=np.float32)
-        m_pitch_arr = np.zeros(shape, dtype=np.float32)
-        fn(self._obj, m_data_arr, m_tone_arr, m_pitch_arr)
+        if m_data_arr.ndim == 2:
+            m_tone_arr = np.zeros_like(m_data_arr, dtype=np.float32)
+            m_pitch_arr = np.zeros_like(m_data_arr, dtype=np.float32)
+            fn(self._obj, m_data_arr, m_tone_arr, m_pitch_arr)
+        else:
+            m_data_arr, o_channel_shape = format_channel(m_data_arr, 2)
+            channel_num, *_ = m_data_arr.shape
 
-        m_tone_arr = ascontiguous_T(m_tone_arr)
-        m_pitch_arr = ascontiguous_T(m_pitch_arr)
+            m_tone_arr = np.zeros_like(m_data_arr, dtype=np.float32)
+            m_pitch_arr = np.zeros_like(m_data_arr, dtype=np.float32)
+            for i in range(channel_num):
+                fn(self._obj, m_data_arr[i], m_tone_arr[i], m_pitch_arr[i])
+            m_tone_arr = revoke_channel(m_tone_arr, o_channel_shape, 2)
+            m_pitch_arr = revoke_channel(m_pitch_arr, o_channel_shape, 2)
+
+        m_tone_arr = ascontiguous_swapaxex(m_tone_arr, -1, -2)
+        m_pitch_arr = ascontiguous_swapaxex(m_pitch_arr, -1, -2)
         return m_tone_arr, m_pitch_arr
 
     def __del__(self):

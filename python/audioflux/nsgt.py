@@ -4,7 +4,7 @@ from ctypes import Structure, POINTER, pointer, c_int, c_float, c_void_p
 from audioflux.type import (NSGTFilterBankType, SpectralFilterBankScaleType, SpectralFilterBankStyleType,
                             SpectralFilterBankNormalType)
 from audioflux.base import Base
-from audioflux.utils import check_audio, check_audio_length, note_to_hz
+from audioflux.utils import check_audio, check_audio_length, format_channel, revoke_channel, note_to_hz
 
 __all__ = ['NSGT']
 
@@ -87,7 +87,7 @@ class NSGT(Base):
     >>> audio_arr, sr = af.read(audio_path)
     >>> # NSGT can only input fft_length data
     >>> # For radix2_exp=15, then fft_length=2**15=32768
-    >>> audio_arr = audio_arr[:32768]
+    >>> audio_arr = audio_arr[..., :32768]
 
     Create NSGT object of Octave
 
@@ -110,7 +110,7 @@ class NSGT(Base):
 
     >>> import matplotlib.pyplot as plt
     >>> from audioflux.display import fill_spec
-    >>> audio_len = audio_arr.shape[0]
+    >>> audio_len = audio_arr.shape[-1]
     >>> fig, ax = plt.subplots()
     >>> img = fill_spec(spec_arr, axes=ax,
     >>>                 x_coords=obj.x_coords(audio_len),
@@ -282,6 +282,7 @@ class NSGT(Base):
         fn = self._lib['nsgtObj_setMinLength']
         fn.argtypes = [POINTER(OpaqueNSGT), c_int]
         fn(self._obj, c_int(min_length))
+        self.min_len = min_length
 
     def nsgt(self, data_arr):
         """
@@ -289,16 +290,16 @@ class NSGT(Base):
 
         Parameters
         ----------
-        data_arr: np.ndarray [shape=(n,)]
+        data_arr: np.ndarray [shape=(..., 2**radix2_exp)]
             Input audio data
 
         Returns
         -------
-        m_data_arr: np.ndarray [shape=(fre, time), dtype=np.complex]
+        m_data_arr: np.ndarray [shape=(..., fre, time), dtype=np.complex]
             The matrix of NSGT
         """
         data_arr = np.asarray(data_arr, dtype=np.float32, order='C')
-        check_audio(data_arr)
+        check_audio(data_arr, is_mono=False)
         data_arr = check_audio_length(data_arr, self.radix2_exp)
 
         fn = self._lib['nsgtObj_nsgt']
@@ -310,13 +311,24 @@ class NSGT(Base):
         ]
 
         max_time_length = self.get_max_time_length()
-        m_real_arr = np.zeros((self.num, max_time_length), dtype=np.float32)
-        m_imag_arr = np.zeros((self.num, max_time_length), dtype=np.float32)
 
-        fn(self._obj, data_arr, m_real_arr, m_imag_arr)
-        m_data_arr = m_real_arr + m_imag_arr * 1j
+        if data_arr.ndim == 1:
+            m_real_arr = np.zeros((self.num, max_time_length), dtype=np.float32)
+            m_imag_arr = np.zeros((self.num, max_time_length), dtype=np.float32)
+            fn(self._obj, data_arr, m_real_arr, m_imag_arr)
+            m_nsgt_arr = m_real_arr + m_imag_arr * 1j
+        else:
+            data_arr, o_channel_shape = format_channel(data_arr, 1)
+            channel_num = data_arr.shape[0]
 
-        return m_data_arr
+            m_real_arr = np.zeros((channel_num, self.num, max_time_length), dtype=np.float32)
+            m_imag_arr = np.zeros((channel_num, self.num, max_time_length), dtype=np.float32)
+            for i in range(channel_num):
+                fn(self._obj, data_arr[i], m_real_arr[i], m_imag_arr[i])
+            m_nsgt_arr = m_real_arr + m_imag_arr * 1j
+            m_nsgt_arr = revoke_channel(m_nsgt_arr, o_channel_shape, 2)
+
+        return m_nsgt_arr
 
     def y_coords(self):
         """

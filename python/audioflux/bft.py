@@ -1,9 +1,10 @@
+from collections import defaultdict
 import numpy as np
 from ctypes import Structure, POINTER, pointer, c_int, c_float, c_void_p
 from audioflux.type import (SpectralFilterBankScaleType, SpectralFilterBankStyleType, SpectralFilterBankNormalType,
                             WindowType, SpectralDataType)
 from audioflux.base import Base
-from audioflux.utils import check_audio, ascontiguous_T, note_to_hz
+from audioflux.utils import check_audio, ascontiguous_swapaxex, format_channel, revoke_channel, note_to_hz
 
 __all__ = ["BFT"]
 
@@ -127,7 +128,7 @@ class BFT(Base):
 
     >>> import matplotlib.pyplot as plt
     >>> from audioflux.display import fill_spec
-    >>> audio_len = audio_arr.shape[0]
+    >>> audio_len = audio_arr.shape[-1]
     >>> fig, ax = plt.subplots()
     >>> img = fill_spec(spec_dB_arr, axes=ax,
     >>>                 x_coords=obj.x_coords(audio_len),
@@ -197,6 +198,10 @@ class BFT(Base):
         self.data_type = data_type
         self.is_reassign = is_reassign
         self.is_temporal = is_temporal
+
+        self.result_type = 0
+        self._temporal_cache = {}
+        self._is_temporal_cached = False
 
         fn = self._lib['bftObj_new']
         fn.argtypes = [POINTER(POINTER(OpaqueBFT)), c_int, c_int,
@@ -287,7 +292,8 @@ class BFT(Base):
 
         c_fn = self._lib['bftObj_setResultType']
         c_fn.argtypes = [POINTER(OpaqueBFT), c_int]
-        return c_fn(self._obj, c_int(result_type))
+        c_fn(self._obj, c_int(result_type))
+        self.result_type = result_type
 
     def set_data_norm_value(self, norm_value):
         """
@@ -307,7 +313,7 @@ class BFT(Base):
 
         Parameters
         ----------
-        data_arr: np.ndarray [shape=(n,)]
+        data_arr: np.ndarray [shape=(..., n)]
             Input audio data
 
         result_type: int，0 or 1
@@ -316,18 +322,21 @@ class BFT(Base):
 
         Returns
         -------
-        m_data_arr: np.ndarray [shape=(fre, time), dtype=np.complex]
+        m_data_arr: np.ndarray [shape=(..., fre, time), dtype=(np.complex or np.float32)]
             The matrix of BFT
         """
 
         data_arr = np.asarray(data_arr, dtype=np.float32, order='C')
-        check_audio(data_arr)
-        data_len = data_arr.shape[0]
+        check_audio(data_arr, is_mono=False)
+        data_len = data_arr.shape[-1]
         if data_len < self.fft_length:
             raise ValueError(f'radix2_exp={self.radix2_exp}(fft_length={self.fft_length}) '
                              f'is too large for data_arr length={data_len}')
+        self._temporal_cache.clear()
+        self._is_temporal_cached = False
 
-        self.set_result_type(result_type)
+        if result_type != self.result_type:
+            self.set_result_type(result_type)
 
         fn = self._lib['bftObj_bft']
         fn.argtypes = [POINTER(OpaqueBFT),
@@ -338,21 +347,80 @@ class BFT(Base):
                        ]
 
         time_len = self.cal_time_length(data_len)
-        size = (time_len, self.num)
-        m_real_arr = np.zeros(size, dtype=np.float32)
-        m_imag_arr = np.zeros(size, dtype=np.float32)
-
-        fn(self._obj, data_arr, c_int(data_len), m_real_arr, m_imag_arr)
-
-        if result_type == 0:
-            m_data_arr = m_real_arr + m_imag_arr * 1j
+        energy_arr, rms_arr, zcr_arr = None, None, None
+        if data_arr.ndim == 1:
+            m_real_arr = np.zeros((time_len, self.num), dtype=np.float32)
+            m_imag_arr = np.zeros((time_len, self.num), dtype=np.float32)
+            fn(self._obj, data_arr, c_int(data_len), m_real_arr, m_imag_arr)
+            if self.is_temporal:
+                energy_arr, rms_arr, zcr_arr = self._get_temporal_data(data_len)
         else:
-            m_data_arr = m_real_arr
-        return ascontiguous_T(m_data_arr)
+            data_arr, o_channel_shape = format_channel(data_arr, 1)
+            channel_num = data_arr.shape[0]
 
-    def get_temporal_data(self, data_length):
+            m_real_arr = np.zeros((channel_num, time_len, self.num), dtype=np.float32)
+            m_imag_arr = np.zeros((channel_num, time_len, self.num), dtype=np.float32)
+            _temporal_data_dic = defaultdict(list)
+            for i in range(channel_num):
+                fn(self._obj, data_arr[i], c_int(data_len), m_real_arr[i], m_imag_arr[i])
+                if self.is_temporal:
+                    _energy_arr, _rms_arr, _zcr_arr = self._get_temporal_data(data_len)
+                    _temporal_data_dic['energy'].append(_energy_arr)
+                    _temporal_data_dic['rms'].append(_rms_arr)
+                    _temporal_data_dic['zcr'].append(_zcr_arr)
+
+            m_real_arr = revoke_channel(m_real_arr, o_channel_shape, 2)
+            m_imag_arr = revoke_channel(m_imag_arr, o_channel_shape, 2)
+            if self.is_temporal:
+                energy_arr = np.stack(_temporal_data_dic['energy'], axis=0)
+                rms_arr = np.stack(_temporal_data_dic['rms'], axis=0)
+                zcr_arr = np.stack(_temporal_data_dic['zcr'], axis=0)
+                energy_arr = revoke_channel(energy_arr, o_channel_shape, 1)
+                rms_arr = revoke_channel(rms_arr, o_channel_shape, 1)
+                zcr_arr = revoke_channel(zcr_arr, o_channel_shape, 1)
+
+        if self.is_temporal:
+            self._temporal_cache['energy'] = energy_arr
+            self._temporal_cache['rms'] = rms_arr
+            self._temporal_cache['zcr'] = zcr_arr
+            self._is_temporal_cached = True
+        m_data_arr = (m_real_arr + m_imag_arr * 1j) if self.result_type == 0 else m_real_arr
+        m_data_arr = ascontiguous_swapaxex(m_data_arr, -1, -2)
+        return m_data_arr
+
+    def get_temporal_data(self):
         """
-        Get energy/rms/zeroCrossRate feature
+        Get energy/rms/zeroCrossRate feature.
+
+        Need to call `bft` method first.
+
+        Returns
+        -------
+        energy_arr: np.ndarray [shape=(..., time)]
+            energy feature
+
+        rms_arr: np.ndarray [shape=(..., time)]
+            rms feature
+
+        zero_cross_arr: np.ndarray [shape=(..., time)]
+            zero cross rate feature
+        """
+
+        if not self.is_temporal:
+            raise ValueError(f'Please set the parameter is_temporal=True when creating the BFT object')
+        if not self._is_temporal_cached:
+            raise ValueError(f'Please call the `BFT.bft()` method before calling this method')
+
+        energy_arr = self._temporal_cache.get('energy')
+        rms_arr = self._temporal_cache.get('rms')
+        zcr_arr = self._temporal_cache.get('zcr')
+        return energy_arr, rms_arr, zcr_arr
+
+    def _get_temporal_data(self, data_length):
+        """
+        Call the C function to get energy/rms/zeroCrossRate feature.
+
+        Need to call `bft` method first.
 
         Parameters
         ----------
@@ -384,19 +452,19 @@ class BFT(Base):
 
         pp_energy_arr = pointer(pointer(c_float()))
         pp_rms_arr = pointer(pointer(c_float()))
-        pp_zero_cross_arr = pointer(pointer(c_float()))
+        pp_zcr_arr = pointer(pointer(c_float()))
 
         fn(self._obj,
            pp_energy_arr,
            pp_rms_arr,
-           pp_zero_cross_arr
+           pp_zcr_arr
            )
 
         energy_arr = np.array([pp_energy_arr.contents[x] for x in range(time_length)], dtype=np.float32)
         rms_arr = np.array([pp_rms_arr.contents[x] for x in range(time_length)], dtype=np.float32)
-        zero_cross_arr = np.array([pp_zero_cross_arr.contents[x] for x in range(time_length)], dtype=np.float32)
+        zcr_arr = np.array([pp_zcr_arr.contents[x] for x in range(time_length)], dtype=np.float32)
 
-        return energy_arr, rms_arr, zero_cross_arr
+        return energy_arr, rms_arr, zcr_arr
 
     def y_coords(self):
         """
@@ -436,3 +504,6 @@ class BFT(Base):
             fn.argtypes = [POINTER(OpaqueBFT)]
             fn.restype = c_void_p
             fn(self._obj)
+
+            self._temporal_cache.clear()
+            self._is_temporal_cached = False

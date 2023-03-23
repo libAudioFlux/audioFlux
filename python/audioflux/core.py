@@ -30,7 +30,7 @@ def linear_spectrogram(X, num=None, radix2_exp=12, samplate=32000, slide_length=
 
     Parameters
     ----------
-    X: np.ndarray [shape=(n,)]
+    X: np.ndarray [shape=(..., n)]
         audio time series.
 
     num: int or None
@@ -79,7 +79,7 @@ def linear_spectrogram(X, num=None, radix2_exp=12, samplate=32000, slide_length=
 
     Returns
     -------
-    spectrogram: np.ndarray [shape=(fre, time)]
+    spectrogram: np.ndarray [shape=(..., fre, time)]
         The matrix of Linear(STFT)
 
     fre_band_arr: np:ndarray [shape=(fre,)]
@@ -118,8 +118,8 @@ def linear_spectrogram(X, num=None, radix2_exp=12, samplate=32000, slide_length=
     >>> import numpy as np
     >>>
     >>> # calculate x/y-coords
-    >>> audio_len = audio_arr.shape[0]
-    >>> x_coords = np.linspace(0, audio_len/sr, spec_arr.shape[1] + 1)
+    >>> audio_len = audio_arr.shape[-1]
+    >>> x_coords = np.linspace(0, audio_len/sr, spec_arr.shape[-1] + 1)
     >>> y_coords = np.insert(fre_band_arr, 0, low_fre)
     >>>
     >>> fig, ax = plt.subplots()
@@ -155,7 +155,7 @@ def mel_spectrogram(X, num=128, radix2_exp=12, samplate=32000,
 
     Parameters
     ----------
-    X: np.ndarray [shape=(n,)]
+    X: np.ndarray [shape=(..., n)]
         audio time series.
 
     num: int
@@ -206,7 +206,7 @@ def mel_spectrogram(X, num=128, radix2_exp=12, samplate=32000,
 
     Returns
     -------
-    spectrogram: np.ndarray [shape=(fre, time)]
+    spectrogram: np.ndarray [shape=(..., fre, time)]
         The matrix of MEL
 
     fre_band_arr: np:ndarray [shape=(fre,)]
@@ -245,8 +245,8 @@ def mel_spectrogram(X, num=128, radix2_exp=12, samplate=32000,
     >>> import numpy as np
     >>>
     >>> # calculate x/y-coords
-    >>> audio_len = audio_arr.shape[0]
-    >>> x_coords = np.linspace(0, audio_len/sr, spec_arr.shape[1] + 1)
+    >>> audio_len = audio_arr.shape[-1]
+    >>> x_coords = np.linspace(0, audio_len/sr, spec_arr.shape[-1] + 1)
     >>> y_coords = np.insert(fre_band_arr, 0, low_fre)
     >>>
     >>> fig, ax = plt.subplots()
@@ -283,7 +283,7 @@ def bark_spectrogram(X, num=128, radix2_exp=12, samplate=32000,
 
     Parameters
     ----------
-    X: np.ndarray [shape=(n,)]
+    X: np.ndarray [shape=(..., n)]
         audio time series.
 
     num: int
@@ -334,7 +334,7 @@ def bark_spectrogram(X, num=128, radix2_exp=12, samplate=32000,
 
     Returns
     -------
-    spectrogram: np.ndarray [shape=(fre, time)]
+    spectrogram: np.ndarray [shape=(..., fre, time)]
         The matrix of BARK
 
     fre_band_arr: np:ndarray [shape=(fre,)]
@@ -373,8 +373,8 @@ def bark_spectrogram(X, num=128, radix2_exp=12, samplate=32000,
     >>> import numpy as np
     >>>
     >>> # calculate x/y-coords
-    >>> audio_len = audio_arr.shape[0]
-    >>> x_coords = np.linspace(0, audio_len/sr, spec_arr.shape[1] + 1)
+    >>> audio_len = audio_arr.shape[-1]
+    >>> x_coords = np.linspace(0, audio_len/sr, spec_arr.shape[-1] + 1)
     >>> y_coords = np.insert(fre_band_arr, 0, low_fre)
     >>>
     >>> fig, ax = plt.subplots()
@@ -410,7 +410,7 @@ def erb_spectrogram(X, num=128, radix2_exp=12, samplate=32000,
 
     Parameters
     ----------
-    X: np.ndarray [shape=(n,)]
+    X: np.ndarray [shape=(..., n)]
         audio time series.
 
     num: int
@@ -461,7 +461,7 @@ def erb_spectrogram(X, num=128, radix2_exp=12, samplate=32000,
 
     Returns
     -------
-    out: np.ndarray [shape=(fre, time)]
+    out: np.ndarray [shape=(..., fre, time)]
         The matrix of ERB
 
     fre_band_arr: np:ndarray [shape=(fre,)]
@@ -500,8 +500,8 @@ def erb_spectrogram(X, num=128, radix2_exp=12, samplate=32000,
     >>> import numpy as np
     >>>
     >>> # calculate x/y-coords
-    >>> audio_len = audio_arr.shape[0]
-    >>> x_coords = np.linspace(0, audio_len/sr, spec_arr.shape[1] + 1)
+    >>> audio_len = audio_arr.shape[-1]
+    >>> x_coords = np.linspace(0, audio_len/sr, spec_arr.shape[-1] + 1)
     >>> y_coords = np.insert(fre_band_arr, 0, low_fre)
     >>>
     >>> fig, ax = plt.subplots()
@@ -533,7 +533,7 @@ def mfcc(X, cc_num=13, rectify_type=CepstralRectifyType.LOG,
 
     Parameters
     ----------
-    X: np.ndarray [shape=(n,)]
+    X: np.ndarray [shape=(..., n)]
         audio time series.
 
     cc_num: int
@@ -569,7 +569,7 @@ def mfcc(X, cc_num=13, rectify_type=CepstralRectifyType.LOG,
 
     Returns
     -------
-    out: np.ndarray [shape=(cc_num, time)]
+    out: np.ndarray [shape=(..., cc_num, time)]
         The matrix of MFCCs
 
     fre_band_arr: np:ndarray [shape=(fre,)]
@@ -604,8 +604,8 @@ def mfcc(X, cc_num=13, rectify_type=CepstralRectifyType.LOG,
     >>> import numpy as np
     >>>
     >>> # calculate x-coords
-    >>> audio_len = audio_arr.shape[0]
-    >>> x_coords = np.linspace(0, audio_len/sr, cc_arr.shape[1] + 1)
+    >>> audio_len = audio_arr.shape[-1]
+    >>> x_coords = np.linspace(0, audio_len/sr, cc_arr.shape[-1] + 1)
     >>>
     >>> fig, ax = plt.subplots()
     >>> img = fill_spec(cc_arr, axes=ax,
@@ -623,7 +623,7 @@ def mfcc(X, cc_num=13, rectify_type=CepstralRectifyType.LOG,
     spec_arr = bft_obj.bft(X)
 
     xxcc_obj = XXCC(num=bft_obj.num)
-    xxcc_obj.set_time_length(time_length=spec_arr.shape[1])
+    xxcc_obj.set_time_length(time_length=spec_arr.shape[-1])
     xxcc_arr = xxcc_obj.xxcc(spec_arr, cc_num=cc_num, rectify_type=rectify_type)
     fre_band_arr = bft_obj.get_fre_band_arr()
     return xxcc_arr, fre_band_arr
@@ -639,7 +639,7 @@ def bfcc(X, cc_num=13, rectify_type=CepstralRectifyType.LOG,
 
     Parameters
     ----------
-    X: np.ndarray [shape=(n,)]
+    X: np.ndarray [shape=(..., n)]
         audio time series.
 
     cc_num: int
@@ -675,7 +675,7 @@ def bfcc(X, cc_num=13, rectify_type=CepstralRectifyType.LOG,
 
     Returns
     -------
-    out: np.ndarray [shape=(cc_num, time)]
+    out: np.ndarray [shape=(..., cc_num, time)]
         The matrix of BFCCs
 
     fre_band_arr: np:ndarray [shape=(fre,)]
@@ -710,8 +710,8 @@ def bfcc(X, cc_num=13, rectify_type=CepstralRectifyType.LOG,
     >>> import numpy as np
     >>>
     >>> # calculate x-coords
-    >>> audio_len = audio_arr.shape[0]
-    >>> x_coords = np.linspace(0, audio_len/sr, cc_arr.shape[1] + 1)
+    >>> audio_len = audio_arr.shape[-1]
+    >>> x_coords = np.linspace(0, audio_len/sr, cc_arr.shape[-1] + 1)
     >>>
     >>> fig, ax = plt.subplots()
     >>> img = fill_spec(cc_arr, axes=ax,
@@ -729,7 +729,7 @@ def bfcc(X, cc_num=13, rectify_type=CepstralRectifyType.LOG,
     spec_arr = bft_obj.bft(X)
 
     xxcc_obj = XXCC(num=bft_obj.num)
-    xxcc_obj.set_time_length(time_length=spec_arr.shape[1])
+    xxcc_obj.set_time_length(time_length=spec_arr.shape[-1])
     xxcc_arr = xxcc_obj.xxcc(spec_arr, cc_num=cc_num, rectify_type=rectify_type)
     fre_band_arr = bft_obj.get_fre_band_arr()
     return xxcc_arr, fre_band_arr
@@ -745,7 +745,7 @@ def gtcc(X, cc_num=13, rectify_type=CepstralRectifyType.LOG,
 
     Parameters
     ----------
-    X: np.ndarray [shape=(n,)]
+    X: np.ndarray [shape=(..., n)]
         audio time series.
 
     cc_num: int
@@ -781,7 +781,7 @@ def gtcc(X, cc_num=13, rectify_type=CepstralRectifyType.LOG,
 
     Returns
     -------
-    out: np.ndarray [shape=(cc_num, time)]
+    out: np.ndarray [shape=(..., cc_num, time)]
         The matrix of GTCCs
 
     fre_band_arr: np:ndarray [shape=(fre,)]
@@ -816,8 +816,8 @@ def gtcc(X, cc_num=13, rectify_type=CepstralRectifyType.LOG,
     >>> import numpy as np
     >>>
     >>> # calculate x-coords
-    >>> audio_len = audio_arr.shape[0]
-    >>> x_coords = np.linspace(0, audio_len/sr, cc_arr.shape[1] + 1)
+    >>> audio_len = audio_arr.shape[-1]
+    >>> x_coords = np.linspace(0, audio_len/sr, cc_arr.shape[-1] + 1)
     >>>
     >>> fig, ax = plt.subplots()
     >>> img = fill_spec(cc_arr, axes=ax,
@@ -835,7 +835,7 @@ def gtcc(X, cc_num=13, rectify_type=CepstralRectifyType.LOG,
     spec_arr = bft_obj.bft(X)
 
     xxcc_obj = XXCC(num=bft_obj.num)
-    xxcc_obj.set_time_length(time_length=spec_arr.shape[1])
+    xxcc_obj.set_time_length(time_length=spec_arr.shape[-1])
     xxcc_arr = xxcc_obj.xxcc(spec_arr, cc_num=cc_num, rectify_type=rectify_type)
     fre_band_arr = bft_obj.get_fre_band_arr()
     return xxcc_arr, fre_band_arr
@@ -853,7 +853,7 @@ def cqcc(X, cc_num=13, rectify_type=CepstralRectifyType.LOG,
 
     Parameters
     ----------
-    X: np.ndarray [shape=(n,)]
+    X: np.ndarray [shape=(..., n)]
         audio time series.
 
     cc_num: int
@@ -894,7 +894,7 @@ def cqcc(X, cc_num=13, rectify_type=CepstralRectifyType.LOG,
 
     Returns
     -------
-    out: np.ndarray [shape=(cc_num, time)]
+    out: np.ndarray [shape=(..., cc_num, time)]
         The matrix of CQCCs
 
     fre_band_arr: np:ndarray [shape=(fre,)]
@@ -928,8 +928,8 @@ def cqcc(X, cc_num=13, rectify_type=CepstralRectifyType.LOG,
     >>> import numpy as np
     >>>
     >>> # calculate x-coords
-    >>> audio_len = audio_arr.shape[0]
-    >>> x_coords = np.linspace(0, audio_len/sr, cc_arr.shape[1] + 1)
+    >>> audio_len = audio_arr.shape[-1]
+    >>> x_coords = np.linspace(0, audio_len/sr, cc_arr.shape[-1] + 1)
     >>>
     >>> fig, ax = plt.subplots()
     >>> img = fill_spec(cc_arr, axes=ax,
@@ -959,7 +959,7 @@ def cqt(X, num=84, samplate=32000, low_fre=note_to_hz('C1'), bin_per_octave=12,
 
     Parameters
     ----------
-    X: np.ndarray [shape=(n,)]
+    X: np.ndarray [shape=(..., n)]
         audio time series.
 
     num: int
@@ -1000,7 +1000,7 @@ def cqt(X, num=84, samplate=32000, low_fre=note_to_hz('C1'), bin_per_octave=12,
 
     Returns
     -------
-    out: np.ndarray [shape=(num, time)]
+    out: np.ndarray [shape=(..., fre, time)]
         The matrix of CQT
 
     fre_band_arr: np:ndarray [shape=(fre,)]
@@ -1035,8 +1035,8 @@ def cqt(X, num=84, samplate=32000, low_fre=note_to_hz('C1'), bin_per_octave=12,
     >>> import numpy as np
     >>>
     >>> # calculate x/y-coords
-    >>> audio_len = audio_arr.shape[0]
-    >>> x_coords = np.linspace(0, audio_len/sr, spec_arr.shape[1] + 1)
+    >>> audio_len = audio_arr.shape[-1]
+    >>> x_coords = np.linspace(0, audio_len/sr, spec_arr.shape[-1] + 1)
     >>> y_coords = np.insert(fre_band_arr, 0, low_fre)
     >>>
     >>> fig, ax = plt.subplots()
@@ -1069,7 +1069,7 @@ def vqt(X, num=84, samplate=32000, low_fre=note_to_hz('C1'), bin_per_octave=12,
 
     Parameters
     ----------
-    X: np.ndarray [shape=(n,)]
+    X: np.ndarray [shape=(..., n)]
         audio time series.
 
     num: int
@@ -1113,7 +1113,7 @@ def vqt(X, num=84, samplate=32000, low_fre=note_to_hz('C1'), bin_per_octave=12,
 
     Returns
     -------
-    out: np.ndarray [shape=(num, time)]
+    out: np.ndarray [shape=(..., fre, time)]
         The matrix of VQT
 
     fre_band_arr: np:ndarray [shape=(fre,)]
@@ -1148,8 +1148,8 @@ def vqt(X, num=84, samplate=32000, low_fre=note_to_hz('C1'), bin_per_octave=12,
     >>> import numpy as np
     >>>
     >>> # calculate x/y-coords
-    >>> audio_len = audio_arr.shape[0]
-    >>> x_coords = np.linspace(0, audio_len/sr, spec_arr.shape[1] + 1)
+    >>> audio_len = audio_arr.shape[-1]
+    >>> x_coords = np.linspace(0, audio_len/sr, spec_arr.shape[-1] + 1)
     >>> y_coords = np.insert(fre_band_arr, 0, low_fre)
     >>>
     >>> fig, ax = plt.subplots()
@@ -1179,7 +1179,7 @@ def chroma_linear(X, chroma_num=12, radix2_exp=12, samplate=32000, low_fre=0., h
 
     Parameters
     ----------
-    X: np.ndarray [shape=(n,)]
+    X: np.ndarray [shape=(..., n)]
         audio time series.
 
     chroma_num: int
@@ -1222,7 +1222,7 @@ def chroma_linear(X, chroma_num=12, radix2_exp=12, samplate=32000, low_fre=0., h
 
     Returns
     -------
-    out: np.ndarray [shape=(chroma_num, time)]
+    out: np.ndarray [shape=(..., chroma_num, time)]
         The matrix of chroma_linear
 
     See Also
@@ -1250,8 +1250,8 @@ def chroma_linear(X, chroma_num=12, radix2_exp=12, samplate=32000, low_fre=0., h
     >>> import numpy as np
     >>>
     >>> # calculate x-coords
-    >>> audio_len = audio_arr.shape[0]
-    >>> x_coords = np.linspace(0, audio_len/sr, chroma_arr.shape[1] + 1)
+    >>> audio_len = audio_arr.shape[-1]
+    >>> x_coords = np.linspace(0, audio_len/sr, chroma_arr.shape[-1] + 1)
     >>>
     >>> fig, ax = plt.subplots()
     >>> img = fill_spec(chroma_arr, axes=ax,
@@ -1279,7 +1279,7 @@ def chroma_octave(X, chroma_num=12, radix2_exp=12, samplate=32000, low_fre=note_
 
     Parameters
     ----------
-    X: np.ndarray [shape=(n,)]
+    X: np.ndarray [shape=(..., n)]
         audio time series.
 
     chroma_num: int
@@ -1322,7 +1322,7 @@ def chroma_octave(X, chroma_num=12, radix2_exp=12, samplate=32000, low_fre=note_
 
     Returns
     -------
-    out: np.ndarray [shape=(chroma_num, time)]
+    out: np.ndarray [shape=(..., chroma_num, time)]
         The matrix of chroma_octave
 
     See Also
@@ -1350,8 +1350,8 @@ def chroma_octave(X, chroma_num=12, radix2_exp=12, samplate=32000, low_fre=note_
     >>> import numpy as np
     >>>
     >>> # calculate x-coords
-    >>> audio_len = audio_arr.shape[0]
-    >>> x_coords = np.linspace(0, audio_len/sr, chroma_arr.shape[1] + 1)
+    >>> audio_len = audio_arr.shape[-1]
+    >>> x_coords = np.linspace(0, audio_len/sr, chroma_arr.shape[-1] + 1)
     >>>
     >>> fig, ax = plt.subplots()
     >>> img = fill_spec(chroma_arr, axes=ax,
@@ -1382,7 +1382,7 @@ def chroma_cqt(X, chroma_num=12, num=84, samplate=32000, low_fre=note_to_hz('C1'
 
     Parameters
     ----------
-    X: np.ndarray [shape=(n,)]
+    X: np.ndarray [shape=(..., n)]
         audio time series.
 
     chroma_num: int
@@ -1426,7 +1426,7 @@ def chroma_cqt(X, chroma_num=12, num=84, samplate=32000, low_fre=note_to_hz('C1'
 
     Returns
     -------
-    out: np.ndarray [shape=(chroma_num, time)]
+    out: np.ndarray [shape=(..., chroma_num, time)]
         The matrix of CHROMA_CQT
 
     See Also
@@ -1454,8 +1454,8 @@ def chroma_cqt(X, chroma_num=12, num=84, samplate=32000, low_fre=note_to_hz('C1'
     >>> import numpy as np
     >>>
     >>> # calculate x-coords
-    >>> audio_len = audio_arr.shape[0]
-    >>> x_coords = np.linspace(0, audio_len/sr, chroma_arr.shape[1] + 1)
+    >>> audio_len = audio_arr.shape[-1]
+    >>> x_coords = np.linspace(0, audio_len/sr, chroma_arr.shape[-1] + 1)
     >>>
     >>> fig, ax = plt.subplots()
     >>> img = fill_spec(chroma_arr, axes=ax,

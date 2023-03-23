@@ -225,60 +225,31 @@ class FeatureExtractor(object):
         else:
             raise ValueError(f'transform name={name} is not supported')
 
-    # def _continue_spec(self, spec_fn, data_arr):
-    #
-    #     data_len = data_arr.shape[0]
-    #     win_len = self.fft_length
-    #     win_len_4 = self.fft_length // 4
-    #     step = win_len_4 * 2
-    #     win_count = ((data_len - win_len) // step) + 1
-    #
-    #     if win_count * step < data_len:
-    #         padding_size = (win_count + 1) * step + win_len - data_len
-    #         data_arr = np.pad(data_arr, (0, padding_size))
-    #         warnings.warn(f'The length of the last packet of data_arr is not enough '
-    #                       f'for fft_length={self.fft_length} calculation, '
-    #                       f'data_arr will be padded with {padding_size} zeros')
-    #
-    #     ret_arr = np.array([], dtype=np.float32).reshape(self.num, 0)
-    #     for i in range(win_count):
-    #         sample_arr = data_arr[i * step:i * step + self.fft_length].copy()
-    #         if sample_arr.shape[0] != self.fft_length:
-    #             break
-    #         cur_spec_arr = spec_fn(sample_arr)
-    #
-    #         start_idx = 0 if i == 0 else win_len_4
-    #         end_idx = self.fft_length if i == (win_count - 1) else (win_len_4 * 3)
-    #
-    #         valid_spec_arr = cur_spec_arr[:, start_idx:end_idx]
-    #         ret_arr = np.hstack((ret_arr, valid_spec_arr))
-    #     return ret_arr
     def _continue_spec(self, spec_fn, data_arr):
-
-        ret_arr = None
-        data_len = data_arr.shape[0]
+        data_len = data_arr.shape[-1]
         cur_spec_arr = None
         per_time_len = 0
+        ret_arr = []
         for i, sample_idx in enumerate(range(0, data_len, self.fft_length // 2)):
-            sample_arr = data_arr[sample_idx:sample_idx + self.fft_length].copy()
-            if sample_arr.shape[0] != self.fft_length:
+            sample_arr = data_arr[..., sample_idx:sample_idx + self.fft_length].copy()
+            if sample_arr.shape[-1] != self.fft_length:
                 break
             cur_spec_arr = spec_fn(sample_arr)
 
-            n_fre, n_time = cur_spec_arr.shape
+            n_time = cur_spec_arr.shape[-1]
             if n_time < 4:
                 raise ValueError(f'The length={n_time} of the time dimension of the spectrogram must be greater than 4')
-            if ret_arr is None:
-                ret_arr = np.array([], dtype=np.float32).reshape(n_fre, 0)
-
             per_time_len = n_time // 4
 
             start_idx = 0 if i == 0 else per_time_len
 
-            valid_spec_arr = cur_spec_arr[:, start_idx:per_time_len * 3]
-            ret_arr = np.hstack((ret_arr, valid_spec_arr))
+            valid_spec_arr = cur_spec_arr[..., :, start_idx:per_time_len * 3]
+            ret_arr.append(valid_spec_arr)
+        ret_arr = np.concatenate(ret_arr, axis=-1)
+
+        # The last part of the last package of stitching
         if cur_spec_arr is not None and per_time_len:
-            ret_arr = np.hstack((ret_arr, cur_spec_arr[:, per_time_len * 3:]))
+            ret_arr = np.concatenate((ret_arr, cur_spec_arr[..., :, per_time_len * 3:]), axis=-1)
         return ret_arr
 
     def _check_name(self, name):
@@ -312,7 +283,7 @@ class FeatureExtractor(object):
             spectrogram data
         """
         data_arr = np.asarray(data_arr, dtype=np.float32, order='C')
-        check_audio(data_arr)
+        check_audio(data_arr, is_mono=False)
 
         result = FeatureResult('spectrogram')
         for name, _obj in self._transforms.items():
@@ -337,11 +308,11 @@ class FeatureExtractor(object):
             else:
                 raise ValueError(f'name={name} is not supported')
 
-            use_continue = is_continue
-            if use_continue and name in (self._T_BFT, self._T_CQT):
-                use_continue = False
+            _need_continue = is_continue
+            if _need_continue and name in (self._T_BFT, self._T_CQT):
+                _need_continue = False
 
-            if use_continue:
+            if _need_continue:
                 spec_arr = self._continue_spec(spec_fn, data_arr)
             else:
                 spec_arr = spec_fn(data_arr)
@@ -382,7 +353,7 @@ class FeatureExtractor(object):
             _obj = self._transforms[name]
             xxcc_obj = XXCC(_obj.num)
             for spec in spec_list:
-                n_fre, n_time = spec.shape
+                n_time = spec.shape[-1]
                 xxcc_obj.set_time_length(n_time)
                 spec = spec_convert(spec)
                 xx_arr = xxcc_obj.xxcc(spec, cc_num=cc_num,
@@ -413,15 +384,17 @@ class FeatureExtractor(object):
         for name, spec_list in spec_result.items():
             if name not in self._transforms:
                 raise ValueError(f'name={name} not found in transforms')
+            if not spec_list:
+                continue
 
             _obj = self._transforms[name]
             deconv_obj = Deconv(_obj.num)
-            n_fre, n_time = spec_list[0].shape
+            n_time = spec_list[0].shape[-1]
             deconv_obj.set_time_length(n_time)
             for spec in spec_list:
                 spec = spec_convert(spec)
-                xx_arr = deconv_obj.deconv(spec)
-                result[name].append(xx_arr)
+                deconv_arr = deconv_obj.deconv(spec)
+                result[name].append(deconv_arr)
         return result
 
     def spectral(self, spec_result, spectral, spectral_kw=None, spec_convert=np.abs):
@@ -455,13 +428,15 @@ class FeatureExtractor(object):
         for name, spec_list in spec_result.items():
             if name not in self._transforms:
                 raise ValueError(f'name={name} not found in transforms')
+            if not spec_list:
+                continue
 
             _obj = self._transforms[name]
             spectral_obj = Spectral(num=_obj.num,
                                     fre_band_arr=_obj.get_fre_band_arr())
             if not hasattr(spectral_obj, spectral):
                 raise ValueError(f'spectral={spectral} function is not found')
-            n_fre, n_time = spec_list[0].shape
+            n_time = spec_list[0].shape[-1]
             spectral_obj.set_time_length(n_time)
             for spec in spec_list:
                 spec = spec_convert(spec)

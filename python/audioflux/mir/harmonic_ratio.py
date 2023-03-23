@@ -2,7 +2,7 @@ import numpy as np
 from ctypes import Structure, POINTER, pointer, c_int, c_void_p, c_float
 from audioflux.base import Base
 from audioflux.type import WindowType
-from audioflux.utils import check_audio, note_to_hz
+from audioflux.utils import check_audio, format_channel, revoke_channel, note_to_hz
 
 __all__ = ["HarmonicRatio"]
 
@@ -53,11 +53,11 @@ class HarmonicRatio(Base):
                        POINTER(c_int)]
 
         fn(self._obj,
-               pointer(c_int(self.samplate)),
-               pointer(c_float(self.low_fre)),
-               pointer(c_int(self.radix2_exp)),
-               pointer(c_int(self.window_type.value)),
-               pointer(c_int(self.slide_length)))
+           pointer(c_int(self.samplate)),
+           pointer(c_float(self.low_fre)),
+           pointer(c_int(self.radix2_exp)),
+           pointer(c_int(self.window_type.value)),
+           pointer(c_int(self.slide_length)))
         self._is_created = True
 
     def cal_time_length(self, data_length):
@@ -84,15 +84,15 @@ class HarmonicRatio(Base):
 
         Parameters
         ----------
-        data_arr: np.ndarray [shape=(n,)]
-            Input audio data array
+        data_arr: np.ndarray [shape=(..., n)]
+            Input audio data array.
 
         Returns
         -------
-        out: np.ndarray [shape=(time,)]
+        out: np.ndarray [shape=(..., time)]
         """
         data_arr = np.asarray(data_arr, dtype=np.float32, order='C')
-        check_audio(data_arr)
+        check_audio(data_arr, is_mono=False)
 
         fn = self._lib['harmonicRatioObj_harmonicRatio']
         fn.argtypes = [POINTER(OpaqueHarmonicRatio),
@@ -101,14 +101,21 @@ class HarmonicRatio(Base):
                        np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS'),
                        ]
 
-        data_len = data_arr.shape[0]
-
+        data_len = data_arr.shape[-1]
         time_length = self.cal_time_length(data_len)
 
-        value_arr = np.zeros(time_length, dtype=np.float32)
+        if data_arr.ndim == 1:
+            ret_arr = np.zeros(time_length, dtype=np.float32)
+            fn(self._obj, data_arr, c_int(data_len), ret_arr)
+        else:
+            data_arr, o_channel_shape = format_channel(data_arr, 1)
+            channel_num = data_arr.shape[0]
 
-        fn(self._obj, data_arr, c_int(data_len), value_arr)
-        return value_arr
+            ret_arr = np.zeros((channel_num, time_length), dtype=np.float32)
+            for i in range(channel_num):
+                fn(self._obj, data_arr[i], c_int(data_len), ret_arr[i])
+            ret_arr = revoke_channel(ret_arr, o_channel_shape, 1)
+        return ret_arr
 
     def __del__(self):
         if self._is_created:

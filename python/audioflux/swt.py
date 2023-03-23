@@ -2,7 +2,7 @@ import numpy as np
 from ctypes import Structure, POINTER, pointer, c_int, c_void_p
 from audioflux.type import WaveletDiscreteType
 from audioflux.base import Base
-from audioflux.utils import check_audio, check_audio_length
+from audioflux.utils import check_audio, format_channel, revoke_channel
 
 __all__ = ["SWT"]
 
@@ -140,15 +140,16 @@ class SWT(Base):
 
         Parameters
         ----------
-        data_arr: np.ndarray [shape=(n,)]
+        data_arr: np.ndarray [shape=(..., n)]
             Input audio data
 
         Returns
         -------
-        out: np.ndarray [shape=(fre, time)]
+        m_data_arr1: np.ndarray [shape=(..., fre, time)]
+        m_data_arr2: np.ndarray [shape=(..., fre, time)]
         """
         data_arr = np.asarray(data_arr, dtype=np.float32, order='C')
-        check_audio(data_arr)
+        check_audio(data_arr, is_mono=False)
 
         fn = self._lib['swtObj_swt']
         fn.argtypes = [POINTER(OpaqueSWT),
@@ -157,10 +158,20 @@ class SWT(Base):
                        np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS'),
                        ]
 
-        m_data_arr1 = np.zeros((self.num, self.fft_length), dtype=np.float32)
-        m_data_arr2 = np.zeros((self.num, self.fft_length), dtype=np.float32)
+        if data_arr.ndim == 1:
+            m_data_arr1 = np.zeros((self.num, self.fft_length), dtype=np.float32)
+            m_data_arr2 = np.zeros((self.num, self.fft_length), dtype=np.float32)
+            fn(self._obj, data_arr, m_data_arr1, m_data_arr2)
+        else:
+            data_arr, o_channel_shape = format_channel(data_arr, 1)
+            channel_num = data_arr.shape[0]
 
-        fn(self._obj, data_arr, m_data_arr1, m_data_arr2)
+            m_data_arr1 = np.zeros((channel_num, self.num, self.fft_length), dtype=np.float32)
+            m_data_arr2 = np.zeros((channel_num, self.num, self.fft_length), dtype=np.float32)
+            for i in range(channel_num):
+                fn(self._obj, data_arr[i], m_data_arr1[i], m_data_arr2[i])
+            m_data_arr1 = revoke_channel(m_data_arr1, o_channel_shape, 2)
+            m_data_arr2 = revoke_channel(m_data_arr2, o_channel_shape, 2)
         return m_data_arr1, m_data_arr2
 
     def __del__(self):
