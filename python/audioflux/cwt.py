@@ -125,7 +125,7 @@ class CWT(Base):
     >>> fig.colorbar(img, ax=ax)
     """
 
-    def __init__(self, num, radix2_exp=12, samplate=32000,
+    def __init__(self, num=84, radix2_exp=12, samplate=32000,
                  low_fre=None, high_fre=None, bin_per_octave=12,
                  wavelet_type=WaveletContinueType.MORSE,
                  scale_type=SpectralFilterBankScaleType.OCTAVE,
