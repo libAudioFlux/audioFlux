@@ -113,8 +113,8 @@ class PWT(Base):
     >>> fig.colorbar(img, ax=ax)
     """
 
-    def __init__(self, num, radix2_exp=12, samplate=32000,
-                 low_fre=0., high_fre=16000., bin_per_octave=12,
+    def __init__(self, num=84, radix2_exp=12, samplate=32000,
+                 low_fre=None, high_fre=None, bin_per_octave=12,
                  scale_type=SpectralFilterBankScaleType.OCTAVE,
                  style_type=SpectralFilterBankStyleType.SLANEY,
                  normal_type=SpectralFilterBankNormalType.NONE,
