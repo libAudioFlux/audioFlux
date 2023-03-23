@@ -130,7 +130,7 @@ class WSST(Base):
     >>> fig.colorbar(img, ax=ax)
     """
 
-    def __init__(self, num=0, radix2_exp=12, samplate=32000, low_fre=None, high_fre=None,
+    def __init__(self, num=84, radix2_exp=12, samplate=32000, low_fre=None, high_fre=None,
                  bin_per_octave=12, wavelet_type=WaveletContinueType.MORLET,
                  scale_type=SpectralFilterBankScaleType.OCTAVE,
                  gamma=None, beta=None, thresh=0.001, is_padding=True):
