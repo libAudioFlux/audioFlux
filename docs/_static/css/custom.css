@@ -19,6 +19,10 @@ div.wy-nav-content {
     max-width: 1000px;
 }
 
+div.rst-versions {
+    width: 330px !important;
+}
+
 @media screen and (max-width: 768px) {
     .wy-nav-side {
         left: -330px;

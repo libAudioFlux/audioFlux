@@ -7,7 +7,7 @@ The mir module contains the following algorithms:
     :maxdepth: 1
 
     pitch
-    onset
+    onsetBase
     hpss
 
 +-----------------+---------------------------------+

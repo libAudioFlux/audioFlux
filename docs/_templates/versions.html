@@ -1,0 +1,16 @@
+{% if switcher and switcher.json_url %}
+<script>
+  DOCUMENTATION_OPTIONS.switcher_version_json_url = '{{ switcher.json_url }}';
+</script>
+{# Add rst-badge after rst-versions for small badge style. #}
+  <div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="{{ _('Versions') }}">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      <span class="fa fa-book"> Read the Docs</span>
+    </span>
+    <div class="rst-other-versions">
+      <dl id="rst-version-dl">
+        <dt>{{ _('Versions') }}</dt>
+      </dl>
+    </div>
+  </div>
+{% endif %}

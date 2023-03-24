@@ -61,7 +61,7 @@ html_css_files = [
 ]
 
 html_js_files = [
-    'js/edit_github_url.js',
+    'js/custom.js',
 ]
 
 html_context = {
@@ -69,6 +69,9 @@ html_context = {
     "github_repo": "libAudioFlux/audioflux",  # Repo name
     "github_version": "master",  # Version
     "conf_py_path": "/docs/",  # Path in the checkout to the docs root
+    "switcher": {
+        "json_url": "https://audioflux.top/_static/versions.json"
+    }
 }
 
 html_theme_options = {
