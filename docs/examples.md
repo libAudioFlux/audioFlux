@@ -34,9 +34,9 @@ spec_arr = np.abs(spec_arr)
 mfcc_arr, _ = af.mfcc(audio_arr, cc_num=13, mel_num=128, radix2_exp=12, samplate=sr)
 
 # Display
-audio_len = audio_arr.shape[0]
+audio_len = audio_arr.shape[-1]
 # calculate x/y-coords
-x_coords = np.linspace(0, audio_len / sr, spec_arr.shape[1] + 1)
+x_coords = np.linspace(0, audio_len / sr, spec_arr.shape[-1] + 1)
 y_coords = np.insert(mel_fre_band_arr, 0, 0)
 fig, ax = plt.subplots()
 img = fill_spec(spec_arr, axes=ax,
@@ -75,7 +75,7 @@ sample_path = af.utils.sample_path('220')
 
 # Read audio data and sample rate
 audio_arr, sr = af.read(sample_path)
-audio_arr = audio_arr[:4096]
+audio_arr = audio_arr[..., :4096]
 
 cwt_obj = af.CWT(num=84, radix2_exp=12, samplate=sr, low_fre=note_to_hz('C1'),
                  bin_per_octave=12, wavelet_type=WaveletContinueType.MORSE,
@@ -136,7 +136,7 @@ cqt_arr = cqt_obj.cqt(audio_arr)
 chroma_cqt_arr = cqt_obj.chroma(cqt_arr)
 
 # Display
-audio_len = audio_arr.shape[0]
+audio_len = audio_arr.shape[-1]
 
 # Display CQT
 fig, ax = plt.subplots()
@@ -175,7 +175,7 @@ from audioflux.display import fill_spec, fill_wave
 
 # Read audio data and sample rate
 audio_arr, sr = af.read(af.utils.sample_path('220'))
-audio_arr = audio_arr[:4096]
+audio_arr = audio_arr[..., :4096]
 
 # Create CWT object of Octave and Extract spectrogram
 obj = af.CWT(num=84, radix2_exp=12, samplate=sr,
@@ -359,7 +359,7 @@ onset_obj = af.Onset(time_length=n_time, fre_length=n_fre,
                      novelty_type=NoveltyType.FLUX)
 point_arr, evn_arr, time_arr, value_arr = onset_obj.onset(spec_dB_arr)
 
-audio_len = audio_arr.shape[0]
+audio_len = audio_arr.shape[-1]
 fig, axes = plt.subplots(nrows=3, sharex=True)
 img = fill_spec(spec_dB_arr, axes=axes[0],
                 x_coords=bft_obj.x_coords(audio_len), y_coords=bft_obj.y_coords(),
@@ -406,7 +406,7 @@ bft_obj = af.BFT(num=2049, radix2_exp=12, samplate=sr,
                  data_type=SpectralDataType.POWER,
                  scale_type=SpectralFilterBankScaleType.LINEAR)
 
-audio_arr = audio_arr[:len(h_arr)]
+audio_arr = audio_arr[..., :h_arr.shape[-1]]
 
 origin_spec_arr = bft_obj.bft(audio_arr, result_type=1)
 h_spec_arr = bft_obj.bft(h_arr, result_type=1)
