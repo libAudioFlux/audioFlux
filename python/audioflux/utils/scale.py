@@ -21,11 +21,13 @@ def min_max_scale(X):
     Parameters
     ----------
     X: np.ndarray [shape=(n_samples, n_features)]
-        Input array
+        Input array.
 
     Returns
     -------
-
+    out: np.ndarray [shape=(n_samples, n_features)]
+        Transformed array.
+        
     """""
     X = np.asarray(X, dtype=np.float32, order='C')
     fn = get_fft_lib()['util_minMaxScale']
@@ -53,7 +55,7 @@ def stand_scale(X, tp: int = 1):
     Parameters
     ----------
     X: np.ndarray (n_samples, n_features)
-        Input array
+        Input array.
 
     tp: int
         - 0 sample variance
@@ -61,7 +63,8 @@ def stand_scale(X, tp: int = 1):
 
     Returns
     -------
-
+    out: np.ndarray [shape=(n_samples, n_features)]
+        Transformed array.
     """
     X = np.asarray(X, dtype=np.float32, order='C')
     fn = get_fft_lib()['util_standScale']
@@ -90,11 +93,12 @@ def max_abs_scale(X):
     Parameters
     ----------
     X: np.ndarray (n_samples, n_features)
-        Input array
+        Input array.
 
     Returns
     -------
-
+    out: np.ndarray [shape=(n_samples, n_features)]
+        Transformed array.
     """
     X = np.asarray(X, dtype=np.float32, order='C')
     fn = get_fft_lib()['util_maxAbsScale']
@@ -126,7 +130,8 @@ def robust_scale(X):
 
     Returns
     -------
-
+    out: np.ndarray [shape=(n_samples, n_features)]
+        Transformed array.
     """
     X = np.asarray(X, dtype=np.float32, order='C')
     fn = get_fft_lib()['util_robustScale']
@@ -158,6 +163,8 @@ def center_scale(X):
 
     Returns
     -------
+    out: np.ndarray [shape=(n_samples, n_features)]
+        Transformed array.
 
     """
     X = np.asarray(X, dtype=np.float32, order='C')
@@ -190,6 +197,8 @@ def mean_scale(X):
 
     Returns
     -------
+    out: np.ndarray [shape=(n_samples, n_features)]
+        Transformed array.
 
     """
     X = np.asarray(X, dtype=np.float32, order='C')
@@ -220,9 +229,10 @@ def arctan_scale(X):
     X: np.ndarray (n_samples, n_features)
         Input array
 
-
     Returns
     -------
+    out: np.ndarray [shape=(n_samples, n_features)]
+        Transformed array.
 
     """
     X = np.asarray(X, dtype=np.float32, order='C')

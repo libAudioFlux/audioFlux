@@ -20,13 +20,13 @@ Extract cwt
                      scale_type=SpectralFilterBankScaleType.OCTAVE)
 
     # The cwt() method can only extract data of fft_length=2**radix2_exp=4096
-    cwt_arr = cwt_obj.cwt(audio_arr[:4096])
+    cwt_arr = cwt_obj.cwt(audio_arr[..., :4096])
     cwt_arr = np.abs(cwt_arr)
 
     # Display spectrogram
     import matplotlib.pyplot as plt
     from audioflux.display import fill_spec
-    audio_len = audio_arr.shape[0]
+    audio_len = audio_arr.shape[-1]
     fig, ax = plt.subplots()
     img = fill_spec(cwt_arr, axes=ax,
               x_coords=cwt_obj.x_coords(),

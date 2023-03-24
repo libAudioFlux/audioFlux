@@ -3,7 +3,7 @@ import ctypes
 from ctypes import Structure, POINTER, pointer, c_int, c_float, c_void_p, c_size_t
 from audioflux.type import SpectralNoveltyMethodType, SpectralNoveltyDataType
 from audioflux.base import Base
-from audioflux.utils import ascontiguous_T
+from audioflux.utils import ascontiguous_swapaxex, format_channel, revoke_channel
 
 __all__ = ["Spectral"]
 
@@ -30,8 +30,9 @@ class Spectral(Base):
         super(Spectral, self).__init__(pointer(OpaqueSpectral()))
 
         self.num = num
-        self.fre_band_arr = np.asarray(fre_band_arr, dtype=np.float32)
+        self.fre_band_arr = np.asarray(fre_band_arr, dtype=np.float32, order='C')
 
+        self.time_length = 0
         fn = self._lib['spectralObj_new']
         fn.argtypes = [POINTER(POINTER(OpaqueSpectral)),
                        c_int,
@@ -55,8 +56,9 @@ class Spectral(Base):
             c_int
         ]
         fn(self._obj, c_int(time_length))
+        self.time_length = time_length
 
-    def set_edge(self, start: int, end: int):
+    def set_edge(self, start, end):
         """
         Set edge
 
@@ -86,9 +88,13 @@ class Spectral(Base):
 
         Parameters
         ----------
-        index_arr: np.ndarray [shape=(n,)]
+        index_arr: np.ndarray [shape=(n,), dtype=np.int32]
             fre index array
         """
+
+        index_arr = np.asarray(index_arr, dtype=np.int32, order='C')
+        if index_arr.ndim != 1:
+            raise ValueError(f'index_arr must be a 1D array.')
 
         fn = self._lib['spectralObj_setEdgeArr']
         fn.argtypes = [
@@ -122,12 +128,12 @@ class Spectral(Base):
 
         Parameters
         ----------
-        m_data_arr: np.ndarray [shape=(fre, time)]
-            Spectrogram data
+        m_data_arr: np.ndarray [shape=(..., fre, time)]
+            Spectrogram data.
 
         Returns
         -------
-        flatness: np.ndarray [shape=(time,)]
+        flatness: np.ndarray [shape=(..., time)]
             flatness frequency for each time
 
         Examples
@@ -153,7 +159,7 @@ class Spectral(Base):
 
         >>> spectral_obj = af.Spectral(num=bft_obj.num,
         >>>                            fre_band_arr=bft_obj.get_fre_band_arr())
-        >>> n_time = spec_arr.shape[1]  # Or use bft_obj.cal_time_length(len(audio_arr))
+        >>> n_time = spec_arr.shape[-1]  # Or use bft_obj.cal_time_length(audio_arr.shape[-1])
         >>> spectral_obj.set_time_length(n_time)
         >>> flatness_arr = spectral_obj.flatness(spec_arr)
 
@@ -166,7 +172,7 @@ class Spectral(Base):
         >>> times = np.arange(0, len(flatness_arr)) * (bft_obj.slide_length / bft_obj.samplate)
         >>> fill_plot(times, flatness_arr, axes=ax[1], label='flatness')
         """
-        m_data_arr = ascontiguous_T(m_data_arr, dtype=np.float32)
+        m_data_arr = ascontiguous_swapaxex(m_data_arr, -1, -2)
 
         fn = self._lib['spectralObj_flatness']
         fn.argtypes = [
@@ -174,10 +180,19 @@ class Spectral(Base):
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS'),
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS')
         ]
-        n_len, m_len = m_data_arr.shape  # t * f
-        ret = np.zeros(n_len, dtype=np.float32)
-        fn(self._obj, m_data_arr, ret)
-        return ret
+        *_, n_len, m_len = m_data_arr.shape  # t * f
+        if m_data_arr.ndim == 2:
+            ret_arr = np.zeros(n_len, dtype=np.float32)
+            fn(self._obj, m_data_arr, ret_arr)
+        else:
+            m_data_arr, o_channel_shape = format_channel(m_data_arr, 2)
+            channel_num = m_data_arr.shape[0]
+
+            ret_arr = np.zeros((channel_num, n_len), dtype=np.float32)
+            for i in range(channel_num):
+                fn(self._obj, m_data_arr[i], ret_arr[i])
+            ret_arr = revoke_channel(ret_arr, o_channel_shape, 1)
+        return ret_arr
 
     def flux(self, m_data_arr, step=1, p=2, is_positive=False, is_no_exp=True, tp=0):
         """
@@ -192,8 +207,8 @@ class Spectral(Base):
 
         Parameters
         ----------
-        m_data_arr: np.ndarray [shape=(fre, time)]
-            Spectrogram data
+        m_data_arr: np.ndarray [shape=(..., fre, time)]
+            Spectrogram data.
 
         step: int
             Compute time axis steps, like 1/2/3/...
@@ -212,7 +227,7 @@ class Spectral(Base):
 
         Returns
         -------
-        flux: np.ndarray [shape=(time,)]
+        flux: np.ndarray [shape=(..., time)]
             flux frequency for each time
 
         Examples
@@ -238,7 +253,7 @@ class Spectral(Base):
 
         >>> spectral_obj = af.Spectral(num=bft_obj.num,
         >>>                            fre_band_arr=bft_obj.get_fre_band_arr())
-        >>> n_time = spec_arr.shape[1]  # Or use bft_obj.cal_time_length(len(audio_arr))
+        >>> n_time = spec_arr.shape[-1]  # Or use bft_obj.cal_time_length(audio_arr.shape[-1])
         >>> spectral_obj.set_time_length(n_time)
         >>> flux_arr = spectral_obj.flux(spec_arr)
 
@@ -251,7 +266,7 @@ class Spectral(Base):
         >>> times = np.arange(0, len(flux_arr)) * (bft_obj.slide_length / bft_obj.samplate)
         >>> fill_plot(times, flux_arr, axes=ax[1], label='flux')
         """
-        m_data_arr = ascontiguous_T(m_data_arr, dtype=np.float32)
+        m_data_arr = ascontiguous_swapaxex(m_data_arr, -1, -2)
 
         fn = self._lib['spectralObj_flux']
         fn.argtypes = [
@@ -261,17 +276,33 @@ class Spectral(Base):
             POINTER(c_int), POINTER(c_int),
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS')
         ]
-        time_len, _ = m_data_arr.shape  # t * n
-        ret = np.zeros(time_len, dtype=np.float32)
-        fn(self._obj,
-           m_data_arr,
-           c_int(step),
-           c_float(p),
-           c_int(int(is_positive)),
-           pointer(c_int(int(is_no_exp))),
-           pointer(c_int(tp)),
-           ret)
-        return ret
+        *_, n_time, n_fre = m_data_arr.shape  # t * n
+        if m_data_arr.ndim == 2:
+            ret_arr = np.zeros(n_time, dtype=np.float32)
+            fn(self._obj,
+               m_data_arr,
+               c_int(step),
+               c_float(p),
+               c_int(int(is_positive)),
+               pointer(c_int(int(is_no_exp))),
+               pointer(c_int(tp)),
+               ret_arr)
+        else:
+            m_data_arr, o_channel_shape = format_channel(m_data_arr, 2)
+            channel_num = m_data_arr.shape[0]
+
+            ret_arr = np.zeros((channel_num, n_time), dtype=np.float32)
+            for i in range(channel_num):
+                fn(self._obj,
+                   m_data_arr[i],
+                   c_int(step),
+                   c_float(p),
+                   c_int(int(is_positive)),
+                   pointer(c_int(int(is_no_exp))),
+                   pointer(c_int(tp)),
+                   ret_arr[i])
+            ret_arr = revoke_channel(ret_arr, o_channel_shape, 1)
+        return ret_arr
 
     def rolloff(self, m_data_arr, threshold=0.95):
         """
@@ -285,15 +316,15 @@ class Spectral(Base):
 
         Parameters
         ----------
-        m_data_arr: np.ndarray [shape=(fre, time)]
-            Spectrogram data
+        m_data_arr: np.ndarray [shape=(..., fre, time)]
+            Spectrogram data.
 
         threshold: float, [0,1]
             rolloff threshold. Generally take 0.95 or 0.85.
 
         Returns
         -------
-        rolloff: np.ndarray [shape=(time,)]
+        rolloff: np.ndarray [shape=(..., time)]
             rolloff frequency for each time
 
         Examples
@@ -319,7 +350,7 @@ class Spectral(Base):
 
         >>> spectral_obj = af.Spectral(num=bft_obj.num,
         >>>                            fre_band_arr=bft_obj.get_fre_band_arr())
-        >>> n_time = spec_arr.shape[1]  # Or use bft_obj.cal_time_length(len(audio_arr))
+        >>> n_time = spec_arr.shape[-1]  # Or use bft_obj.cal_time_length(audio_arr.shape[-1])
         >>> spectral_obj.set_time_length(n_time)
         >>> rolloff_arr = spectral_obj.rolloff(spec_arr)
 
@@ -335,7 +366,7 @@ class Spectral(Base):
         if not 0 <= threshold <= 1:
             raise ValueError(f'threshold must be 0 or 1')
 
-        m_data_arr = ascontiguous_T(m_data_arr, dtype=np.float32)
+        m_data_arr = ascontiguous_swapaxex(m_data_arr, -1, -2)
 
         fn = self._lib['spectralObj_rolloff']
         fn.argtypes = [
@@ -344,10 +375,20 @@ class Spectral(Base):
             c_float,
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS')
         ]
-        n_len, m_len = m_data_arr.shape  # t * n
-        ret = np.zeros(n_len, dtype=np.float32)
-        fn(self._obj, m_data_arr, c_float(threshold), ret)
-        return ret
+        *_, n_len, m_len = m_data_arr.shape  # t * n
+        if m_data_arr.ndim == 2:
+            ret_arr = np.zeros(n_len, dtype=np.float32)
+            fn(self._obj, m_data_arr, c_float(threshold), ret_arr)
+        else:
+            m_data_arr, o_channel_shape = format_channel(m_data_arr, 2)
+            channel_num = m_data_arr.shape[0]
+
+            ret_arr = np.zeros((channel_num, n_len), dtype=np.float32)
+            for i in range(channel_num):
+                fn(self._obj, m_data_arr[i], c_float(threshold), ret_arr[i])
+            ret_arr = revoke_channel(ret_arr, o_channel_shape, 1)
+
+        return ret_arr
 
     def centroid(self, m_data_arr):
         """
@@ -361,12 +402,12 @@ class Spectral(Base):
 
         Parameters
         ----------
-        m_data_arr: np.ndarray [shape=(fre, time)]
-            Spectrogram data
+        m_data_arr: np.ndarray [shape=(..., fre, time)]
+            Spectrogram data.
 
         Returns
         -------
-        centroid: np.ndarray [shape=(time,)]
+        centroid: np.ndarray [shape=(..., time)]
             centroid frequency for each time
 
         Examples
@@ -392,7 +433,7 @@ class Spectral(Base):
 
         >>> spectral_obj = af.Spectral(num=bft_obj.num,
         >>>                            fre_band_arr=bft_obj.get_fre_band_arr())
-        >>> n_time = spec_arr.shape[1]  # Or use bft_obj.cal_time_length(len(audio_arr))
+        >>> n_time = spec_arr.shape[-1]  # Or use bft_obj.cal_time_length(audio_arr.shape[-1])
         >>> spectral_obj.set_time_length(n_time)
         >>> centroid_arr = spectral_obj.centroid(spec_arr)
 
@@ -405,7 +446,7 @@ class Spectral(Base):
         >>> times = np.arange(0, len(centroid_arr)) * (bft_obj.slide_length / bft_obj.samplate)
         >>> fill_plot(times, centroid_arr, axes=ax[1], label='centroid')
         """
-        m_data_arr = ascontiguous_T(m_data_arr, dtype=np.float32)
+        m_data_arr = ascontiguous_swapaxex(m_data_arr, -1, -2)
 
         fn = self._lib['spectralObj_centroid']
         fn.argtypes = [
@@ -413,10 +454,19 @@ class Spectral(Base):
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS'),
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS')
         ]
-        n_len, m_len = m_data_arr.shape  # t * n
-        ret = np.zeros(n_len, dtype=np.float32)
-        fn(self._obj, m_data_arr, ret)
-        return ret
+        *_, n_len, m_len = m_data_arr.shape  # t * n
+        if m_data_arr.ndim == 2:
+            ret_arr = np.zeros(n_len, dtype=np.float32)
+            fn(self._obj, m_data_arr, ret_arr)
+        else:
+            m_data_arr, o_channel_shape = format_channel(m_data_arr, 2)
+            channel_num = m_data_arr.shape[0]
+
+            ret_arr = np.zeros((channel_num, n_len), dtype=np.float32)
+            for i in range(channel_num):
+                fn(self._obj, m_data_arr[i], ret_arr[i])
+            ret_arr = revoke_channel(ret_arr, o_channel_shape, 1)
+        return ret_arr
 
     def spread(self, m_data_arr):
         """
@@ -431,12 +481,12 @@ class Spectral(Base):
 
         Parameters
         ----------
-        m_data_arr: np.ndarray [shape=(fre, time)]
-            Spectrogram data
+        m_data_arr: np.ndarray [shape=(..., fre, time)]
+            Spectrogram data.
 
         Returns
         -------
-        spread: np.ndarray [shape=(time,)]
+        spread: np.ndarray [shape=(..., time)]
             spread frequency for each time
 
         Examples
@@ -462,7 +512,7 @@ class Spectral(Base):
 
         >>> spectral_obj = af.Spectral(num=bft_obj.num,
         >>>                            fre_band_arr=bft_obj.get_fre_band_arr())
-        >>> n_time = spec_arr.shape[1]  # Or use bft_obj.cal_time_length(len(audio_arr))
+        >>> n_time = spec_arr.shape[-1]  # Or use bft_obj.cal_time_length(audio_arr.shape[-1])
         >>> spectral_obj.set_time_length(n_time)
         >>> spread_arr = spectral_obj.spread(spec_arr)
 
@@ -475,7 +525,7 @@ class Spectral(Base):
         >>> times = np.arange(0, len(spread_arr)) * (bft_obj.slide_length / bft_obj.samplate)
         >>> fill_plot(times, spread_arr, axes=ax[1], label='spread')
         """
-        m_data_arr = ascontiguous_T(m_data_arr, dtype=np.float32)
+        m_data_arr = ascontiguous_swapaxex(m_data_arr, -1, -2)
 
         fn = self._lib['spectralObj_spread']
         fn.argtypes = [
@@ -483,10 +533,21 @@ class Spectral(Base):
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS'),
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS')
         ]
-        n_len, m_len = m_data_arr.shape  # t * n
-        ret = np.zeros(n_len, dtype=np.float32)
-        fn(self._obj, m_data_arr, ret)
-        return ret
+
+        *_, n_len, m_len = m_data_arr.shape  # t * n
+        if m_data_arr.ndim == 2:
+            ret_arr = np.zeros(n_len, dtype=np.float32)
+            fn(self._obj, m_data_arr, ret_arr)
+        else:
+            m_data_arr, o_channel_shape = format_channel(m_data_arr, 2)
+            channel_num = m_data_arr.shape[0]
+
+            ret_arr = np.zeros((channel_num, n_len), dtype=np.float32)
+            for i in range(channel_num):
+                fn(self._obj, m_data_arr[i], ret_arr[i])
+            ret_arr = revoke_channel(ret_arr, o_channel_shape, 1)
+
+        return ret_arr
 
     def skewness(self, m_data_arr):
         """
@@ -502,12 +563,12 @@ class Spectral(Base):
 
         Parameters
         ----------
-        m_data_arr: np.ndarray [shape=(fre, time)]
-            Spectrogram data
+        m_data_arr: np.ndarray [shape=(..., fre, time)]
+            Spectrogram data.
 
         Returns
         -------
-        skewness: np.ndarray [shape=(time,)]
+        skewness: np.ndarray [shape=(..., time)]
             skewness frequency for each time
 
         Examples
@@ -533,7 +594,7 @@ class Spectral(Base):
 
         >>> spectral_obj = af.Spectral(num=bft_obj.num,
         >>>                            fre_band_arr=bft_obj.get_fre_band_arr())
-        >>> n_time = spec_arr.shape[1]  # Or use bft_obj.cal_time_length(len(audio_arr))
+        >>> n_time = spec_arr.shape[-1]  # Or use bft_obj.cal_time_length(audio_arr.shape[-1])
         >>> spectral_obj.set_time_length(n_time)
         >>> skewness_arr = spectral_obj.skewness(spec_arr)
 
@@ -546,7 +607,7 @@ class Spectral(Base):
         >>> times = np.arange(0, len(skewness_arr)) * (bft_obj.slide_length / bft_obj.samplate)
         >>> fill_plot(times, skewness_arr, axes=ax[1], label='skewness')
         """
-        m_data_arr = ascontiguous_T(m_data_arr, dtype=np.float32)
+        m_data_arr = ascontiguous_swapaxex(m_data_arr, -1, -2)
 
         fn = self._lib['spectralObj_skewness']
         fn.argtypes = [
@@ -554,10 +615,21 @@ class Spectral(Base):
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS'),
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS')
         ]
-        n_len, m_len = m_data_arr.shape  # t * n
-        ret = np.zeros(n_len, dtype=np.float32)
-        fn(self._obj, m_data_arr, ret)
-        return ret
+
+        *_, n_len, m_len = m_data_arr.shape  # t * n
+        if m_data_arr.ndim == 2:
+            ret_arr = np.zeros(n_len, dtype=np.float32)
+            fn(self._obj, m_data_arr, ret_arr)
+        else:
+            m_data_arr, o_channel_shape = format_channel(m_data_arr, 2)
+            channel_num = m_data_arr.shape[0]
+
+            ret_arr = np.zeros((channel_num, n_len), dtype=np.float32)
+            for i in range(channel_num):
+                fn(self._obj, m_data_arr[i], ret_arr[i])
+            ret_arr = revoke_channel(ret_arr, o_channel_shape, 1)
+
+        return ret_arr
 
     def kurtosis(self, m_data_arr):
         """
@@ -573,12 +645,12 @@ class Spectral(Base):
 
         Parameters
         ----------
-        m_data_arr: np.ndarray [shape=(fre, time)]
-            Spectrogram data
+        m_data_arr: np.ndarray [shape=(..., fre, time)]
+            Spectrogram data.
 
         Returns
         -------
-        kurtosis: np.ndarray [shape=(time,)]
+        kurtosis: np.ndarray [shape=(..., time)]
             kurtosis frequency for each time
 
         Examples
@@ -604,7 +676,7 @@ class Spectral(Base):
 
         >>> spectral_obj = af.Spectral(num=bft_obj.num,
         >>>                            fre_band_arr=bft_obj.get_fre_band_arr())
-        >>> n_time = spec_arr.shape[1]  # Or use bft_obj.cal_time_length(len(audio_arr))
+        >>> n_time = spec_arr.shape[-1]  # Or use bft_obj.cal_time_length(audio_arr.shape[-1])
         >>> spectral_obj.set_time_length(n_time)
         >>> kurtosis_arr = spectral_obj.kurtosis(spec_arr)
 
@@ -617,7 +689,7 @@ class Spectral(Base):
         >>> times = np.arange(0, len(kurtosis_arr)) * (bft_obj.slide_length / bft_obj.samplate)
         >>> fill_plot(times, kurtosis_arr, axes=ax[1], label='kurtosis')
         """
-        m_data_arr = ascontiguous_T(m_data_arr, dtype=np.float32)
+        m_data_arr = ascontiguous_swapaxex(m_data_arr, -1, -2)
 
         fn = self._lib['spectralObj_kurtosis']
         fn.argtypes = [
@@ -625,10 +697,19 @@ class Spectral(Base):
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS'),
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS')
         ]
-        n_len, m_len = m_data_arr.shape  # t * n
-        ret = np.zeros(n_len, dtype=np.float32)
-        fn(self._obj, m_data_arr, ret)
-        return ret
+        *_, n_len, m_len = m_data_arr.shape  # t * n
+        if m_data_arr.ndim == 2:
+            ret_arr = np.zeros(n_len, dtype=np.float32)
+            fn(self._obj, m_data_arr, ret_arr)
+        else:
+            m_data_arr, o_channel_shape = format_channel(m_data_arr, 2)
+            channel_num = m_data_arr.shape[0]
+
+            ret_arr = np.zeros((channel_num, n_len), dtype=np.float32)
+            for i in range(channel_num):
+                fn(self._obj, m_data_arr[i], ret_arr[i])
+            ret_arr = revoke_channel(ret_arr, o_channel_shape, 1)
+        return ret_arr
 
     def entropy(self, m_data_arr, is_norm=False):
         """
@@ -647,15 +728,15 @@ class Spectral(Base):
 
         Parameters
         ----------
-        m_data_arr: np.ndarray [shape=(fre, time)]
-            Spectrogram data
+        m_data_arr: np.ndarray [shape=(..., fre, time)]
+            Spectrogram data.
 
         is_norm: bool
             Whether to norm
 
         Returns
         -------
-        entropy: np.ndarray [shape=(time,)]
+        entropy: np.ndarray [shape=(..., time)]
             entropy frequency for each time
 
         Examples
@@ -681,7 +762,7 @@ class Spectral(Base):
 
         >>> spectral_obj = af.Spectral(num=bft_obj.num,
         >>>                            fre_band_arr=bft_obj.get_fre_band_arr())
-        >>> n_time = spec_arr.shape[1]  # Or use bft_obj.cal_time_length(len(audio_arr))
+        >>> n_time = spec_arr.shape[-1]  # Or use bft_obj.cal_time_length(audio_arr.shape[-1])
         >>> spectral_obj.set_time_length(n_time)
         >>> entropy_arr = spectral_obj.entropy(spec_arr)
 
@@ -694,7 +775,7 @@ class Spectral(Base):
         >>> times = np.arange(0, len(entropy_arr)) * (bft_obj.slide_length / bft_obj.samplate)
         >>> fill_plot(times, entropy_arr, axes=ax[1], label='entropy')
         """
-        m_data_arr = ascontiguous_T(m_data_arr, dtype=np.float32)
+        m_data_arr = ascontiguous_swapaxex(m_data_arr, -1, -2)
 
         fn = self._lib['spectralObj_entropy']
         fn.argtypes = [
@@ -703,10 +784,20 @@ class Spectral(Base):
             c_int,
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS')
         ]
-        n_len, m_len = m_data_arr.shape  # t * n
-        ret = np.zeros(n_len, dtype=np.float32)
-        fn(self._obj, m_data_arr, c_int(int(is_norm)), ret)
-        return ret
+        *_, n_len, m_len = m_data_arr.shape  # t * n
+        if m_data_arr.ndim == 2:
+            ret_arr = np.zeros(n_len, dtype=np.float32)
+            fn(self._obj, m_data_arr, c_int(int(is_norm)), ret_arr)
+        else:
+            m_data_arr, o_channel_shape = format_channel(m_data_arr, 2)
+            channel_num = m_data_arr.shape[0]
+
+            ret_arr = np.zeros((channel_num, n_len), dtype=np.float32)
+            for i in range(channel_num):
+                fn(self._obj, m_data_arr[i], c_int(int(is_norm)), ret_arr[i])
+            ret_arr = revoke_channel(ret_arr, o_channel_shape, 1)
+
+        return ret_arr
 
     def crest(self, m_data_arr):
         """
@@ -719,12 +810,12 @@ class Spectral(Base):
 
         Parameters
         ----------
-        m_data_arr: np.ndarray [shape=(fre, time)]
-            Spectrogram data
+        m_data_arr: np.ndarray [shape=(..., fre, time)]
+            Spectrogram data.
 
         Returns
         -------
-        crest: np.ndarray [shape=(time,)]
+        crest: np.ndarray [shape=(..., time)]
             crest frequency for each time
 
         Examples
@@ -750,7 +841,7 @@ class Spectral(Base):
 
         >>> spectral_obj = af.Spectral(num=bft_obj.num,
         >>>                            fre_band_arr=bft_obj.get_fre_band_arr())
-        >>> n_time = spec_arr.shape[1]  # Or use bft_obj.cal_time_length(len(audio_arr))
+        >>> n_time = spec_arr.shape[-1]  # Or use bft_obj.cal_time_length(audio_arr.shape[-1])
         >>> spectral_obj.set_time_length(n_time)
         >>> crest_arr = spectral_obj.crest(spec_arr)
 
@@ -763,7 +854,7 @@ class Spectral(Base):
         >>> times = np.arange(0, len(crest_arr)) * (bft_obj.slide_length / bft_obj.samplate)
         >>> fill_plot(times, crest_arr, axes=ax[1], label='crest')
         """
-        m_data_arr = ascontiguous_T(m_data_arr, dtype=np.float32)
+        m_data_arr = ascontiguous_swapaxex(m_data_arr, -1, -2)
 
         fn = self._lib['spectralObj_crest']
         fn.argtypes = [
@@ -771,10 +862,20 @@ class Spectral(Base):
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS'),
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS')
         ]
-        n_len, m_len = m_data_arr.shape  # t * n
-        ret = np.zeros(n_len, dtype=np.float32)
-        fn(self._obj, m_data_arr, ret)
-        return ret
+        *_, n_len, m_len = m_data_arr.shape  # t * n
+        if m_data_arr.ndim == 2:
+            ret_arr = np.zeros(n_len, dtype=np.float32)
+            fn(self._obj, m_data_arr, ret_arr)
+        else:
+            m_data_arr, o_channel_shape = format_channel(m_data_arr, 2)
+            channel_num = m_data_arr.shape[0]
+
+            ret_arr = np.zeros((channel_num, n_len), dtype=np.float32)
+            for i in range(channel_num):
+                fn(self._obj, m_data_arr[i], ret_arr[i])
+            ret_arr = revoke_channel(ret_arr, o_channel_shape, 1)
+
+        return ret_arr
 
     def slope(self, m_data_arr):
         """
@@ -790,12 +891,12 @@ class Spectral(Base):
 
         Parameters
         ----------
-        m_data_arr: np.ndarray [shape=(fre, time)]
-            Spectrogram data
+        m_data_arr: np.ndarray [shape=(..., fre, time)]
+            Spectrogram data.
 
         Returns
         -------
-        slope: np.ndarray [shape=(time,)]
+        slope: np.ndarray [shape=(..., time)]
             slope frequency for each time
 
         Examples
@@ -821,7 +922,7 @@ class Spectral(Base):
 
         >>> spectral_obj = af.Spectral(num=bft_obj.num,
         >>>                            fre_band_arr=bft_obj.get_fre_band_arr())
-        >>> n_time = spec_arr.shape[1]  # Or use bft_obj.cal_time_length(len(audio_arr))
+        >>> n_time = spec_arr.shape[-1]  # Or use bft_obj.cal_time_length(audio_arr.shape[-1])
         >>> spectral_obj.set_time_length(n_time)
         >>> slope_arr = spectral_obj.slope(spec_arr)
 
@@ -834,7 +935,7 @@ class Spectral(Base):
         >>> times = np.arange(0, len(slope_arr)) * (bft_obj.slide_length / bft_obj.samplate)
         >>> fill_plot(times, slope_arr, axes=ax[1], label='slope')
         """
-        m_data_arr = ascontiguous_T(m_data_arr, dtype=np.float32)
+        m_data_arr = ascontiguous_swapaxex(m_data_arr, -1, -2)
 
         fn = self._lib['spectralObj_slope']
         fn.argtypes = [
@@ -842,10 +943,19 @@ class Spectral(Base):
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS'),
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS')
         ]
-        n_len, m_len = m_data_arr.shape  # t * n
-        ret = np.zeros(n_len, dtype=np.float32)
-        fn(self._obj, m_data_arr, ret)
-        return ret
+        *_, n_len, m_len = m_data_arr.shape  # t * n
+        if m_data_arr.ndim == 2:
+            ret_arr = np.zeros(n_len, dtype=np.float32)
+            fn(self._obj, m_data_arr, ret_arr)
+        else:
+            m_data_arr, o_channel_shape = format_channel(m_data_arr, 2)
+            channel_num = m_data_arr.shape[0]
+
+            ret_arr = np.zeros((channel_num, n_len), dtype=np.float32)
+            for i in range(channel_num):
+                fn(self._obj, m_data_arr[i], ret_arr[i])
+            ret_arr = revoke_channel(ret_arr, o_channel_shape, 1)
+        return ret_arr
 
     def decrease(self, m_data_arr):
         """
@@ -858,12 +968,12 @@ class Spectral(Base):
 
         Parameters
         ----------
-        m_data_arr: np.ndarray [shape=(fre, time)]
-            Spectrogram data
+        m_data_arr: np.ndarray [shape=(..., fre, time)]
+            Spectrogram data.
 
         Returns
         -------
-        decrease: np.ndarray [shape=(time,)]
+        decrease: np.ndarray [shape=(..., time)]
             decrease frequency for each time
 
         Examples
@@ -889,7 +999,7 @@ class Spectral(Base):
 
         >>> spectral_obj = af.Spectral(num=bft_obj.num,
         >>>                            fre_band_arr=bft_obj.get_fre_band_arr())
-        >>> n_time = spec_arr.shape[1]  # Or use bft_obj.cal_time_length(len(audio_arr))
+        >>> n_time = spec_arr.shape[-1]  # Or use bft_obj.cal_time_length(audio_arr.shape[-1])
         >>> spectral_obj.set_time_length(n_time)
         >>> decrease_arr = spectral_obj.decrease(spec_arr)
 
@@ -902,7 +1012,7 @@ class Spectral(Base):
         >>> times = np.arange(0, len(decrease_arr)) * (bft_obj.slide_length / bft_obj.samplate)
         >>> fill_plot(times, decrease_arr, axes=ax[1], label='decrease')
         """
-        m_data_arr = ascontiguous_T(m_data_arr, dtype=np.float32)
+        m_data_arr = ascontiguous_swapaxex(m_data_arr, -1, -2)
 
         fn = self._lib['spectralObj_decrease']
         fn.argtypes = [
@@ -910,10 +1020,20 @@ class Spectral(Base):
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS'),
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS')
         ]
-        n_len, m_len = m_data_arr.shape  # t * n
-        ret = np.zeros(n_len, dtype=np.float32)
-        fn(self._obj, m_data_arr, ret)
-        return ret
+        *_, n_len, m_len = m_data_arr.shape  # t * n
+        if m_data_arr.ndim == 2:
+            ret_arr = np.zeros(n_len, dtype=np.float32)
+            fn(self._obj, m_data_arr, ret_arr)
+        else:
+            m_data_arr, o_channel_shape = format_channel(m_data_arr, 2)
+            channel_num = m_data_arr.shape[0]
+
+            ret_arr = np.zeros((channel_num, n_len), dtype=np.float32)
+            for i in range(channel_num):
+                fn(self._obj, m_data_arr[i], ret_arr[i])
+            ret_arr = revoke_channel(ret_arr, o_channel_shape, 1)
+
+        return ret_arr
 
     def band_width(self, m_data_arr, p=2):
         """
@@ -928,15 +1048,15 @@ class Spectral(Base):
 
         Parameters
         ----------
-        m_data_arr: np.ndarray [shape=(fre, time)]
-            Spectrogram data
+        m_data_arr: np.ndarray [shape=(..., fre, time)]
+            Spectrogram data.
 
         p: int, 1 or 2
             norm: 1 abs; 2 pow
 
         Returns
         -------
-        band_width: np.ndarray [shape=(time,)]
+        band_width: np.ndarray [shape=(..., time)]
             band_width frequency for each time
 
         Examples
@@ -962,7 +1082,7 @@ class Spectral(Base):
 
         >>> spectral_obj = af.Spectral(num=bft_obj.num,
         >>>                            fre_band_arr=bft_obj.get_fre_band_arr())
-        >>> n_time = spec_arr.shape[1]  # Or use bft_obj.cal_time_length(len(audio_arr))
+        >>> n_time = spec_arr.shape[-1]  # Or use bft_obj.cal_time_length(audio_arr.shape[-1])
         >>> spectral_obj.set_time_length(n_time)
         >>> band_width_arr = spectral_obj.band_width(spec_arr)
 
@@ -975,7 +1095,7 @@ class Spectral(Base):
         >>> times = np.arange(0, len(band_width_arr)) * (bft_obj.slide_length / bft_obj.samplate)
         >>> fill_plot(times, band_width_arr, axes=ax[1], label='band_width')
         """
-        m_data_arr = ascontiguous_T(m_data_arr, dtype=np.float32)
+        m_data_arr = ascontiguous_swapaxex(m_data_arr, -1, -2)
 
         fn = self._lib['spectralObj_bandWidth']
         fn.argtypes = [
@@ -984,10 +1104,19 @@ class Spectral(Base):
             c_float,
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS')
         ]
-        n_len, m_len = m_data_arr.shape  # t * n
-        ret = np.zeros(n_len, dtype=np.float32)
-        fn(self._obj, m_data_arr, c_float(p), ret)
-        return ret
+        *_, n_len, m_len = m_data_arr.shape  # t * n
+        if m_data_arr.ndim == 2:
+            ret_arr = np.zeros(n_len, dtype=np.float32)
+            fn(self._obj, m_data_arr, c_float(p), ret_arr)
+        else:
+            m_data_arr, o_channel_shape = format_channel(m_data_arr, 2)
+            channel_num = m_data_arr.shape[0]
+
+            ret_arr = np.zeros((channel_num, n_len), dtype=np.float32)
+            for i in range(channel_num):
+                fn(self._obj, m_data_arr[i], c_float(p), ret_arr[i])
+            ret_arr = revoke_channel(ret_arr, o_channel_shape, 1)
+        return ret_arr
 
     def rms(self, m_data_arr):
         """
@@ -997,12 +1126,12 @@ class Spectral(Base):
 
         Parameters
         ----------
-        m_data_arr: np.ndarray [shape=(fre, time)]
-            Spectrogram data
+        m_data_arr: np.ndarray [shape=(..., fre, time)]
+            Spectrogram data.
 
         Returns
         -------
-        rms: np.ndarray [shape=(time,)]
+        rms: np.ndarray [shape=(.... time)]
             rms frequency for each time
 
         Examples
@@ -1028,7 +1157,7 @@ class Spectral(Base):
 
         >>> spectral_obj = af.Spectral(num=bft_obj.num,
         >>>                            fre_band_arr=bft_obj.get_fre_band_arr())
-        >>> n_time = spec_arr.shape[1]  # Or use bft_obj.cal_time_length(len(audio_arr))
+        >>> n_time = spec_arr.shape[-1]  # Or use bft_obj.cal_time_length(audio_arr.shape[-1])
         >>> spectral_obj.set_time_length(n_time)
         >>> rms_arr = spectral_obj.rms(spec_arr)
 
@@ -1041,7 +1170,7 @@ class Spectral(Base):
         >>> times = np.arange(0, len(rms_arr)) * (bft_obj.slide_length / bft_obj.samplate)
         >>> fill_plot(times, rms_arr, axes=ax[1], label='rms')
         """
-        m_data_arr = ascontiguous_T(m_data_arr, dtype=np.float32)
+        m_data_arr = ascontiguous_swapaxex(m_data_arr, -1, -2)
 
         fn = self._lib['spectralObj_rms']
         fn.argtypes = [
@@ -1049,10 +1178,20 @@ class Spectral(Base):
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS'),
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS')
         ]
-        n_len, m_len = m_data_arr.shape  # t * n
-        ret = np.zeros(n_len, dtype=np.float32)
-        fn(self._obj, m_data_arr, ret)
-        return ret
+        *_, n_len, m_len = m_data_arr.shape  # t * n
+        if m_data_arr.ndim == 2:
+            ret_arr = np.zeros(n_len, dtype=np.float32)
+            fn(self._obj, m_data_arr, ret_arr)
+        else:
+            m_data_arr, o_channel_shape = format_channel(m_data_arr, 2)
+            channel_num = m_data_arr.shape[0]
+
+            ret_arr = np.zeros((channel_num, n_len), dtype=np.float32)
+            for i in range(channel_num):
+                fn(self._obj, m_data_arr[i], ret_arr[i])
+            ret_arr = revoke_channel(ret_arr, o_channel_shape, 1)
+
+        return ret_arr
 
     def energy(self, m_data_arr, is_log=False, gamma=10.):
         """
@@ -1062,8 +1201,8 @@ class Spectral(Base):
 
         Parameters
         ----------
-        m_data_arr: np.ndarray [shape=(fre, time)]
-            Spectrogram data
+        m_data_arr: np.ndarray [shape=(..., fre, time)]
+            Spectrogram data.
 
         is_log: bool
             Whether to log
@@ -1073,7 +1212,7 @@ class Spectral(Base):
 
         Returns
         -------
-        energy: np.ndarray [shape=(time,)]
+        energy: np.ndarray [shape=(..., time)]
             energy frequency for each time
 
         Examples
@@ -1099,7 +1238,7 @@ class Spectral(Base):
 
         >>> spectral_obj = af.Spectral(num=bft_obj.num,
         >>>                            fre_band_arr=bft_obj.get_fre_band_arr())
-        >>> n_time = spec_arr.shape[1]  # Or use bft_obj.cal_time_length(len(audio_arr))
+        >>> n_time = spec_arr.shape[-1]  # Or use bft_obj.cal_time_length(audio_arr.shape[-1])
         >>> spectral_obj.set_time_length(n_time)
         >>> energy_arr = spectral_obj.energy(spec_arr)
 
@@ -1112,7 +1251,7 @@ class Spectral(Base):
         >>> times = np.arange(0, len(energy_arr)) * (bft_obj.slide_length / bft_obj.samplate)
         >>> fill_plot(times, energy_arr, axes=ax[1], label='energy')
         """
-        m_data_arr = ascontiguous_T(m_data_arr, dtype=np.float32)
+        m_data_arr = ascontiguous_swapaxex(m_data_arr, -1, -2)
 
         fn = self._lib['spectralObj_energy']
         fn.argtypes = [
@@ -1122,10 +1261,20 @@ class Spectral(Base):
             c_float,
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS')
         ]
-        n_len, m_len = m_data_arr.shape  # t * n
-        ret = np.zeros(n_len, dtype=np.float32)
-        fn(self._obj, m_data_arr, int(is_log), gamma, ret)
-        return ret
+        *_, n_len, m_len = m_data_arr.shape  # t * n
+        if m_data_arr.ndim == 2:
+            ret_arr = np.zeros(n_len, dtype=np.float32)
+            fn(self._obj, m_data_arr, int(is_log), gamma, ret_arr)
+        else:
+            m_data_arr, o_channel_shape = format_channel(m_data_arr, 2)
+            channel_num = m_data_arr.shape[0]
+
+            ret_arr = np.zeros((channel_num, n_len), dtype=np.float32)
+            for i in range(channel_num):
+                fn(self._obj, m_data_arr[i], int(is_log), gamma, ret_arr[i])
+            ret_arr = revoke_channel(ret_arr, o_channel_shape, 1)
+
+        return ret_arr
 
     def hfc(self, m_data_arr):
         """
@@ -1138,12 +1287,12 @@ class Spectral(Base):
 
         Parameters
         ----------
-        m_data_arr: np.ndarray [shape=(fre, time)]
-            Spectrogram data
+        m_data_arr: np.ndarray [shape=(..., fre, time)]
+            Spectrogram data.
 
         Returns
         -------
-        hfc: np.ndarray [shape=(time,)]
+        hfc: np.ndarray [shape=(..., time)]
             hfc frequency for each time
 
         Examples
@@ -1169,7 +1318,7 @@ class Spectral(Base):
 
         >>> spectral_obj = af.Spectral(num=bft_obj.num,
         >>>                            fre_band_arr=bft_obj.get_fre_band_arr())
-        >>> n_time = spec_arr.shape[1]  # Or use bft_obj.cal_time_length(len(audio_arr))
+        >>> n_time = spec_arr.shape[-1]  # Or use bft_obj.cal_time_length(audio_arr.shape[-1])
         >>> spectral_obj.set_time_length(n_time)
         >>> hfc_arr = spectral_obj.hfc(spec_arr)
 
@@ -1182,7 +1331,7 @@ class Spectral(Base):
         >>> times = np.arange(0, len(hfc_arr)) * (bft_obj.slide_length / bft_obj.samplate)
         >>> fill_plot(times, hfc_arr, axes=ax[1], label='hfc')
         """
-        m_data_arr = ascontiguous_T(m_data_arr, dtype=np.float32)
+        m_data_arr = ascontiguous_swapaxex(m_data_arr, -1, -2)
 
         fn = self._lib['spectralObj_hfc']
         fn.argtypes = [
@@ -1190,10 +1339,19 @@ class Spectral(Base):
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS'),
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS')
         ]
-        n_len, m_len = m_data_arr.shape  # t * n
-        ret = np.zeros(n_len, dtype=np.float32)
-        fn(self._obj, m_data_arr, ret)
-        return ret
+        *_, n_len, m_len = m_data_arr.shape  # t * n
+        if m_data_arr.ndim == 2:
+            ret_arr = np.zeros(n_len, dtype=np.float32)
+            fn(self._obj, m_data_arr, ret_arr)
+        else:
+            m_data_arr, o_channel_shape = format_channel(m_data_arr, 2)
+            channel_num = m_data_arr.shape[0]
+
+            ret_arr = np.zeros((channel_num, n_len), dtype=np.float32)
+            for i in range(channel_num):
+                fn(self._obj, m_data_arr[i], ret_arr[i])
+            ret_arr = revoke_channel(ret_arr, o_channel_shape, 1)
+        return ret_arr
 
     def sd(self, m_data_arr, step=1, is_positive=False):
         """
@@ -1208,8 +1366,8 @@ class Spectral(Base):
 
         Parameters
         ----------
-        m_data_arr: np.ndarray [shape=(fre, time)]
-            Spectrogram data
+        m_data_arr: np.ndarray [shape=(..., fre, time)]
+            Spectrogram data.
 
         step: int
             Compute time axis steps, like 1/2/3/...
@@ -1219,7 +1377,7 @@ class Spectral(Base):
 
         Returns
         -------
-        sd: np.ndarray [shape=(time,)]
+        sd: np.ndarray [shape=(..., time)]
             sd frequency for each time
 
         Examples
@@ -1245,7 +1403,7 @@ class Spectral(Base):
 
         >>> spectral_obj = af.Spectral(num=bft_obj.num,
         >>>                            fre_band_arr=bft_obj.get_fre_band_arr())
-        >>> n_time = spec_arr.shape[1]  # Or use bft_obj.cal_time_length(len(audio_arr))
+        >>> n_time = spec_arr.shape[-1]  # Or use bft_obj.cal_time_length(audio_arr.shape[-1])
         >>> spectral_obj.set_time_length(n_time)
         >>> sd_arr = spectral_obj.sd(spec_arr)
 
@@ -1258,7 +1416,7 @@ class Spectral(Base):
         >>> times = np.arange(0, len(sd_arr)) * (bft_obj.slide_length / bft_obj.samplate)
         >>> fill_plot(times, sd_arr, axes=ax[1], label='sd')
         """
-        m_data_arr = ascontiguous_T(m_data_arr, dtype=np.float32)
+        m_data_arr = ascontiguous_swapaxex(m_data_arr, -1, -2)
 
         fn = self._lib['spectralObj_sd']
         fn.argtypes = [
@@ -1268,10 +1426,19 @@ class Spectral(Base):
             c_int,
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS')
         ]
-        n_len, m_len = m_data_arr.shape  # t * n
-        ret = np.zeros(n_len, dtype=np.float32)
-        fn(self._obj, m_data_arr, c_int(step), c_int(int(is_positive)), ret)
-        return ret
+        *_, n_len, m_len = m_data_arr.shape  # t * n
+        if m_data_arr.ndim == 2:
+            ret_arr = np.zeros(n_len, dtype=np.float32)
+            fn(self._obj, m_data_arr, c_int(step), c_int(int(is_positive)), ret_arr)
+        else:
+            m_data_arr, o_channel_shape = format_channel(m_data_arr, 2)
+            channel_num = m_data_arr.shape[0]
+
+            ret_arr = np.zeros((channel_num, n_len), dtype=np.float32)
+            for i in range(channel_num):
+                fn(self._obj, m_data_arr[i], c_int(step), c_int(int(is_positive)), ret_arr[i])
+            ret_arr = revoke_channel(ret_arr, o_channel_shape, 1)
+        return ret_arr
 
     def sf(self, m_data_arr, step=1, is_positive=False):
         """
@@ -1286,8 +1453,8 @@ class Spectral(Base):
 
         Parameters
         ----------
-        m_data_arr: np.ndarray [shape=(fre, time)]
-            Spectrogram data
+        m_data_arr: np.ndarray [shape=(..., fre, time)]
+            Spectrogram data.
 
         step: int
             Compute time axis steps, like 1/2/3/...
@@ -1297,7 +1464,7 @@ class Spectral(Base):
 
         Returns
         -------
-        sf: np.ndarray [shape=(time,)]
+        sf: np.ndarray [shape=(..., time)]
             sf frequency for each time
 
         Examples
@@ -1323,7 +1490,7 @@ class Spectral(Base):
 
         >>> spectral_obj = af.Spectral(num=bft_obj.num,
         >>>                            fre_band_arr=bft_obj.get_fre_band_arr())
-        >>> n_time = spec_arr.shape[1]  # Or use bft_obj.cal_time_length(len(audio_arr))
+        >>> n_time = spec_arr.shape[-1]  # Or use bft_obj.cal_time_length(audio_arr.shape[-1])
         >>> spectral_obj.set_time_length(n_time)
         >>> sf_arr = spectral_obj.sf(spec_arr)
 
@@ -1336,7 +1503,7 @@ class Spectral(Base):
         >>> times = np.arange(0, len(sf_arr)) * (bft_obj.slide_length / bft_obj.samplate)
         >>> fill_plot(times, sf_arr, axes=ax[1], label='sf')
         """
-        m_data_arr = ascontiguous_T(m_data_arr, dtype=np.float32)
+        m_data_arr = ascontiguous_swapaxex(m_data_arr, -1, -2)
 
         fn = self._lib['spectralObj_sf']
         fn.argtypes = [
@@ -1346,10 +1513,19 @@ class Spectral(Base):
             c_int,
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS')
         ]
-        n_len, m_len = m_data_arr.shape  # t * n
-        ret = np.zeros(n_len, dtype=np.float32)
-        fn(self._obj, m_data_arr, c_int(step), c_int(int(is_positive)), ret)
-        return ret
+        *_, n_len, m_len = m_data_arr.shape  # t * n
+        if m_data_arr.ndim == 2:
+            ret_arr = np.zeros(n_len, dtype=np.float32)
+            fn(self._obj, m_data_arr, c_int(step), c_int(int(is_positive)), ret_arr)
+        else:
+            m_data_arr, o_channel_shape = format_channel(m_data_arr, 2)
+            channel_num = m_data_arr.shape[0]
+
+            ret_arr = np.zeros((channel_num, n_len), dtype=np.float32)
+            for i in range(channel_num):
+                fn(self._obj, m_data_arr[i], c_int(step), c_int(int(is_positive)), ret_arr[i])
+            ret_arr = revoke_channel(ret_arr, o_channel_shape, 1)
+        return ret_arr
 
     def mkl(self, m_data_arr, tp=0):
         """
@@ -1362,15 +1538,15 @@ class Spectral(Base):
 
         Parameters
         ----------
-        m_data_arr: np.ndarray [shape=(fre, time)]
-            Spectrogram data
+        m_data_arr: np.ndarray [shape=(..., fre, time)]
+            Spectrogram data.
 
         tp: int, 0 or 1
             0 sum 1 mean
 
         Returns
         -------
-        mkl: np.ndarray [shape=(time,)]
+        mkl: np.ndarray [shape=(..., time)]
             mkl frequency for each time
 
         Examples
@@ -1396,7 +1572,7 @@ class Spectral(Base):
 
         >>> spectral_obj = af.Spectral(num=bft_obj.num,
         >>>                            fre_band_arr=bft_obj.get_fre_band_arr())
-        >>> n_time = spec_arr.shape[1]  # Or use bft_obj.cal_time_length(len(audio_arr))
+        >>> n_time = spec_arr.shape[-1]  # Or use bft_obj.cal_time_length(audio_arr.shape[-1])
         >>> spectral_obj.set_time_length(n_time)
         >>> mkl_arr = spectral_obj.mkl(spec_arr)
 
@@ -1409,7 +1585,7 @@ class Spectral(Base):
         >>> times = np.arange(0, len(mkl_arr)) * (bft_obj.slide_length / bft_obj.samplate)
         >>> fill_plot(times, mkl_arr, axes=ax[1], label='mkl')
         """
-        m_data_arr = ascontiguous_T(m_data_arr, dtype=np.float32)
+        m_data_arr = ascontiguous_swapaxex(m_data_arr, -1, -2)
 
         fn = self._lib['spectralObj_mkl']
         fn.argtypes = [
@@ -1418,10 +1594,19 @@ class Spectral(Base):
             c_int,
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS')
         ]
-        n_len, m_len = m_data_arr.shape  # t * n
-        ret = np.zeros(n_len, dtype=np.float32)
-        fn(self._obj, m_data_arr, c_int(tp), ret)
-        return ret
+        *_, n_len, m_len = m_data_arr.shape  # t * n
+        if m_data_arr.ndim == 2:
+            ret_arr = np.zeros(n_len, dtype=np.float32)
+            fn(self._obj, m_data_arr, c_int(tp), ret_arr)
+        else:
+            m_data_arr, o_channel_shape = format_channel(m_data_arr, 2)
+            channel_num = m_data_arr.shape[0]
+
+            ret_arr = np.zeros((channel_num, n_len), dtype=np.float32)
+            for i in range(channel_num):
+                fn(self._obj, m_data_arr[i], c_int(tp), ret_arr[i])
+            ret_arr = revoke_channel(ret_arr, o_channel_shape, 1)
+        return ret_arr
 
     def pd(self, m_data_arr, m_phase_arr):
         """
@@ -1439,15 +1624,15 @@ class Spectral(Base):
 
         Parameters
         ----------
-        m_data_arr: np.ndarray [shape=(fre, time)]
-            Spectrogram data
+        m_data_arr: np.ndarray [shape=(..., fre, time)]
+            Spectrogram data.
 
-        m_phase_arr: np.ndarray [shape=(fre, time)]
-            Phase data
+        m_phase_arr: np.ndarray [shape=(..., fre, time)]
+            Phase data.
 
         Returns
         -------
-        pd: np.ndarray [shape=(time,)]
+        pd: np.ndarray [shape=(..., time)]
             pd frequency for each time
 
         Examples
@@ -1474,12 +1659,16 @@ class Spectral(Base):
 
         >>> spectral_obj = af.Spectral(num=bft_obj.num,
         >>>                            fre_band_arr=bft_obj.get_fre_band_arr())
-        >>> n_time = spec_arr.shape[1]  # Or use bft_obj.cal_time_length(len(audio_arr))
+        >>> n_time = spec_arr.shape[-1]  # Or use bft_obj.cal_time_length(audio_arr.shape[-1])
         >>> spectral_obj.set_time_length(n_time)
         >>> pd_arr = spectral_obj.pd(spec_arr, phase_arr)
         """
-        m_data_arr = ascontiguous_T(m_data_arr, dtype=np.float32)
-        m_phase_arr = ascontiguous_T(m_phase_arr)
+
+        if m_data_arr.shape != m_phase_arr.shape:
+            raise ValueError(f'm_data_arr and m_phase_arr must be the same shape')
+
+        m_data_arr = ascontiguous_swapaxex(m_data_arr, -1, -2)
+        m_phase_arr = ascontiguous_swapaxex(m_phase_arr, -1, -2)
 
         fn = self._lib['spectralObj_pd']
         fn.argtypes = [
@@ -1488,10 +1677,21 @@ class Spectral(Base):
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS'),
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS')
         ]
-        n_len, m_len = m_data_arr.shape  # t * n
-        ret = np.zeros(n_len, dtype=np.float32)
-        fn(self._obj, m_data_arr, m_phase_arr, ret)
-        return ret
+        *_, n_len, m_len = m_data_arr.shape  # t * n
+        if m_data_arr.ndim == 2:
+            ret_arr = np.zeros(n_len, dtype=np.float32)
+            fn(self._obj, m_data_arr, m_phase_arr, ret_arr)
+        else:
+            m_data_arr, o_channel_shape = format_channel(m_data_arr, 2)
+            m_phase_arr, _ = format_channel(m_phase_arr, 2)
+            channel_num = m_data_arr.shape[0]
+
+            ret_arr = np.zeros((channel_num, n_len), dtype=np.float32)
+            for i in range(channel_num):
+                fn(self._obj, m_data_arr[i], m_phase_arr[i], ret_arr[i])
+            ret_arr = revoke_channel(ret_arr, o_channel_shape, 1)
+
+        return ret_arr
 
     def wpd(self, m_data_arr, m_phase_arr):
         """
@@ -1510,15 +1710,15 @@ class Spectral(Base):
 
         Parameters
         ----------
-        m_data_arr: np.ndarray [shape=(fre, time)]
-            Spectrogram data
+        m_data_arr: np.ndarray [shape=(..., fre, time)]
+            Spectrogram data.
 
-        m_phase_arr: np.ndarray [shape=(fre, time)]
-            Phase data
+        m_phase_arr: np.ndarray [shape=(..., fre, time)]
+            Phase data.
 
         Returns
         -------
-        wpd: np.ndarray [shape=(time,)]
+        wpd: np.ndarray [shape=(..., time)]
             wpd frequency for each time
 
         Examples
@@ -1545,7 +1745,7 @@ class Spectral(Base):
 
         >>> spectral_obj = af.Spectral(num=bft_obj.num,
         >>>                            fre_band_arr=bft_obj.get_fre_band_arr())
-        >>> n_time = spec_arr.shape[1]  # Or use bft_obj.cal_time_length(len(audio_arr))
+        >>> n_time = spec_arr.shape[-1]  # Or use bft_obj.cal_time_length(audio_arr.shape[-1])
         >>> spectral_obj.set_time_length(n_time)
         >>> wpd_arr = spectral_obj.wpd(spec_arr, phase_arr)
 
@@ -1558,8 +1758,11 @@ class Spectral(Base):
         >>> times = np.arange(0, len(wpd_arr)) * (bft_obj.slide_length / bft_obj.samplate)
         >>> fill_plot(times, wpd_arr, axes=ax[1], label='wpd')
         """
-        m_data_arr = ascontiguous_T(m_data_arr, dtype=np.float32)
-        m_phase_arr = ascontiguous_T(m_phase_arr)
+
+        if m_data_arr.shape != m_phase_arr.shape:
+            raise ValueError(f'm_data_arr and m_phase_arr must be the same shape')
+        m_data_arr = ascontiguous_swapaxex(m_data_arr, -1, -2)
+        m_phase_arr = ascontiguous_swapaxex(m_phase_arr, -1, -2)
 
         fn = self._lib['spectralObj_wpd']
         fn.argtypes = [
@@ -1568,10 +1771,21 @@ class Spectral(Base):
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS'),
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS')
         ]
-        n_len, m_len = m_data_arr.shape  # t * n
-        ret = np.zeros(n_len, dtype=np.float32)
-        fn(self._obj, m_data_arr, m_phase_arr, ret)
-        return ret
+        *_, n_len, m_len = m_data_arr.shape  # t * n
+        if m_data_arr.ndim == 2:
+            ret_arr = np.zeros(n_len, dtype=np.float32)
+            fn(self._obj, m_data_arr, m_phase_arr, ret_arr)
+        else:
+            m_data_arr, o_channel_shape = format_channel(m_data_arr, 2)
+            m_phase_arr, _ = format_channel(m_phase_arr, 2)
+            channel_num = m_data_arr.shape[0]
+
+            ret_arr = np.zeros((channel_num, n_len), dtype=np.float32)
+            for i in range(channel_num):
+                fn(self._obj, m_data_arr[i], m_phase_arr[i], ret_arr[i])
+            ret_arr = revoke_channel(ret_arr, o_channel_shape, 1)
+
+        return ret_arr
 
     def nwpd(self, m_data_arr, m_phase_arr):
         """
@@ -1585,15 +1799,15 @@ class Spectral(Base):
 
         Parameters
         ----------
-        m_data_arr: np.ndarray [shape=(fre, time)]
-            Spectrogram data
+        m_data_arr: np.ndarray [shape=(..., fre, time)]
+            Spectrogram data.
 
-        m_phase_arr: np.ndarray [shape=(fre, time)]
-            Phase data
+        m_phase_arr: np.ndarray [shape=(..., fre, time)]
+            Phase data.
 
         Returns
         -------
-        nwpd: np.ndarray [shape=(time,)]
+        nwpd: np.ndarray [shape=(..., time)]
             nwpd frequency for each time
 
         Examples
@@ -1620,12 +1834,15 @@ class Spectral(Base):
 
         >>> spectral_obj = af.Spectral(num=bft_obj.num,
         >>>                            fre_band_arr=bft_obj.get_fre_band_arr())
-        >>> n_time = spec_arr.shape[1]  # Or use bft_obj.cal_time_length(len(audio_arr))
+        >>> n_time = spec_arr.shape[-1]  # Or use bft_obj.cal_time_length(audio_arr.shape[-1])
         >>> spectral_obj.set_time_length(n_time)
         >>> nwpd_arr = spectral_obj.nwpd(spec_arr, phase_arr)
         """
-        m_data_arr = ascontiguous_T(m_data_arr, dtype=np.float32)
-        m_phase_arr = ascontiguous_T(m_phase_arr)
+
+        if m_data_arr.shape != m_phase_arr.shape:
+            raise ValueError(f'm_data_arr and m_phase_arr must be the same shape')
+        m_data_arr = ascontiguous_swapaxex(m_data_arr, -1, -2)
+        m_phase_arr = ascontiguous_swapaxex(m_phase_arr, -1, -2)
 
         fn = self._lib['spectralObj_nwpd']
         fn.argtypes = [
@@ -1634,10 +1851,20 @@ class Spectral(Base):
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS'),
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS')
         ]
-        n_len, m_len = m_data_arr.shape  # t * n
-        ret = np.zeros(n_len, dtype=np.float32)
-        fn(self._obj, m_data_arr, m_phase_arr, ret)
-        return ret
+        *_, n_len, m_len = m_data_arr.shape  # t * n
+        if m_data_arr.ndim == 2:
+            ret_arr = np.zeros(n_len, dtype=np.float32)
+            fn(self._obj, m_data_arr, m_phase_arr, ret_arr)
+        else:
+            m_data_arr, o_channel_shape = format_channel(m_data_arr, 2)
+            m_phase_arr, _ = format_channel(m_phase_arr, 2)
+            channel_num = m_data_arr.shape[0]
+
+            ret_arr = np.zeros((channel_num, n_len), dtype=np.float32)
+            for i in range(channel_num):
+                fn(self._obj, m_data_arr[i], m_phase_arr[i], ret_arr[i])
+            ret_arr = revoke_channel(ret_arr, o_channel_shape, 1)
+        return ret_arr
 
     def cd(self, m_data_arr, m_phase_arr):
         """
@@ -1656,15 +1883,15 @@ class Spectral(Base):
 
         Parameters
         ----------
-        m_data_arr: np.ndarray [shape=(fre, time)]
-            Spectrogram data
+        m_data_arr: np.ndarray [shape=(..., fre, time)]
+            Spectrogram data.
 
-        m_phase_arr: np.ndarray [shape=(fre, time)]
-            Phase data
+        m_phase_arr: np.ndarray [shape=(..., fre, time)]
+            Phase data.
 
         Returns
         -------
-        cd: np.ndarray [shape=(time,)]
+        cd: np.ndarray [shape=(..., time)]
             cd frequency for each time
 
         Examples
@@ -1691,7 +1918,7 @@ class Spectral(Base):
 
         >>> spectral_obj = af.Spectral(num=bft_obj.num,
         >>>                            fre_band_arr=bft_obj.get_fre_band_arr())
-        >>> n_time = spec_arr.shape[1]  # Or use bft_obj.cal_time_length(len(audio_arr))
+        >>> n_time = spec_arr.shape[-1]  # Or use bft_obj.cal_time_length(audio_arr.shape[-1])
         >>> spectral_obj.set_time_length(n_time)
         >>> cd_arr = spectral_obj.cd(spec_arr, phase_arr)
 
@@ -1704,8 +1931,11 @@ class Spectral(Base):
         >>> times = np.arange(0, len(cd_arr)) * (bft_obj.slide_length / bft_obj.samplate)
         >>> fill_plot(times, cd_arr, axes=ax[1], label='cd')
         """
-        m_data_arr = ascontiguous_T(m_data_arr, dtype=np.float32)
-        m_phase_arr = ascontiguous_T(m_phase_arr)
+
+        if m_data_arr.shape != m_phase_arr.shape:
+            raise ValueError(f'm_data_arr and m_phase_arr must be the same shape')
+        m_data_arr = ascontiguous_swapaxex(m_data_arr, -1, -2)
+        m_phase_arr = ascontiguous_swapaxex(m_phase_arr, -1, -2)
 
         fn = self._lib['spectralObj_cd']
         fn.argtypes = [
@@ -1714,10 +1944,21 @@ class Spectral(Base):
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS'),
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS')
         ]
-        n_len, m_len = m_data_arr.shape  # t * n
-        ret = np.zeros(n_len, dtype=np.float32)
-        fn(self._obj, m_data_arr, m_phase_arr, ret)
-        return ret
+        *_, n_len, m_len = m_data_arr.shape  # t * n
+        if m_data_arr.ndim == 2:
+            ret_arr = np.zeros(n_len, dtype=np.float32)
+            fn(self._obj, m_data_arr, m_phase_arr, ret_arr)
+        else:
+            m_data_arr, o_channel_shape = format_channel(m_data_arr, 2)
+            m_phase_arr, _ = format_channel(m_phase_arr, 2)
+            channel_num = m_data_arr.shape[0]
+
+            ret_arr = np.zeros((channel_num, n_len), dtype=np.float32)
+            for i in range(channel_num):
+                fn(self._obj, m_data_arr[i], m_phase_arr[i], ret_arr[i])
+            ret_arr = revoke_channel(ret_arr, o_channel_shape, 1)
+
+        return ret_arr
 
     def rcd(self, m_data_arr, m_phase_arr):
         """
@@ -1732,15 +1973,15 @@ class Spectral(Base):
 
         Parameters
         ----------
-        m_data_arr: np.ndarray [shape=(fre, time)]
-            Spectrogram data
+        m_data_arr: np.ndarray [shape=(..., fre, time)]
+            Spectrogram data.
 
-        m_phase_arr: np.ndarray [shape=(fre, time)]
-            Phase data
+        m_phase_arr: np.ndarray [shape=(..., fre, time)]
+            Phase data.
 
         Returns
         -------
-        rcd: np.ndarray [shape=(time,)]
+        rcd: np.ndarray [shape=(..., time)]
             rcd frequency for each time
 
         Examples
@@ -1767,7 +2008,7 @@ class Spectral(Base):
 
         >>> spectral_obj = af.Spectral(num=bft_obj.num,
         >>>                            fre_band_arr=bft_obj.get_fre_band_arr())
-        >>> n_time = spec_arr.shape[1]  # Or use bft_obj.cal_time_length(len(audio_arr))
+        >>> n_time = spec_arr.shape[-1]  # Or use bft_obj.cal_time_length(audio_arr.shape[-1])
         >>> spectral_obj.set_time_length(n_time)
         >>> rcd_arr = spectral_obj.rcd(spec_arr, phase_arr)
 
@@ -1780,8 +2021,11 @@ class Spectral(Base):
         >>> times = np.arange(0, len(rcd_arr)) * (bft_obj.slide_length / bft_obj.samplate)
         >>> fill_plot(times, rcd_arr, axes=ax[1], label='rcd')
         """
-        m_data_arr = ascontiguous_T(m_data_arr, dtype=np.float32)
-        m_phase_arr = ascontiguous_T(m_phase_arr)
+
+        if m_data_arr.shape != m_phase_arr.shape:
+            raise ValueError(f'm_data_arr and m_phase_arr must be the same shape')
+        m_data_arr = ascontiguous_swapaxex(m_data_arr, -1, -2)
+        m_phase_arr = ascontiguous_swapaxex(m_phase_arr, -1, -2)
 
         fn = self._lib['spectralObj_rcd']
         fn.argtypes = [
@@ -1790,10 +2034,20 @@ class Spectral(Base):
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS'),
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS')
         ]
-        n_len, m_len = m_data_arr.shape  # t * n
-        ret = np.zeros(n_len, dtype=np.float32)
-        fn(self._obj, m_data_arr, m_phase_arr, ret)
-        return ret
+        *_, n_len, m_len = m_data_arr.shape  # t * n
+        if m_data_arr.ndim == 2:
+            ret_arr = np.zeros(n_len, dtype=np.float32)
+            fn(self._obj, m_data_arr, m_phase_arr, ret_arr)
+        else:
+            m_data_arr, o_channel_shape = format_channel(m_data_arr, 2)
+            m_phase_arr, _ = format_channel(m_phase_arr, 2)
+            channel_num = m_data_arr.shape[0]
+
+            ret_arr = np.zeros((channel_num, n_len), dtype=np.float32)
+            for i in range(channel_num):
+                fn(self._obj, m_data_arr[i], m_phase_arr[i], ret_arr[i])
+            ret_arr = revoke_channel(ret_arr, o_channel_shape, 1)
+        return ret_arr
 
     def broadband(self, m_data_arr, threshold=0):
         """
@@ -1801,15 +2055,15 @@ class Spectral(Base):
 
         Parameters
         ----------
-        m_data_arr: np.ndarray [shape=(fre, time)]
-            Spectrogram data
+        m_data_arr: np.ndarray [shape=(..., fre, time)]
+            Spectrogram data.
 
         threshold: float, [0,1]
             broadband threshold
 
         Returns
         -------
-        broadband: np.ndarray [shape=(time,)]
+        broadband: np.ndarray [shape=(..., time)]
             broadband frequency for each time
 
         Examples
@@ -1835,7 +2089,7 @@ class Spectral(Base):
 
         >>> spectral_obj = af.Spectral(num=bft_obj.num,
         >>>                            fre_band_arr=bft_obj.get_fre_band_arr())
-        >>> n_time = spec_arr.shape[1]  # Or use bft_obj.cal_time_length(len(audio_arr))
+        >>> n_time = spec_arr.shape[-1]  # Or use bft_obj.cal_time_length(audio_arr.shape[-1])
         >>> spectral_obj.set_time_length(n_time)
         >>> broadband_arr = spectral_obj.broadband(spec_arr)
 
@@ -1851,7 +2105,7 @@ class Spectral(Base):
         if not 0 <= threshold <= 1:
             raise ValueError(f'threshold must be 0 or 1')
 
-        m_data_arr = ascontiguous_T(m_data_arr, dtype=np.float32)
+        m_data_arr = ascontiguous_swapaxex(m_data_arr, -1, -2)
 
         fn = self._lib['spectralObj_broadband']
         fn.argtypes = [
@@ -1860,9 +2114,19 @@ class Spectral(Base):
             c_float,
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS')
         ]
-        n_len, m_len = m_data_arr.shape  # t * n
-        ret_arr = np.zeros(n_len, dtype=np.float32)
-        fn(self._obj, m_data_arr, c_float(threshold), ret_arr)
+        *_, n_len, m_len = m_data_arr.shape  # t * n
+        if m_data_arr.ndim == 2:
+            ret_arr = np.zeros(n_len, dtype=np.float32)
+            fn(self._obj, m_data_arr, c_float(threshold), ret_arr)
+        else:
+            m_data_arr, o_channel_shape = format_channel(m_data_arr, 2)
+            channel_num = m_data_arr.shape[0]
+
+            ret_arr = np.zeros((channel_num, n_len), dtype=np.float32)
+            for i in range(channel_num):
+                fn(self._obj, m_data_arr[i], c_float(threshold), ret_arr[i])
+            ret_arr = revoke_channel(ret_arr, o_channel_shape, 1)
+
         return ret_arr
 
     def novelty(self, m_data_arr, step=1, threshold=0.,
@@ -1873,8 +2137,8 @@ class Spectral(Base):
 
         Parameters
         ----------
-        m_data_arr: np.ndarray [shape=(fre, time)]
-            Spectrogram data
+        m_data_arr: np.ndarray [shape=(..., fre, time)]
+            Spectrogram data.
 
         step: int
             Compute time axis steps, like 1/2/3/...
@@ -1890,7 +2154,7 @@ class Spectral(Base):
 
         Returns
         -------
-        novelty: np.ndarray [shape=(time,)]
+        novelty: np.ndarray [shape=(..., time)]
             Novelty frequency per time step.
 
         Examples
@@ -1916,7 +2180,7 @@ class Spectral(Base):
 
         >>> spectral_obj = af.Spectral(num=bft_obj.num,
         >>>                            fre_band_arr=bft_obj.get_fre_band_arr())
-        >>> n_time = spec_arr.shape[1]  # Or use bft_obj.cal_time_length(len(audio_arr))
+        >>> n_time = spec_arr.shape[-1]  # Or use bft_obj.cal_time_length(audio_arr.shape[-1])
         >>> spectral_obj.set_time_length(n_time)
         >>> novelty_arr = spectral_obj.novelty(spec_arr)
 
@@ -1929,7 +2193,7 @@ class Spectral(Base):
         >>> times = np.arange(0, len(novelty_arr)) * (bft_obj.slide_length / bft_obj.samplate)
         >>> fill_plot(times, novelty_arr, axes=ax[1], label='novelty')
         """
-        m_data_arr = ascontiguous_T(m_data_arr, dtype=np.float32)
+        m_data_arr = ascontiguous_swapaxex(m_data_arr, -1, -2)
 
         fn = self._lib['spectralObj_novelty']
         fn.argtypes = [
@@ -1941,12 +2205,25 @@ class Spectral(Base):
             POINTER(c_int),
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS'),
         ]
-        n_len, m_len = m_data_arr.shape  # t * n
-        ret_arr = np.zeros(n_len, dtype=np.float32)
-        fn(self._obj, m_data_arr, c_int(step), c_float(threshold),
-           pointer(c_int(method_type.value)),
-           pointer(c_int(data_type.value)),
-           ret_arr)
+        *_, n_len, m_len = m_data_arr.shape  # t * n
+        if m_data_arr.ndim == 2:
+            ret_arr = np.zeros(n_len, dtype=np.float32)
+            fn(self._obj, m_data_arr, c_int(step), c_float(threshold),
+               pointer(c_int(method_type.value)),
+               pointer(c_int(data_type.value)),
+               ret_arr)
+        else:
+            m_data_arr, o_channel_shape = format_channel(m_data_arr, 2)
+            channel_num = m_data_arr.shape[0]
+
+            ret_arr = np.zeros((channel_num, n_len), dtype=np.float32)
+            for i in range(channel_num):
+                fn(self._obj, m_data_arr[i], c_int(step), c_float(threshold),
+                   pointer(c_int(method_type.value)),
+                   pointer(c_int(data_type.value)),
+                   ret_arr[i])
+            ret_arr = revoke_channel(ret_arr, o_channel_shape, 1)
+
         return ret_arr
 
     def eef(self, m_data_arr, is_norm=False):
@@ -1965,15 +2242,15 @@ class Spectral(Base):
 
         Parameters
         ----------
-        m_data_arr: np.ndarray [shape=(fre, time)]
-            Spectrogram data
+        m_data_arr: np.ndarray [shape=(..., fre, time)]
+            Spectrogram data.
 
         is_norm: bool
             Whether to norm
 
         Returns
         -------
-        eef: np.ndarray [shape=(time,)]
+        eef: np.ndarray [shape=(..., time)]
             eef frequency for each time
 
         Examples
@@ -1999,7 +2276,7 @@ class Spectral(Base):
 
         >>> spectral_obj = af.Spectral(num=bft_obj.num,
         >>>                            fre_band_arr=bft_obj.get_fre_band_arr())
-        >>> n_time = spec_arr.shape[1]  # Or use bft_obj.cal_time_length(len(audio_arr))
+        >>> n_time = spec_arr.shape[-1]  # Or use bft_obj.cal_time_length(audio_arr.shape[-1])
         >>> spectral_obj.set_time_length(n_time)
         >>> eef_arr = spectral_obj.eef(spec_arr)
 
@@ -2012,7 +2289,7 @@ class Spectral(Base):
         >>> times = np.arange(0, len(eef_arr)) * (bft_obj.slide_length / bft_obj.samplate)
         >>> fill_plot(times, eef_arr, axes=ax[1], label='eef')
         """
-        m_data_arr = ascontiguous_T(m_data_arr, dtype=np.float32)
+        m_data_arr = ascontiguous_swapaxex(m_data_arr, -1, -2)
 
         fn = self._lib['spectralObj_eef']
         fn.argtypes = [
@@ -2021,9 +2298,19 @@ class Spectral(Base):
             c_int,
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS'),
         ]
-        n_len, m_len = m_data_arr.shape  # t * n
-        ret_arr = np.zeros(n_len, dtype=np.float32)
-        fn(self._obj, m_data_arr, c_int(int(is_norm)), ret_arr)
+        *_, n_len, m_len = m_data_arr.shape  # t * n
+        if m_data_arr.ndim == 2:
+            ret_arr = np.zeros(n_len, dtype=np.float32)
+            fn(self._obj, m_data_arr, c_int(int(is_norm)), ret_arr)
+        else:
+            m_data_arr, o_channel_shape = format_channel(m_data_arr, 2)
+            channel_num = m_data_arr.shape[0]
+
+            ret_arr = np.zeros((channel_num, n_len), dtype=np.float32)
+            for i in range(channel_num):
+                fn(self._obj, m_data_arr[i], c_int(int(is_norm)), ret_arr[i])
+            ret_arr = revoke_channel(ret_arr, o_channel_shape, 1)
+
         return ret_arr
 
     def eer(self, m_data_arr, is_norm=False, gamma=1.):
@@ -2044,8 +2331,8 @@ class Spectral(Base):
 
         Parameters
         ----------
-        m_data_arr: np.ndarray [shape=(fre, time)]
-            Spectrogram data
+        m_data_arr: np.ndarray [shape=(..., fre, time)]
+            Spectrogram data.
 
         is_norm: bool
             Whether to norm
@@ -2055,7 +2342,7 @@ class Spectral(Base):
 
         Returns
         -------
-        eer: np.ndarray [shape=(time,)]
+        eer: np.ndarray [shape=(..., time)]
             eer frequency for each time
 
         Examples
@@ -2081,7 +2368,7 @@ class Spectral(Base):
 
         >>> spectral_obj = af.Spectral(num=bft_obj.num,
         >>>                            fre_band_arr=bft_obj.get_fre_band_arr())
-        >>> n_time = spec_arr.shape[1]  # Or use bft_obj.cal_time_length(len(audio_arr))
+        >>> n_time = spec_arr.shape[-1]  # Or use bft_obj.cal_time_length(audio_arr.shape[-1])
         >>> spectral_obj.set_time_length(n_time)
         >>> eer_arr = spectral_obj.eer(spec_arr)
 
@@ -2094,7 +2381,7 @@ class Spectral(Base):
         >>> times = np.arange(0, len(eer_arr)) * (bft_obj.slide_length / bft_obj.samplate)
         >>> fill_plot(times, eer_arr, axes=ax[1], label='eer')
         """
-        m_data_arr = ascontiguous_T(m_data_arr, dtype=np.float32)
+        m_data_arr = ascontiguous_swapaxex(m_data_arr, -1, -2)
 
         fn = self._lib['spectralObj_eer']
         fn.argtypes = [
@@ -2104,9 +2391,18 @@ class Spectral(Base):
             c_float,
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS'),
         ]
-        n_len, m_len = m_data_arr.shape  # t * n
-        ret_arr = np.zeros(n_len, dtype=np.float32)
-        fn(self._obj, m_data_arr, c_int(int(is_norm)), c_float(gamma), ret_arr)
+        *_, n_len, m_len = m_data_arr.shape  # t * n
+        if m_data_arr.ndim == 2:
+            ret_arr = np.zeros(n_len, dtype=np.float32)
+            fn(self._obj, m_data_arr, c_int(int(is_norm)), c_float(gamma), ret_arr)
+        else:
+            m_data_arr, o_channel_shape = format_channel(m_data_arr, 2)
+            channel_num = m_data_arr.shape[0]
+
+            ret_arr = np.zeros((channel_num, n_len), dtype=np.float32)
+            for i in range(channel_num):
+                fn(self._obj, m_data_arr[i], c_int(int(is_norm)), c_float(gamma), ret_arr[i])
+            ret_arr = revoke_channel(ret_arr, o_channel_shape, 1)
         return ret_arr
 
     def max(self, m_data_arr):
@@ -2115,15 +2411,15 @@ class Spectral(Base):
 
         Parameters
         ----------
-        m_data_arr: np.ndarray [shape=(fre, time)]
-            Spectrogram data
+        m_data_arr: np.ndarray [shape=(..., fre, time)]
+            Spectrogram data.
 
         Returns
         -------
-        val_arr: np.ndarray [shape=(time,)]
+        val_arr: np.ndarray [shape=(..., time)]
             max value for each time
 
-        fre_arr: np.ndarray [shape=(time,)]
+        fre_arr: np.ndarray [shape=(..., time)]
             max frequency for each time
 
         Examples
@@ -2149,7 +2445,7 @@ class Spectral(Base):
 
         >>> spectral_obj = af.Spectral(num=bft_obj.num,
         >>>                            fre_band_arr=bft_obj.get_fre_band_arr())
-        >>> n_time = spec_arr.shape[1]  # Or use bft_obj.cal_time_length(len(audio_arr))
+        >>> n_time = spec_arr.shape[-1]  # Or use bft_obj.cal_time_length(audio_arr.shape[-1])
         >>> spectral_obj.set_time_length(n_time)
         >>> max_val_arr, max_fre_arr = spectral_obj.max(spec_arr)
 
@@ -2162,7 +2458,7 @@ class Spectral(Base):
         >>> times = np.arange(0, len(max_val_arr)) * (bft_obj.slide_length / bft_obj.samplate)
         >>> fill_plot(times, max_val_arr, axes=ax[1], label='max_val')
         """
-        m_data_arr = ascontiguous_T(m_data_arr, dtype=np.float32)
+        m_data_arr = ascontiguous_swapaxex(m_data_arr, -1, -2)
 
         fn = self._lib['spectralObj_max']
         fn.argtypes = [
@@ -2171,10 +2467,21 @@ class Spectral(Base):
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS'),
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS')
         ]
-        n_len, m_len = m_data_arr.shape  # t * n
-        val_arr = np.zeros(n_len, dtype=np.float32)
-        fre_arr = np.zeros(n_len, dtype=np.float32)
-        fn(self._obj, m_data_arr, val_arr, fre_arr)
+        *_, n_len, m_len = m_data_arr.shape  # t * n
+        if m_data_arr.ndim == 2:
+            val_arr = np.zeros(n_len, dtype=np.float32)
+            fre_arr = np.zeros(n_len, dtype=np.float32)
+            fn(self._obj, m_data_arr, val_arr, fre_arr)
+        else:
+            m_data_arr, o_channel_shape = format_channel(m_data_arr, 2)
+            channel_num = m_data_arr.shape[0]
+
+            val_arr = np.zeros((channel_num, n_len), dtype=np.float32)
+            fre_arr = np.zeros((channel_num, n_len), dtype=np.float32)
+            for i in range(channel_num):
+                fn(self._obj, m_data_arr[i], val_arr[i], fre_arr[i])
+            val_arr = revoke_channel(val_arr, o_channel_shape, 1)
+            fre_arr = revoke_channel(fre_arr, o_channel_shape, 1)
         return val_arr, fre_arr
 
     def mean(self, m_data_arr):
@@ -2183,15 +2490,15 @@ class Spectral(Base):
 
         Parameters
         ----------
-        m_data_arr: np.ndarray [shape=(fre, time)]
-            Spectrogram data
+        m_data_arr: np.ndarray [shape=(..., fre, time)]
+            Spectrogram data.
 
         Returns
         -------
-        val_arr: np.ndarray [shape=(time,)]
+        val_arr: np.ndarray [shape=(..., time)]
             mean value for each time
 
-        fre_arr: np.ndarray [shape=(time,)]
+        fre_arr: np.ndarray [shape=(..., time)]
             mean frequency for each time
 
         Examples
@@ -2217,7 +2524,7 @@ class Spectral(Base):
 
         >>> spectral_obj = af.Spectral(num=bft_obj.num,
         >>>                            fre_band_arr=bft_obj.get_fre_band_arr())
-        >>> n_time = spec_arr.shape[1]  # Or use bft_obj.cal_time_length(len(audio_arr))
+        >>> n_time = spec_arr.shape[-1]  # Or use bft_obj.cal_time_length(audio_arr.shape[-1])
         >>> spectral_obj.set_time_length(n_time)
         >>> mean_val_arr, mean_fre_arr = spectral_obj.mean(spec_arr)
 
@@ -2230,7 +2537,7 @@ class Spectral(Base):
         >>> times = np.arange(0, len(mean_val_arr)) * (bft_obj.slide_length / bft_obj.samplate)
         >>> fill_plot(times, mean_val_arr, axes=ax[1], label='mean_val')
         """
-        m_data_arr = ascontiguous_T(m_data_arr, dtype=np.float32)
+        m_data_arr = ascontiguous_swapaxex(m_data_arr, -1, -2)
 
         fn = self._lib['spectralObj_mean']
         fn.argtypes = [
@@ -2239,10 +2546,22 @@ class Spectral(Base):
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS'),
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS')
         ]
-        n_len, m_len = m_data_arr.shape  # t * n
-        val_arr = np.zeros(n_len, dtype=np.float32)
-        fre_arr = np.zeros(n_len, dtype=np.float32)
-        fn(self._obj, m_data_arr, val_arr, fre_arr)
+        *_, n_len, m_len = m_data_arr.shape  # t * n
+        if m_data_arr.ndim == 2:
+            val_arr = np.zeros(n_len, dtype=np.float32)
+            fre_arr = np.zeros(n_len, dtype=np.float32)
+            fn(self._obj, m_data_arr, val_arr, fre_arr)
+        else:
+            m_data_arr, o_channel_shape = format_channel(m_data_arr, 2)
+            channel_num = m_data_arr.shape[0]
+
+            val_arr = np.zeros((channel_num, n_len), dtype=np.float32)
+            fre_arr = np.zeros((channel_num, n_len), dtype=np.float32)
+            for i in range(channel_num):
+                fn(self._obj, m_data_arr[i], val_arr[i], fre_arr[i])
+            val_arr = revoke_channel(val_arr, o_channel_shape, 1)
+            fre_arr = revoke_channel(fre_arr, o_channel_shape, 1)
+
         return val_arr, fre_arr
 
     def var(self, m_data_arr):
@@ -2251,15 +2570,15 @@ class Spectral(Base):
 
         Parameters
         ----------
-        m_data_arr: np.ndarray [shape=(fre, time)]
-            Spectrogram data
+        m_data_arr: np.ndarray [shape=(..., fre, time)]
+            Spectrogram data.
 
         Returns
         -------
-        val_arr: np.ndarray [shape=(time,)]
+        val_arr: np.ndarray [shape=(..., time)]
             var value for each time
 
-        fre_arr: np.ndarray [shape=(time,)]
+        fre_arr: np.ndarray [shape=(..., time)]
             var frequency for each time
 
         Examples
@@ -2285,7 +2604,7 @@ class Spectral(Base):
 
         >>> spectral_obj = af.Spectral(num=bft_obj.num,
         >>>                            fre_band_arr=bft_obj.get_fre_band_arr())
-        >>> n_time = spec_arr.shape[1]  # Or use bft_obj.cal_time_length(len(audio_arr))
+        >>> n_time = spec_arr.shape[-1]  # Or use bft_obj.cal_time_length(audio_arr.shape[-1])
         >>> spectral_obj.set_time_length(n_time)
         >>> var_val_arr, var_fre_arr = spectral_obj.var(spec_arr)
 
@@ -2298,7 +2617,7 @@ class Spectral(Base):
         >>> times = np.arange(0, len(var_val_arr)) * (bft_obj.slide_length / bft_obj.samplate)
         >>> fill_plot(times, var_val_arr, axes=ax[1], label='var_val')
         """
-        m_data_arr = ascontiguous_T(m_data_arr, dtype=np.float32)
+        m_data_arr = ascontiguous_swapaxex(m_data_arr, -1, -2)
 
         fn = self._lib['spectralObj_var']
         fn.argtypes = [
@@ -2307,10 +2626,21 @@ class Spectral(Base):
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS'),
             np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS')
         ]
-        n_len, m_len = m_data_arr.shape  # t * n
-        val_arr = np.zeros(n_len, dtype=np.float32)
-        fre_arr = np.zeros(n_len, dtype=np.float32)
-        fn(self._obj, m_data_arr, val_arr, fre_arr)
+        *_, n_len, m_len = m_data_arr.shape  # t * n
+        if m_data_arr.ndim == 2:
+            val_arr = np.zeros(n_len, dtype=np.float32)
+            fre_arr = np.zeros(n_len, dtype=np.float32)
+            fn(self._obj, m_data_arr, val_arr, fre_arr)
+        else:
+            m_data_arr, o_channel_shape = format_channel(m_data_arr, 2)
+            channel_num = m_data_arr.shape[0]
+
+            val_arr = np.zeros((channel_num, n_len), dtype=np.float32)
+            fre_arr = np.zeros((channel_num, n_len), dtype=np.float32)
+            for i in range(channel_num):
+                fn(self._obj, m_data_arr[i], val_arr[i], fre_arr[i])
+            val_arr = revoke_channel(val_arr, o_channel_shape, 1)
+            fre_arr = revoke_channel(fre_arr, o_channel_shape, 1)
         return val_arr, fre_arr
 
     def __del__(self):

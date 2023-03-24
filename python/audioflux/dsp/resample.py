@@ -2,7 +2,7 @@ import numpy as np
 from ctypes import Structure, POINTER, pointer, c_int, c_float, c_void_p
 from audioflux.base import Base
 from audioflux.type import ResampleQualityType, WindowType
-from audioflux.utils import check_audio
+from audioflux.utils import check_audio, format_channel, revoke_channel
 
 __all__ = ["Resample", "WindowResample"]
 
@@ -11,9 +11,29 @@ class OpaqueResample(Structure):
     _fields_ = []
 
 
+def _get_quality_type(tp):
+    if isinstance(tp, ResampleQualityType):
+        return tp
+
+    if not isinstance(tp, str):
+        raise ValueError(f'ResampleQualityType[{tp}] not supported')
+
+    if tp in ('af_best', 'audio_best', 'best'):
+        return ResampleQualityType.BEST
+    elif tp in ('af_mid', 'audio_mid', 'mid'):
+        return ResampleQualityType.MID
+    elif tp in ('af_fast', 'audio_fast', 'fast'):
+        return ResampleQualityType.FAST
+
+    raise ValueError(f'ResampleQualityType[{tp}] not supported')
+
+
 class ResampleBase(Base):
     def __init__(self):
         super(ResampleBase, self).__init__(pointer(OpaqueResample()))
+
+        self.source_rate = None
+        self.target_rate = None
 
     def set_samplate(self, source_rate, target_rate):
         """
@@ -27,18 +47,8 @@ class ResampleBase(Base):
         fn = self._lib['resampleObj_setSamplate']
         fn.argtypes = [POINTER(OpaqueResample), c_int, c_int]
         fn(self._obj, c_int(source_rate), c_int(target_rate))
-
-    def enable_continue(self, flag):
-        """
-        Enable continue
-
-        Parameters
-        ----------
-        flag: int
-        """
-        fn = self._lib['resampleObj_enableContinue']
-        fn.argtypes = [POINTER(OpaqueResample), c_int]
-        fn(self._obj, c_int(flag))
+        self.source_rate = source_rate
+        self.target_rate = target_rate
 
     def cal_data_length(self, data_length):
         """
@@ -57,39 +67,45 @@ class ResampleBase(Base):
         fn.restype = c_int
         fn(self._obj, c_int(data_length))
 
-    def debug(self):
-        fn = self._lib['resampleObj_debug']
-        fn.argtypes = [POINTER(OpaqueResample)]
-        fn(self._obj)
-
     def resample(self, data_arr):
         """
         Resample for audio data
 
         Parameters
         ----------
-        data_arr: np.ndarray [shape=(n,)]
-            Input audio array
+        data_arr: np.ndarray [shape=(..., n)]
+            Input audio array.
 
         Returns
         -------
-        out: np.ndarray [shape=(n,)]
+        out: np.ndarray [shape=(..., n)]
             Audio data after resampling
         """
         data_arr = np.asarray(data_arr, dtype=np.float32, order='C')
-        check_audio(data_arr)
+        check_audio(data_arr, is_mono=False)
 
         fn = self._lib['resampleObj_resample']
         fn.argtypes = [POINTER(OpaqueResample),
                        np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS'),
                        c_int,
                        np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS')]
-        data_len = data_arr.shape[0]
+        data_len = data_arr.shape[-1]
 
-        ret_arr = np.zeros(data_len * 5, dtype=np.float32)
+        if data_arr.ndim == 1:
+            ret_arr = np.zeros(data_len * 5, dtype=np.float32)
+            new_arr_len = fn(self._obj, data_arr, c_int(data_len), ret_arr)
+        else:
+            data_arr, o_channel_shape = format_channel(data_arr, 1)
+            channel_num = data_arr.shape[0]
 
-        new_arr_len = fn(self._obj, data_arr, data_len, ret_arr)
-        return ret_arr[:new_arr_len]
+            ret_arr = np.zeros((channel_num, data_len * 5), dtype=np.float32)
+            new_arr_len = 0
+            for i in range(channel_num):
+                _new_arr_len = fn(self._obj, data_arr[i], c_int(data_len), ret_arr[i])
+                new_arr_len = max(new_arr_len, _new_arr_len)
+            ret_arr = revoke_channel(ret_arr, o_channel_shape, 1)
+
+        return ret_arr[..., :new_arr_len]
 
     def __del__(self):
         if self._is_created:
@@ -105,7 +121,9 @@ class Resample(ResampleBase):
 
     Parameters
     ----------
-    qual_type: ResampleQualityType
+    qual_type: ResampleQualityType or str
+        Resample quality type
+
     is_scale: bool
         Whether to use scale
 
@@ -116,16 +134,14 @@ class Resample(ResampleBase):
     >>> audio_data, sr = af.read(af.utils.sample_path('220'))
     >>>
     >>> resample_obj = af.Resample(qual_type=ResampleQualityType.BEST, is_scale=False)
+    >>> resample_obj.set_samplate(sr, 16000)
     >>> new_audio_data = resample_obj.resample(audio_data)
-    >>> new_audio_data
-    array([ 7.7589704e-07, -1.4843295e-06,  2.4068654e-06, ...,
-            2.6401449e-03,  3.1324192e-03,  3.3868181e-03], dtype=float32)
     """
 
     def __init__(self, qual_type=ResampleQualityType.BEST, is_scale=False):
         super(Resample, self).__init__()
 
-        self.qual_type = qual_type
+        self.qual_type = _get_quality_type(qual_type)
         self.is_scale = is_scale
         self.is_continue = False
 
@@ -158,14 +174,11 @@ class WindowResample(ResampleBase):
     Examples
     --------
     >>> import audioflux as af
-    >>> from audioflux.type import ResampleQualityType
     >>> audio_data, sr = af.read(af.utils.sample_path('220'))
     >>>
     >>> resample_obj = af.WindowResample()
+    >>> resample_obj.set_samplate(sr, 16000)
     >>> new_audio_data = resample_obj.resample(audio_data)
-    >>> new_audio_data
-    array([ 1.0972841e-06, -2.0991588e-06,  3.4038217e-06, ...,
-            3.7337288e-03,  4.4299099e-03,  4.7896840e-03], dtype=float32)
     """
 
     def __init__(self, zero_num=64, nbit=9, win_type=WindowType.HANN,
@@ -180,7 +193,7 @@ class WindowResample(ResampleBase):
         self.is_scale = is_scale
         self.is_continue = False
 
-        fn = self._lib['resampleObj_new']
+        fn = self._lib['resampleObj_newWithWindow']
         fn.argtypes = [POINTER(POINTER(OpaqueResample)),
                        POINTER(c_int),
                        POINTER(c_int),

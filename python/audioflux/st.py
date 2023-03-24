@@ -3,7 +3,7 @@ import warnings
 import numpy as np
 from ctypes import Structure, POINTER, pointer, c_int, c_float, c_void_p
 from audioflux.base import Base
-from audioflux.utils import check_audio, check_audio_length
+from audioflux.utils import check_audio, check_audio_length, format_channel, revoke_channel
 
 __all__ = ['ST']
 
@@ -58,7 +58,7 @@ class ST(Base):
     >>> audio_arr, sr = af.read(audio_path)
     >>> # ST can only input fft_length data
     >>> # For radix2_exp=12, then fft_length=4096
-    >>> audio_arr = audio_arr[:4096]
+    >>> audio_arr = audio_arr[..., :4096]
 
     Create ST object
 
@@ -154,6 +154,8 @@ class ST(Base):
         set_value_fn = self._lib['stObj_setValue']
         set_value_fn.argtypes = [POINTER(OpaqueST), c_float, c_float]
         set_value_fn(self._obj, c_float(factor), c_float(norm))
+        self.factor = factor
+        self.norm = norm
 
     def get_fre_band_arr(self):
         """
@@ -171,15 +173,15 @@ class ST(Base):
 
         Parameters
         ----------
-        data_arr: np.ndarray [shape=(n,)]
+        data_arr: np.ndarray [shape=(..., 2**radix2_exp)]
             Input audio data
 
         Returns
         -------
-        out: np.ndarray [shape=(fre, time)]
+        out: np.ndarray [shape=(..., fre, time), dtype=np.complex]
         """
         data_arr = np.asarray(data_arr, dtype=np.float32, order='C')
-        check_audio(data_arr)
+        check_audio(data_arr, is_mono=False)
         data_arr = check_audio_length(data_arr, self.radix2_exp)
 
         st_fn = self._lib['stObj_st']
@@ -189,12 +191,24 @@ class ST(Base):
                           np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS'),
                           ]
 
-        size = (self.num, self.fft_length)
-        m_real_arr = np.zeros(size, dtype=np.float32)
-        m_imag_arr = np.zeros(size, dtype=np.float32)
+        if data_arr.ndim == 1:
+            size = (self.num, self.fft_length)
+            m_real_arr = np.zeros(size, dtype=np.float32)
+            m_imag_arr = np.zeros(size, dtype=np.float32)
+            st_fn(self._obj, data_arr, m_real_arr, m_imag_arr)
+            m_st_arr = m_real_arr + m_imag_arr * 1j
+        else:
+            data_arr, o_channel_shape = format_channel(data_arr, 1)
+            channel_num = data_arr.shape[0]
 
-        st_fn(self._obj, data_arr, m_real_arr, m_imag_arr)
-        return m_real_arr + (m_imag_arr * 1j)
+            size = (channel_num, self.num, self.fft_length)
+            m_real_arr = np.zeros(size, dtype=np.float32)
+            m_imag_arr = np.zeros(size, dtype=np.float32)
+            for i in range(channel_num):
+                st_fn(self._obj, data_arr[i], m_real_arr[i], m_imag_arr[i])
+            m_st_arr = m_real_arr + m_imag_arr * 1j
+            m_st_arr = revoke_channel(m_st_arr, o_channel_shape, 2)
+        return m_st_arr
 
     def y_coords(self):
         """

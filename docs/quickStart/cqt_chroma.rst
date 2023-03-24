@@ -45,7 +45,7 @@ We recommend using the :ref:`CQT <transforms/cqt:CQT>` class, you can use it mor
     # Display
     import matplotlib.pyplot as plt
     from audioflux.display import fill_spec
-    audio_len = audio_arr.shape[0]
+    audio_len = audio_arr.shape[-1]
 
     # Display CQT
     fig, ax = plt.subplots()

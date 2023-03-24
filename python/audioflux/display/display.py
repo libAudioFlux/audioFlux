@@ -186,13 +186,16 @@ def fill_spec(
         warnings.warn('Display after performing abs on complex numbers')
         data = np.abs(data)
 
+    if data.ndim != 2:
+        raise ValueError(f"data[ndim={data.ndim}] must be a 2D array")
+
     if x_coords is None:
-        x_coords = np.arange(data.shape[1] + 1)
+        x_coords = np.arange(data.shape[-1] + 1)
     if y_coords is None:
-        y_coords = np.arange(data.shape[0] + 1)
+        y_coords = np.arange(data.shape[-2] + 1)
 
     if y_axis == 'chroma':
-        y_coords = np.arange(data.shape[0] + 1)
+        y_coords = np.arange(data.shape[-2] + 1)
 
     cmap = get_cmap('plasma')
     collection = axes.pcolormesh(x_coords, y_coords, data, cmap=cmap)
@@ -251,6 +254,10 @@ def fill_plot(x, y, axes=None, label='', is_legend=True, *,
     axes: matplotlib.axes.Axes
     """
     axes = _axes_check(axes)
+    if x.ndim != 1:
+        raise ValueError(f"x[ndim={x.ndim}] must be a 1D array")
+    if y.ndim != 1:
+        raise ValueError(f"y[ndim={y.ndim}] must be a 1D array")
 
     if not x_lims:
         x_lims = (np.min(x), np.max(x))
@@ -291,7 +298,10 @@ def fill_wave(data, samplate=32000, axes=None):
     -------
     axes: matplotlib.axes.Axes
     """
-    times = np.arange(data.shape[0]) / samplate
+    if data.ndim != 1:
+        raise ValueError(f"data[ndim={data.ndim}] must be a 1D array")
+
+    times = np.arange(data.shape[-1]) / samplate
     return fill_plot(times, data, axes=axes,
                      x_lims=(times[0], times[-1]),
                      is_legend=False, y_blank_threshold=0.15)

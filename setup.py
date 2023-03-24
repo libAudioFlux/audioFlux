@@ -132,7 +132,8 @@ setup(
     python_requires=">=3.6",
     install_requires=[
         "numpy",
-        "soundfile",
+        "scipy >= 1.2.0",
+        "soundfile>=0.12.1",
         "matplotlib",
     ],
     classifiers=[

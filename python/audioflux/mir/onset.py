@@ -2,7 +2,7 @@ import numpy as np
 from ctypes import Structure, POINTER, pointer, c_int, c_float, c_void_p
 from audioflux.base import Base
 from audioflux.type import NoveltyType
-from audioflux.utils import ascontiguous_T
+from audioflux.utils import ascontiguous_swapaxex, format_channel, revoke_channel
 
 __all__ = ["Onset", "NoveltyParam"]
 
@@ -12,6 +12,13 @@ class OpaqueOnset(Structure):
 
 
 class NoveltyParam(Structure):
+    """
+    Onset's novelty parameters
+
+    The parameters of the `Onset.novelty_type` corresponding method.
+
+    Which parameter is used, please see: `Spectral`
+    """
     _fields_ = [
         ("step", c_int),
         ("p", c_float),
@@ -71,7 +78,7 @@ class Onset(Base):
 
     >>> import matplotlib.pyplot as plt
     >>> from audioflux.display import fill_spec, fill_wave, fill_plot
-    >>> audio_len = audio_arr.shape[0]
+    >>> audio_len = audio_arr.shape[-1]
     >>> fig, axes = plt.subplots(nrows=3, sharex=True)
     >>> img = fill_spec(spec_dB_arr, axes=axes[0],
     >>>                 x_coords=bft_obj.x_coords(audio_len),
@@ -103,12 +110,12 @@ class Onset(Base):
                        POINTER(c_int), POINTER(c_int), POINTER(c_int)]
 
         fn(self._obj,
-               c_int(self.time_length),
-               c_int(self.fre_length),
-               c_int(self.slide_length),
-               pointer(c_int(self.samplate)),
-               pointer(c_int(self.filter_order)),
-               pointer(c_int(self.novelty_type.value)))
+           c_int(self.time_length),
+           c_int(self.fre_length),
+           c_int(self.slide_length),
+           pointer(c_int(self.samplate)),
+           pointer(c_int(self.filter_order)),
+           pointer(c_int(self.novelty_type.value)))
         self._is_created = True
 
     def onset(self, m_data_arr1, m_data_arr2=None, novelty_param=None, index_arr=None):
@@ -117,26 +124,34 @@ class Onset(Base):
 
         Parameters
         ----------
-        m_data_arr1: np.ndarray [shape=(fre, time)]
-            Input spec matrix
-        m_data_arr2: np.ndarray [shape=(fre, time)] or None
-            Input phase matrix
+        m_data_arr1: np.ndarray [shape=(..., fre, time)]
+            Input spec data.
+
+        m_data_arr2: np.ndarray [shape=(..., fre, time)] or None
+            Input phase data. Provided when `novelty_type` is PD/WPD/NWPD/CD/RCD
+
         novelty_param: NoveltyParam or None
+            The parameters of the `novelty_type` corresponding method.
+
+            See: `NoveltyParam`
+
         index_arr: np.ndarray [shape=()] or None
             The index of frequency array
 
         Returns
         -------
-        point_arr: np.ndarray [shape=(time,)]
-        evn_arr: np.ndarray [shape=(time,)]
-        time_arr: np.ndarray [shape=(time,)]
-        value_arr: np.ndarray [shape=(time,)]
+        point_arr: np.ndarray [shape=(..., time)]
+        evn_arr: np.ndarray [shape=(..., time)]
+        time_arr: np.ndarray [shape=(..., time)]
+        value_arr: np.ndarray [shape=(..., time)]
         """
         m_data_arr1 = np.asarray(m_data_arr1, dtype=np.float32, order='C')
-        m_data_arr1 = ascontiguous_T(m_data_arr1)
+        m_data_arr1 = ascontiguous_swapaxex(m_data_arr1, -1, -2)
         if m_data_arr2 is not None:
             m_data_arr2 = np.asarray(m_data_arr2, dtype=np.float32, order='C')
-            m_data_arr2 = ascontiguous_T(m_data_arr2)
+            m_data_arr2 = ascontiguous_swapaxex(m_data_arr2, -1, -2)
+            if m_data_arr1.shape != m_data_arr2.shape:
+                raise ValueError(f'm_data_arr1 and m_data_arr2 must be the same shape')
 
         if novelty_param is None:
             novelty_param = NoveltyParam(c_int(1), c_float(1), c_int(1), c_int(0),
@@ -159,28 +174,44 @@ class Onset(Base):
                        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags='C_CONTIGUOUS'),
                        ]
 
-        time_len, num = m_data_arr1.shape
-
         index_arr = None if index_arr is None else index_arr.astype(dtype=np.int32)
         index_length = 0 if index_arr is None else len(index_arr)
 
-        evn_arr = np.zeros(time_len, dtype=np.float32)
-        point_arr = np.zeros(time_len, dtype=np.int32)
+        if m_data_arr1.ndim == 2:
+            n_time, n_fre = m_data_arr1.shape
+            evn_arr = np.zeros(n_time, dtype=np.float32)
+            point_arr = np.zeros(n_time, dtype=np.int32)
+            point_len = fn(self._obj, m_data_arr1, m_data_arr2, novelty_param,
+                           index_arr, c_int(index_length),
+                           evn_arr, point_arr)
+            point_arr = point_arr[:point_len]
+            value_arr = evn_arr[point_arr]
+        else:
+            m_data_arr1, o_channel_shape = format_channel(m_data_arr1, 2)
+            channel_num, n_time, n_fre = m_data_arr1.shape
+            if m_data_arr2 is not None:
+                m_data_arr2, _ = format_channel(m_data_arr2, 2)
 
-        point_len = fn(self._obj, m_data_arr1, m_data_arr2, novelty_param,
-                       index_arr, c_int(index_length),
-                       evn_arr, point_arr)
+            evn_arr = np.zeros((channel_num, n_time), dtype=np.float32)
+            point_arr = np.zeros((channel_num, n_time), dtype=np.int32)
+            value_arr = np.zeros((channel_num, n_time), dtype=np.float32)
+            point_len = 0
+            for i in range(channel_num):
+                _m_data_arr2 = None if m_data_arr2 is None else m_data_arr2[i]
+                _point_len = fn(self._obj, m_data_arr1[i], _m_data_arr2, novelty_param,
+                                index_arr, c_int(index_length),
+                                evn_arr[i], point_arr[i])
+                point_len = max(point_len, _point_len)
+                value_arr[i] = evn_arr[i, point_arr[i, :_point_len]]
+            point_arr = point_arr[..., :point_len]
+            value_arr = value_arr[..., :point_len]
+            evn_arr = revoke_channel(evn_arr, o_channel_shape, 1)
+            point_arr = revoke_channel(point_arr, o_channel_shape, 1)
+            value_arr = revoke_channel(value_arr, o_channel_shape, 1)
 
-        point_arr = point_arr[:point_len]
         time_arr = 1.0 * point_arr * self.slide_length / self.samplate
-        value_arr = evn_arr[point_arr]
 
         return point_arr, evn_arr, time_arr, value_arr
-
-    def debug(self):
-        fn = self._lib['onsetObj_debug']
-        fn.argtypes = [POINTER(OpaqueOnset)]
-        fn(self._obj)
 
     def __del__(self):
         if self._is_created:

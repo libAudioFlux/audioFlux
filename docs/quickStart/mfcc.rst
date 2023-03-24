@@ -44,13 +44,13 @@ We recommend using the
 
     # Create XXCC object and extract mfcc
     xxcc_obj = af.XXCC(bft_obj.num)
-    xxcc_obj.set_time_length(time_length=spec_arr.shape[1])
+    xxcc_obj.set_time_length(time_length=spec_arr.shape[-1])
     mfcc_arr = xxcc_obj.xxcc(spec_arr)
 
     # Display MFCC
     import matplotlib.pyplot as plt
     from audioflux.display import fill_spec
-    audio_len = audio_arr.shape[0]
+    audio_len = audio_arr.shape[-1]
     fig, ax = plt.subplots()
     img = fill_spec(mfcc_arr, axes=ax,
               x_coords=bft_obj.x_coords(audio_len), x_axis='time',

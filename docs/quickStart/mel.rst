@@ -42,7 +42,7 @@ We recommend using the :ref:`BFT <transforms/bft:BFT - Based Fourier Transform, 
     # Display spectrogram
     import matplotlib.pyplot as plt
     from audioflux.display import fill_spec
-    audio_len = audio_arr.shape[0]
+    audio_len = audio_arr.shape[-1]
     fig, ax = plt.subplots()
     img = fill_spec(spec_arr, axes=ax,
               x_coords=bft_obj.x_coords(audio_len),

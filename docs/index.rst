@@ -37,13 +37,12 @@ statistics, finance, etc
    display
    utils
 
+.. toctree::
+   :maxdepth: 1
+   :caption: Reference
 
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   changelog
+   genindex
 
 
 Contributing

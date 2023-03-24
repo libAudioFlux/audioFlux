@@ -5,7 +5,7 @@ from ctypes import Structure, POINTER, pointer, c_int, c_float, c_void_p
 from audioflux.base import Base
 from audioflux.type import (WindowType, SpectralFilterBankNormalType, SpectralDataType,
                             ChromaDataNormalType, CepstralRectifyType)
-from audioflux.utils import check_audio, ascontiguous_T, note_to_hz
+from audioflux.utils import check_audio, ascontiguous_swapaxex, format_channel, revoke_channel, note_to_hz
 
 __all__ = [
     "CQT",
@@ -91,17 +91,18 @@ class CQTBase(Base):
         ret = np.frombuffer((c_float * self.num).from_address(p), np.float32).copy()
         return ret
 
-    def set_scale(self, flag):
+    def set_scale(self, flag=True):
         """
         Set scale
 
         Parameters
         ----------
-        flag: int
+        flag: bool
         """
         fn = self._lib['cqtObj_setScale']
         fn.argtypes = [POINTER(OpaqueCQT), c_int]
-        fn(self._obj, c_int(flag))
+        fn(self._obj, c_int(int(flag)))
+        self.is_scale = bool(flag)
 
     def cqt(self, data_arr):
         """
@@ -109,34 +110,44 @@ class CQTBase(Base):
 
         Parameters
         ----------
-        data_arr: np.ndarray [shape=(n)]
+        data_arr: np.ndarray [shape=(n), dtype=np.float32]
             Input audio data
 
         Returns
         -------
-        out: np.ndarray [shape=(fre, time)]
+        out: np.ndarray [shape=(fre, time), dtype=np.complex]
         """
         data_arr = np.asarray(data_arr, dtype=np.float32, order='C')
-        check_audio(data_arr)
+        check_audio(data_arr, is_mono=False)
+        data_len = data_arr.shape[-1]
 
-        cqt_fn = self._lib['cqtObj_cqt']
-        cqt_fn.argtypes = [POINTER(OpaqueCQT),
-                           np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS'),
-                           c_int,
-                           np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS'),
-                           np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS'),
-                           ]
-
-        data_len = data_arr.shape[0]
+        fn = self._lib['cqtObj_cqt']
+        fn.argtypes = [POINTER(OpaqueCQT),
+                       np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS'),
+                       c_int,
+                       np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS'),
+                       np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS'),
+                       ]
         time_len = self.cal_time_length(data_len)
 
-        m_real_arr = np.zeros((time_len, self.num), dtype=np.float32)
-        m_image_arr = np.zeros((time_len, self.num), dtype=np.float32)
+        if data_arr.ndim == 1:
+            size = (time_len, self.num)
+            m_real_arr = np.zeros(size, dtype=np.float32)
+            m_image_arr = np.zeros(size, dtype=np.float32)
+            fn(self._obj, data_arr, c_int(data_len), m_real_arr, m_image_arr)
+            ret_arr = m_real_arr + m_image_arr * 1j
+        else:
+            data_arr, o_channel_shape = format_channel(data_arr, 1)
+            channel_num = data_arr.shape[0]
 
-        cqt_fn(self._obj, data_arr, c_int(data_len), m_real_arr, m_image_arr)
-
-        ret_arr = m_real_arr + m_image_arr * 1j
-        ret_arr = ascontiguous_T(ret_arr)
+            size = (channel_num, time_len, self.num)
+            m_real_arr = np.zeros(size, dtype=np.float32)
+            m_image_arr = np.zeros(size, dtype=np.float32)
+            for i in range(channel_num):
+                fn(self._obj, data_arr[i], c_int(data_len), m_real_arr[i], m_image_arr[i])
+            ret_arr = m_real_arr + m_image_arr * 1j
+            ret_arr = revoke_channel(ret_arr, o_channel_shape, 2)
+        ret_arr = ascontiguous_swapaxex(ret_arr, -1, -2)
         return ret_arr
 
     def chroma(self, m_cqt_data, chroma_num=12,
@@ -147,7 +158,7 @@ class CQTBase(Base):
 
         Parameters
         ----------
-        m_cqt_data: np.ndarray [shape=(fre, time), dtype=np.complex]
+        m_cqt_data: np.ndarray [shape=(..., fre, time), dtype=np.complex]
             CQT spectrogram matrix, call the **cqt** method to get.
 
         chroma_num: int
@@ -163,14 +174,14 @@ class CQTBase(Base):
 
         Returns
         -------
-        out: np.ndarray [shape=(chroma_num, time)]
+        out: np.ndarray [shape=(..., chroma_num, time), dtype=np.float32]
         """
         if not np.iscomplexobj(m_cqt_data):
             raise ValueError(f'm_cqt_data must be of type np.complex')
-        if m_cqt_data.ndim != 2:
-            raise ValueError(f'm_cqt_data is only defined for 2D arrays')
+        if m_cqt_data.ndim < 2:
+            raise ValueError(f"m_cqt_data's dimensions must be greater than 1")
 
-        m_cqt_data = ascontiguous_T(m_cqt_data)
+        m_cqt_data = ascontiguous_swapaxex(m_cqt_data, -1, -2)
 
         chroma_fn = self._lib['cqtObj_chroma']
         chroma_fn.argtypes = [POINTER(OpaqueCQT),
@@ -181,27 +192,41 @@ class CQTBase(Base):
                               np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS'),
                               np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS'),
                               ]
+        p_chroma_num = pointer(c_int(chroma_num))
+        p_data_type = pointer(c_int(data_type.value))
+        p_norm_type = pointer(c_int(norm_type.value))
 
-        t_len, _ = m_cqt_data.shape  # (time, fre)
-        m_ret_arr = np.zeros((t_len, chroma_num), dtype=np.float32)
+        if m_cqt_data.ndim == 2:
+            t_len, f_len = m_cqt_data.shape
 
-        m_real_arr = m_cqt_data.real.astype(dtype=np.float32)
-        m_imag_arr = m_cqt_data.imag.astype(dtype=np.float32)
+            m_ret_arr = np.zeros((t_len, chroma_num), dtype=np.float32)
+            m_real_arr = m_cqt_data.real.astype(dtype=np.float32)
+            m_imag_arr = m_cqt_data.imag.astype(dtype=np.float32)
 
-        chroma_fn(self._obj,
-                  pointer(c_int(chroma_num)),
-                  pointer(c_int(data_type.value)),
-                  pointer(c_int(norm_type.value)),
-                  m_real_arr, m_imag_arr, m_ret_arr)
-        return ascontiguous_T(m_ret_arr)
+            chroma_fn(self._obj, p_chroma_num, p_data_type, p_norm_type,
+                      m_real_arr, m_imag_arr, m_ret_arr)
+        else:
+            m_cqt_data, o_channel_shape = format_channel(m_cqt_data, 2)
+            channel_num, t_len, f_len = m_cqt_data.shape
 
-    def cqcc(self, m_data_arr, cc_num, rectify_type) -> np.ndarray:
+            m_ret_arr = np.zeros((channel_num, t_len, chroma_num), dtype=np.float32)
+            m_real_arr = m_cqt_data.real.astype(dtype=np.float32)
+            m_imag_arr = m_cqt_data.imag.astype(dtype=np.float32)
+
+            for i in range(channel_num):
+                chroma_fn(self._obj, p_chroma_num, p_data_type, p_norm_type,
+                          m_real_arr[i], m_imag_arr[i], m_ret_arr[i])
+            m_ret_arr = revoke_channel(m_ret_arr, o_channel_shape, 2)
+        m_ret_arr = ascontiguous_swapaxex(m_ret_arr, -1, -2)
+        return m_ret_arr
+
+    def cqcc(self, m_data_arr, cc_num=13, rectify_type=CepstralRectifyType.LOG):
         """
         Compute the spectral cqcc feature.
 
         Parameters
         ----------
-        m_data_arr: np.ndarray [shape=(fre, time)]
+        m_data_arr: np.ndarray [shape=(..., fre, time), dtype=np.float32]
             CQT spectrogram matrix, call the **cqt** method to get.
 
             - data_type:
@@ -217,13 +242,14 @@ class CQTBase(Base):
 
         Returns
         -------
-        out: np.ndarray [shape=(cc_num, time)]
+        out: np.ndarray [shape=(..., cc_num, time), dtype=np.float32]
         """
-        if m_data_arr.ndim != 2:
-            raise ValueError(f'm_data_arr is only defined for 2D arrays')
+        if m_data_arr.ndim < 2:
+            raise ValueError(f"m_data_arr's dimensions must be greater than 1")
+
         if np.iscomplexobj(m_data_arr):
             m_data_arr = np.abs(m_data_arr) ** 2
-        m_data_arr = ascontiguous_T(m_data_arr)
+        m_data_arr = ascontiguous_swapaxex(m_data_arr, -1, -2)
 
         cqcc_fn = self._lib['cqtObj_cqcc']
         cqcc_fn.argtypes = [POINTER(OpaqueCQT),
@@ -232,20 +258,29 @@ class CQTBase(Base):
                             POINTER(c_int),
                             np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS'),
                             ]
+        p_rectify_type = pointer(c_int(rectify_type.value))
 
-        time_len, _ = m_data_arr.shape  # (time, fre)
-        cqcc_arr = np.zeros((time_len, cc_num), dtype=np.float32)
+        if m_data_arr.ndim == 2:
+            time_len, _ = m_data_arr.shape  # (time, fre)
+            cqcc_arr = np.zeros((time_len, cc_num), dtype=np.float32)
+            cqcc_fn(self._obj, m_data_arr, c_int(cc_num), p_rectify_type, cqcc_arr)
+        else:
+            m_data_arr, o_channel_shape = format_channel(m_data_arr, 2)
+            channel_num, time_len, _ = m_data_arr.shape
+            cqcc_arr = np.zeros((channel_num, time_len, cc_num), dtype=np.float32)
+            for i in range(channel_num):
+                cqcc_fn(self._obj, m_data_arr[i], c_int(cc_num), p_rectify_type, cqcc_arr[i])
+            cqcc_arr = revoke_channel(cqcc_arr, o_channel_shape, 2)
+        cqcc_arr = ascontiguous_swapaxex(cqcc_arr, -1, -2)
+        return cqcc_arr
 
-        cqcc_fn(self._obj, m_data_arr, c_int(cc_num), pointer(c_int(rectify_type.value)), cqcc_arr)
-        return ascontiguous_T(cqcc_arr)
-
-    def cqhc(self, m_data_arr, hc_num=20) -> np.ndarray:
+    def cqhc(self, m_data_arr, hc_num=20):
         """
         Compute the spectral cqhc feature.
 
         Parameters
         ----------
-        m_data_arr: np.ndarray [shape=(fre, time)]
+        m_data_arr: np.ndarray [shape=(..., fre, time), dtype=np.float32]
             CQT spectrogram matrix, call the **cqt** method to get.
 
             - data_type:
@@ -258,13 +293,13 @@ class CQTBase(Base):
 
         Returns
         -------
-        out: np.ndarray [shape=(hc_num, time)]
+        out: np.ndarray [shape=(..., hc_num, time), dtype=np.float32]
         """
-        if m_data_arr.ndim != 2:
-            raise ValueError(f'm_data_arr is only defined for 2D arrays')
+        if m_data_arr.ndim < 2:
+            raise ValueError(f"m_data_arr's dimensions must be greater than 1")
         if np.iscomplexobj(m_data_arr):
             m_data_arr = np.abs(m_data_arr) ** 2
-        m_data_arr = ascontiguous_T(m_data_arr)
+        m_data_arr = ascontiguous_swapaxex(m_data_arr, -1, -2)
 
         cqhc_fn = self._lib['cqtObj_cqhc']
         cqhc_fn.argtypes = [POINTER(OpaqueCQT),
@@ -273,18 +308,27 @@ class CQTBase(Base):
                             np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS'),
                             ]
 
-        n_len, m_len = m_data_arr.shape
-        m_form_arr = np.zeros((n_len, hc_num), dtype=np.float32)
-        cqhc_fn(self._obj, m_data_arr, c_int(hc_num), m_form_arr)
-        return ascontiguous_T(m_form_arr)
+        if m_data_arr.ndim == 2:
+            time_len, _ = m_data_arr.shape
+            m_form_arr = np.zeros((time_len, hc_num), dtype=np.float32)
+            cqhc_fn(self._obj, m_data_arr, c_int(hc_num), m_form_arr)
+        else:
+            m_data_arr, o_channel_shape = format_channel(m_data_arr, 2)
+            channel_num, time_len, _ = m_data_arr.shape
+            m_form_arr = np.zeros((channel_num, time_len, hc_num), dtype=np.float32)
+            for i in range(channel_num):
+                cqhc_fn(self._obj, m_data_arr[i], c_int(hc_num), m_form_arr[i])
+            m_form_arr = revoke_channel(m_form_arr, o_channel_shape, 2)
+        m_form_arr = ascontiguous_swapaxex(m_form_arr, -1, -2)
+        return m_form_arr
 
-    def deconv(self, m_data_arr) -> (np.ndarray, np.ndarray):
+    def deconv(self, m_data_arr):
         """
         Compute the spectral deconv feature.
 
         Parameters
         ----------
-        m_data_arr: np.ndarray [shape=(fre, time)]
+        m_data_arr: np.ndarray [shape=(..., fre, time), dtype=np.float32]
             CQT spectrogram matrix, call the **cqt** method to get.
 
             - data_type:
@@ -294,30 +338,40 @@ class CQTBase(Base):
 
         Returns
         -------
-        m_tone_arr: np.ndarray [shape=(..., time)]
+        m_tone_arr: np.ndarray [shape=(..., time), dtype=np.float32]
             The matrix of tone
-        m_pitch_arr: np.ndarray [shape=(..., time)]
+        m_pitch_arr: np.ndarray [shape=(..., time), dtype=np.float32]
             The matrix of pitch
         """
-        if m_data_arr.ndim != 2:
-            raise ValueError(f'm_data_arr is only defined for 2D arrays')
+        if m_data_arr.ndim < 2:
+            raise ValueError(f"m_data_arr's dimensions must be greater than 1")
         if np.iscomplexobj(m_data_arr):
             m_data_arr = np.abs(m_data_arr)
-        m_data_arr = ascontiguous_T(m_data_arr)
+        m_data_arr = ascontiguous_swapaxex(m_data_arr, -1, -2)
 
         deconv_fn = self._lib['cqtObj_deconv']
-        deconv_fn.argtypes = [POINTER(OpaqueCQT),
-                              np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS'),
-                              np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS'),
-                              np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS'),
-                              ]
+        deconv_fn.argtypes = [
+            POINTER(OpaqueCQT),
+            np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS'),
+            np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS'),
+            np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS'),
+        ]
+        if m_data_arr.ndim == 2:
+            m_tone_arr = np.zeros_like(m_data_arr, dtype=np.float32)
+            m_pitch_arr = np.zeros_like(m_data_arr, dtype=np.float32)
+            deconv_fn(self._obj, m_data_arr, m_tone_arr, m_pitch_arr)
+        else:
+            m_data_arr, o_channel_shape = format_channel(m_data_arr, 2)
+            channel_num, *_ = m_data_arr.shape
+            m_tone_arr = np.zeros_like(m_data_arr, dtype=np.float32)
+            m_pitch_arr = np.zeros_like(m_data_arr, dtype=np.float32)
+            for i in range(channel_num):
+                deconv_fn(self._obj, m_data_arr[i], m_tone_arr[i], m_pitch_arr[i])
+            m_tone_arr = revoke_channel(m_tone_arr, o_channel_shape, 2)
+            m_pitch_arr = revoke_channel(m_pitch_arr, o_channel_shape, 2)
 
-        m_tone_arr = np.zeros_like(m_data_arr, dtype=np.float32)
-        m_pitch_arr = np.zeros_like(m_data_arr, dtype=np.float32)
-        deconv_fn(self._obj, m_data_arr, m_tone_arr, m_pitch_arr)
-
-        m_tone_arr = ascontiguous_T(m_tone_arr)
-        m_pitch_arr = ascontiguous_T(m_pitch_arr)
+        m_tone_arr = ascontiguous_swapaxex(m_tone_arr, -1, -2)
+        m_pitch_arr = ascontiguous_swapaxex(m_pitch_arr, -1, -2)
         return m_tone_arr, m_pitch_arr
 
     def y_coords(self):
@@ -394,8 +448,6 @@ class SimpleCQT(CQTBase):
     >>> import audioflux as af
     >>> audio_path = af.utils.sample_path('220')
     >>> audio_arr, sr = af.read(audio_path)
-    array([-5.5879354e-09, -9.3132257e-09,  0.0000000e+00, ...,
-           3.2826858e-03,  3.2447521e-03,  3.0795704e-03], dtype=float32)
 
     Create SimpleCQT object
 
@@ -408,25 +460,12 @@ class SimpleCQT(CQTBase):
     >>> import numpy as np
     >>> spec_arr = obj.cqt(audio_arr)
     >>> spec_mag_arr = np.abs(spec_arr)
-    array([[4.13306177e-01, 4.24238801e-01, 4.03985798e-01, ...,
-            9.09681246e-03, 7.72366347e-03, 6.51519699e-03],
-           [3.45392436e-01, 3.47385347e-01, 3.18555593e-01, ...,
-            3.74186062e-03, 3.57810827e-03, 5.09629818e-03],
-           [2.74609476e-01, 2.69073159e-01, 2.38167673e-01, ...,
-            1.73897278e-02, 1.37754036e-02, 1.05445199e-02],
-           ...,
-           [6.24795386e-04, 4.99437414e-02, 1.60291921e-02, ...,
-            1.42244404e-04, 1.27240157e-04, 7.22698495e-03],
-           [8.64346686e-04, 3.18217799e-02, 2.55288873e-02, ...,
-            1.96875044e-04, 1.22444399e-04, 7.08540343e-03],
-           [5.32156206e-04, 3.65380235e-02, 1.94845423e-02, ...,
-            1.01396305e-04, 4.90328348e-05, 6.83017401e-03]], dtype=float32)
 
     Show CQT spectrogram plot
 
     >>> import matplotlib.pyplot as plt
     >>> from audioflux.display import fill_spec
-    >>> audio_len = audio_arr.shape[0]
+    >>> audio_len = audio_arr.shape[-1]
     >>> fig, ax = plt.subplots()
     >>> img = fill_spec(spec_mag_arr, axes=ax,
     >>>           x_coords=obj.x_coords(audio_len),
@@ -438,11 +477,6 @@ class SimpleCQT(CQTBase):
     Extract Chroma-cqt data
 
     >>> chroma_arr = obj.chroma(spec_arr, chroma_num=12)
-    array([[2.28795856e-01, 1.27659831e-02, 5.76458964e-03, ...,
-            1.08233641e-03, 1.06033171e-03, 8.46851245e-02],
-           ...,
-           [3.88875484e-01, 4.20701923e-03, 1.00626342e-03, ...,
-            7.09769898e-04, 3.13778268e-03, 2.85723597e-01]], dtype=float32)
 
     Show Chroma-CQT spectrogram plot
 
@@ -452,8 +486,6 @@ class SimpleCQT(CQTBase):
     >>>           x_axis='time', y_axis='chroma',
     >>>           title='Chroma-CQT Spectrogram')
     >>> fig.colorbar(img, ax=ax)
-
-
     """
 
     def __init__(self, num=84, samplate=32000, low_fre=note_to_hz('C1')):
@@ -559,7 +591,7 @@ class CQT(CQTBase):
 
     >>> import matplotlib.pyplot as plt
     >>> from audioflux.display import fill_spec
-    >>> audio_len = audio_arr.shape[0]
+    >>> audio_len = audio_arr.shape[-1]
     >>> fig, ax = plt.subplots()
     >>> img = fill_spec(spec_mag_arr, axes=ax,
     >>>           x_coords=obj.x_coords(audio_len),
@@ -571,11 +603,6 @@ class CQT(CQTBase):
     Extract Chroma-cqt data
 
     >>> chroma_arr = obj.chroma(spec_arr, chroma_num=12)
-    array([[2.28795856e-01, 1.27659831e-02, 5.76458964e-03, ...,
-            1.08233641e-03, 1.06033171e-03, 8.46851245e-02],
-           ...,
-           [3.88875484e-01, 4.20701923e-03, 1.00626342e-03, ...,
-            7.09769898e-04, 3.13778268e-03, 2.85723597e-01]], dtype=float32)
 
     Show Chroma-CQT spectrogram plot
 

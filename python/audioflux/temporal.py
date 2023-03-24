@@ -1,9 +1,8 @@
-import ctypes
-
 import numpy as np
 from ctypes import Structure, POINTER, pointer, c_int, c_void_p, c_float
 from audioflux.base import Base
 from audioflux.type import WindowType
+from audioflux.utils import check_audio, format_channel, revoke_channel
 
 __all__ = ['Temporal']
 
@@ -41,8 +40,7 @@ class Temporal(Base):
     Create Temporal and extract feature
 
     >>> temp_obj = af.Temporal(frame_length=2048, slide_length=512)
-    >>> temp_obj.temporal(audio_arr)
-    >>> energy_arr, rms_arr, zero_cross_arr, m_arr = temp_obj.get_data(len(audio_arr))
+    >>> energy_arr, rms_arr, zero_cross_arr, m_arr = temp_obj.get_data(audio_arr)
     """
 
     def __init__(self, frame_length=2048, slide_length=512, window_type=WindowType.HANN):
@@ -59,7 +57,7 @@ class Temporal(Base):
            pointer(c_int(self.frame_length)),
            pointer(c_int(self.slide_length)),
            pointer(c_int(self.window_type.value)))
-        self._is_created = False
+        self._is_created = True
 
     def cal_time_length(self, data_length):
         """
@@ -79,17 +77,64 @@ class Temporal(Base):
         fn.restype = c_int
         return fn(self._obj, c_int(data_length))
 
-    def temporal(self, data_arr):
+    def get_data(self, data_arr):
         """
-        set audio data
+           Get energy/rms/zeroCrossRate feature
 
-        Parameters
-        ----------
-        data_arr: np.ndarray [shape=(n,)]
-            Input audio data
+           Parameters
+           ----------
+            data_arr: np.ndarray [shape=(..., n)]
+                Input audio data
+
+           Returns
+           -------
+           energy_arr: np.ndarray [shape=(..., time)]
+               energy feature
+
+           rms_arr: np.ndarray [shape=(..., time)]
+               rms feature
+
+           zcr_arr: np.ndarray [shape=(..., time)]
+               zero Cross Rate feature
+
+           m_arr: np.ndarray [shape=(..., time, frame)]
         """
-        data_arr = data_arr.astype(dtype=np.float32)
+        data_arr = np.asarray(data_arr, dtype=np.float32, order='C')
+        check_audio(data_arr, is_mono=False)
 
+        data_length = data_arr.shape[-1]
+        if data_arr.ndim == 1:
+            self._temporal(data_arr)
+            energy_arr, rms_arr, zcr_arr, m_arr = self._get_data(data_length)
+        else:
+            data_arr, o_channel_shape = format_channel(data_arr, 1)
+            channel_num = data_arr.shape[0]
+
+            energy_arr = []
+            rms_arr = []
+            zcr_arr = []
+            m_arr = []
+
+            for i in range(channel_num):
+                self._temporal(data_arr[i])
+                _energy_arr, _rms_arr, _zcr_arr, _m_arr = self._get_data(data_length)
+                energy_arr.append(_energy_arr)
+                rms_arr.append(_rms_arr)
+                zcr_arr.append(_zcr_arr)
+                m_arr.append(_m_arr)
+
+            energy_arr = np.stack(energy_arr, axis=0)
+            rms_arr = np.stack(rms_arr, axis=0)
+            zcr_arr = np.stack(zcr_arr, axis=0)
+            m_arr = np.stack(m_arr, axis=0)
+
+            energy_arr = revoke_channel(energy_arr, o_channel_shape, 1)
+            rms_arr = revoke_channel(rms_arr, o_channel_shape, 1)
+            zcr_arr = revoke_channel(zcr_arr, o_channel_shape, 1)
+            m_arr = revoke_channel(m_arr, o_channel_shape, 2)
+        return energy_arr, rms_arr, zcr_arr, m_arr
+
+    def _temporal(self, data_arr):
         fn = self._lib['temporalObj_temporal']
         fn.argtypes = [POINTER(OpaqueTemporal),
                        np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS'),
@@ -98,28 +143,7 @@ class Temporal(Base):
         data_length = data_arr.size
         fn(self._obj, data_arr, c_int(data_length))
 
-    def get_data(self, data_length) -> (np.ndarray, np.ndarray, np.ndarray):
-        """
-        Get energy/rms/zeroCrossRate feature
-
-        Parameters
-        ----------
-        data_length: int
-            The length of the data passed in by the temporal method
-
-        Returns
-        -------
-        energy_arr: np.ndarray [shape=(time,)]
-            energy feature
-
-        rms_arr: np.ndarray [shape=(time,)]
-            rms feature
-
-        zero_cross_arr: np.ndarray [shape=(time,)]
-            zero Cross Rate feature
-
-        m_arr: np.ndarray [shape=(...,time)]
-        """
+    def _get_data(self, data_length):
         fn = self._lib['temporalObj_getData']
         fn.argtypes = [POINTER(OpaqueTemporal),
                        POINTER(POINTER(c_float)),
@@ -145,38 +169,9 @@ class Temporal(Base):
         rms_arr = np.array([pp_rms_arr.contents[x] for x in range(time_length)], dtype=np.float32)
         zero_cross_arr = np.array([pp_zero_cross_arr.contents[x] for x in range(time_length)], dtype=np.float32)
         m_arr = np.array([pp_m_arr.contents[x] for x in range(time_length * self.frame_length)],
-                         dtype=np.float32).reshape(
-            time_length, self.frame_length)
+                         dtype=np.float32).reshape(time_length, self.frame_length)
 
         return energy_arr, rms_arr, zero_cross_arr, m_arr
-
-    def ezr(self, data_length, gamma):
-        """
-        Get ezr feature
-
-        Parameters
-        ----------
-        data_length: int
-            The length of the data passed in by the temporal method
-
-        gamma: float
-            gamma value
-
-        Returns
-        -------
-        out: np.ndarray [shape=(time,)]
-            ezr feature
-        """
-
-        fn = self._lib['temporalObj_ezr']
-        fn.argtypes = [POINTER(OpaqueTemporal),
-                       c_float,
-                       np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS'),
-                       ]
-        time_len = self.cal_time_length(data_length)
-        ret_arr = np.zeros(time_len, dtype=np.float32)
-        fn(self._obj, c_float(gamma), ret_arr)
-        return ret_arr
 
     def __del__(self):
         if self._is_created:

@@ -3,7 +3,7 @@ import numpy as np
 from ctypes import Structure, POINTER, pointer, c_int, c_void_p
 from audioflux.type import WaveletDiscreteType
 from audioflux.base import Base
-from audioflux.utils import check_audio, check_audio_length
+from audioflux.utils import check_audio, check_audio_length, format_channel, revoke_channel
 
 __all__ = ["DWT"]
 
@@ -73,7 +73,7 @@ class DWT(Base):
     >>> import audioflux as af
     >>> audio_path = af.utils.sample_path('880')
     >>> audio_arr, sr = af.read(audio_path)
-    >>> audio_arr = audio_arr[:4096]
+    >>> audio_arr = audio_arr[..., :4096]
 
     Create DWT object
 
@@ -99,7 +99,7 @@ class DWT(Base):
     >>>           x_axis='time', y_axis='log',
     >>>           title='DWT')
     >>>
-    >>> fill_plot(np.arange(len(coef_arr)), coef_arr,
+    >>> fill_plot(np.arange(coef_arr.shape[-1]), coef_arr,
     >>>           axes=ax[1], label='DWT-coef')
 
     """
@@ -151,15 +151,16 @@ class DWT(Base):
 
         Parameters
         ----------
-        data_arr: np.ndarray [shape=(n,)]
+        data_arr: np.ndarray [shape=(..., 2**radix2_exp)]
             Input audio data
 
         Returns
         -------
-        out: np.ndarray [shape=(fre, time)]
+        coef_arr: np.ndarray [shape=(..., time)]
+        out: np.ndarray [shape=(..., fre, time)]
         """
         data_arr = np.asarray(data_arr, dtype=np.float32, order='C')
-        check_audio(data_arr)
+        check_audio(data_arr, is_mono=False)
         data_arr = check_audio_length(data_arr, self.radix2_exp)
 
         fn = self._lib['dwtObj_dwt']
@@ -169,10 +170,19 @@ class DWT(Base):
                        np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS'),
                        ]
 
-        coef_arr = np.zeros(self.fft_length, dtype=np.float32)
-        m_data_arr = np.zeros((self.num, self.fft_length), dtype=np.float32)
-
-        fn(self._obj, data_arr, coef_arr, m_data_arr)
+        if data_arr.ndim == 1:
+            coef_arr = np.zeros(self.fft_length, dtype=np.float32)
+            m_data_arr = np.zeros((self.num, self.fft_length), dtype=np.float32)
+            fn(self._obj, data_arr, coef_arr, m_data_arr)
+        else:
+            data_arr, o_channel_shape = format_channel(data_arr, 1)
+            channel_num = data_arr.shape[0]
+            coef_arr = np.zeros((channel_num, self.fft_length), dtype=np.float32)
+            m_data_arr = np.zeros((channel_num, self.num, self.fft_length), dtype=np.float32)
+            for i in range(channel_num):
+                fn(self._obj, data_arr[i], coef_arr[i], m_data_arr[i])
+            coef_arr = revoke_channel(coef_arr, o_channel_shape, 1)
+            m_data_arr = revoke_channel(m_data_arr, o_channel_shape, 2)
         return coef_arr, m_data_arr
 
     def y_coords(self):

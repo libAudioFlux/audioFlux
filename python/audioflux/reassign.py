@@ -2,7 +2,7 @@ import numpy as np
 from ctypes import Structure, POINTER, pointer, c_int, c_float, c_void_p
 from audioflux.type import ReassignType, WindowType
 from audioflux.base import Base
-from audioflux.utils import check_audio, ascontiguous_T
+from audioflux.utils import check_audio, ascontiguous_swapaxex, format_channel, revoke_channel
 
 __all__ = ['Reassign']
 
@@ -13,7 +13,7 @@ class OpaqueReassign(Structure):
 
 class Reassign(Base):
     """
-    Reassign
+    Reassign - reassign transform for STFT
 
     Parameters
     ----------
@@ -71,7 +71,7 @@ class Reassign(Base):
 
     >>> import matplotlib.pyplot as plt
     >>> from audioflux.display import fill_spec
-    >>> audio_len = audio_arr.shape[0]
+    >>> audio_len = audio_arr.shape[-1]
     >>> # Show BFT/STFT Spectrogram
     >>> fig, ax = plt.subplots()
     >>> img = fill_spec(bft_spec_arr, axes=ax,
@@ -110,6 +110,7 @@ class Reassign(Base):
         self.is_padding = is_padding
         self.is_continue = False
         self.order = 1
+        self.result_type = 0
 
         fn = self._lib['reassignObj_new']
         fn.argtypes = [POINTER(POINTER(OpaqueReassign)),
@@ -156,7 +157,8 @@ class Reassign(Base):
         """
         c_fn = self._lib['reassignObj_setResultType']
         c_fn.argtypes = [POINTER(OpaqueReassign), c_int]
-        return c_fn(self._obj, c_int(result_type))
+        c_fn(self._obj, c_int(result_type))
+        self.result_type = result_type
 
     def set_order(self, order):
         """
@@ -167,10 +169,10 @@ class Reassign(Base):
         order: int
             order >= 1
         """
-        self.order = order
         c_fn = self._lib['reassignObj_setOrder']
         c_fn.argtypes = [POINTER(OpaqueReassign), c_int]
-        return c_fn(self._obj, c_int(order))
+        c_fn(self._obj, c_int(order))
+        self.order = order
 
     def reassign(self, data_arr, result_type=0):
         """
@@ -178,7 +180,7 @@ class Reassign(Base):
 
         Parameters
         ----------
-        data_arr: np.ndarray [shape=(n,)]
+        data_arr: np.ndarray [shape=(..., n)]
             Input audio data
 
         result_type: int, 0 or 1
@@ -187,16 +189,17 @@ class Reassign(Base):
 
         Returns
         -------
-        m_arr1: np.ndarray [shape=(fre, time)]
+        m_arr1: np.ndarray [shape=(..., fre, time), dtype=(np.complex or np.float32)]
             The matrix of reassign
 
-        m_arr2: np.ndarray [shape=(fre, time)]
+        m_arr2: np.ndarray [shape=(..., fre, time), dtype=np.complex]
             The matrix of origin(BFT/STFT)
         """
         data_arr = np.asarray(data_arr, dtype=np.float32, order='C')
-        check_audio(data_arr)
+        check_audio(data_arr, is_mono=False)
 
-        self.set_result_type(result_type)
+        if result_type != self.result_type:
+            self.set_result_type(result_type)
 
         c_fn = self._lib['reassignObj_reassign']
         c_fn.argtypes = [POINTER(OpaqueReassign),
@@ -207,23 +210,40 @@ class Reassign(Base):
                          np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS'),
                          np.ctypeslib.ndpointer(dtype=np.float32, ndim=2, flags='C_CONTIGUOUS')]
 
-        data_len = data_arr.size
-        time_len = self.cal_time_length(data_len)
-        m_len = (1 << self.radix2_exp) // 2 + 1
-        shape = (time_len, m_len)
+        data_len = data_arr.shape[-1]
+        n_time = self.cal_time_length(data_len)
+        n_fre = self.fft_length // 2 + 1
 
-        m_real_arr1 = np.zeros(shape, dtype=np.float32)
-        m_image_arr1 = np.zeros(shape, dtype=np.float32)
-        m_real_arr2 = np.zeros(shape, dtype=np.float32)
-        m_image_arr2 = np.zeros(shape, dtype=np.float32)
-
-        c_fn(self._obj, data_arr, c_int(data_len), m_real_arr1, m_image_arr1, m_real_arr2, m_image_arr2)
-        if result_type == 0:
-            m_arr1 = m_real_arr1 + (m_image_arr1 * 1j)
+        if data_arr.ndim == 1:
+            shape = (n_time, n_fre)
+            m_real_arr1 = np.zeros(shape, dtype=np.float32)
+            m_imag_arr1 = np.zeros(shape, dtype=np.float32)
+            m_real_arr2 = np.zeros(shape, dtype=np.float32)
+            m_imag_arr2 = np.zeros(shape, dtype=np.float32)
+            c_fn(self._obj, data_arr, c_int(data_len), m_real_arr1, m_imag_arr1, m_real_arr2, m_imag_arr2)
+            m_arr1 = (m_real_arr1 + m_imag_arr1 * 1j) if self.result_type == 0 else m_real_arr1
+            m_arr2 = m_real_arr2 + m_imag_arr2 * 1j
         else:
-            m_arr1 = m_real_arr1
-        m_arr2 = m_real_arr2 + (m_image_arr2 * 1j)
-        return ascontiguous_T(m_arr1), ascontiguous_T(m_arr2)
+            data_arr, o_channel_shape = format_channel(data_arr, 1)
+            channel_num = data_arr.shape[0]
+
+            shape = (channel_num, n_time, n_fre)
+            m_real_arr1 = np.zeros(shape, dtype=np.float32)
+            m_imag_arr1 = np.zeros(shape, dtype=np.float32)
+            m_real_arr2 = np.zeros(shape, dtype=np.float32)
+            m_imag_arr2 = np.zeros(shape, dtype=np.float32)
+
+            for i in range(channel_num):
+                c_fn(self._obj, data_arr[i], c_int(data_len),
+                     m_real_arr1[i], m_imag_arr1[i], m_real_arr2[i], m_imag_arr2[i])
+            m_arr1 = (m_real_arr1 + m_imag_arr1 * 1j) if self.result_type == 0 else m_real_arr1
+            m_arr2 = m_real_arr2 + m_imag_arr2 * 1j
+            m_arr1 = revoke_channel(m_arr1, o_channel_shape, 2)
+            m_arr2 = revoke_channel(m_arr2, o_channel_shape, 2)
+
+        m_arr1 = ascontiguous_swapaxex(m_arr1, -1, -2)
+        m_arr2 = ascontiguous_swapaxex(m_arr2, -1, -2)
+        return m_arr1, m_arr2
 
     def y_coords(self):
         """
