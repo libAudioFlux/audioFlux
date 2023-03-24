@@ -1,5 +1,4 @@
-audioread>=2.1.9
 numpy
 scipy>=1.2.0
-soundfile
+soundfile>=0.12.1
 matplotlib

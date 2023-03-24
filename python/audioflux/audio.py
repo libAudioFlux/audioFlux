@@ -2,7 +2,6 @@ import os
 import warnings
 from ctypes import Structure, POINTER, pointer, c_int, c_void_p, c_char_p
 import scipy
-import audioread
 import numpy as np
 import soundfile as sf
 
@@ -108,22 +107,10 @@ def read(path=None, dir=None, is_mono=True, samplate=None, re_type='scipy'):
 
 
 def __read(fp):
-    try:
-        with sf.SoundFile(fp, 'r') as f:
-            data = f.read(dtype=np.float32)
-            sr = f.samplerate
-    except sf.SoundFileRuntimeError:
-        temp = bytearray()
-        with audioread.audio_open(fp) as f:
-            sr = f.samplerate
-            n_channels = f.channels
-
-            # chunk size can be specified with 'block_samples' (default 1024):
-            for chunk in f.read_data():
-                temp.extend(chunk)
-
-        data = np.frombuffer(temp, dtype='<i2').reshape(-1, n_channels)
-        data = (data * 1.0 / 32768).astype(np.float32)
+    with sf.SoundFile(fp, 'r') as f:
+        data = f.read()
+        data = data.astype(dtype=np.float32)
+        sr = f.samplerate
     data = ascontiguous_T(data)
     return data, sr
 
