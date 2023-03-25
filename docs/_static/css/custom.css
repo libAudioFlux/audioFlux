@@ -28,3 +28,9 @@ div.rst-versions {
         left: -330px;
     }
 }
+
+@media screen and (max-width:480px) {
+	.wy-breadcrumbs-extra,.wy-breadcrumbs li.wy-breadcrumbs-aside {
+		display: inline-block;
+	}
+}

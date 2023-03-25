@@ -248,6 +248,7 @@ from audioflux.display import fill_wave, fill_plot, fill_spec
 
 # Read audio data and sample rate
 audio_arr, sr = af.read(af.utils.sample_path('guitar_chord2'))
+audio_len = audio_arr.shape[-1]
 
 bft_obj = af.BFT(num=256, samplate=sr, radix2_exp=12, slide_length=1024,
                  data_type=SpectralDataType.MAG,
@@ -258,8 +259,7 @@ spec_arr = np.abs(spec_arr)
 # Create Spectral object and extract spectral feature
 spectral_obj = af.Spectral(num=bft_obj.num,
                            fre_band_arr=bft_obj.get_fre_band_arr())
-n_time = bft_obj.cal_time_length(len(audio_arr))
-spectral_obj.set_time_length(n_time)
+spectral_obj.set_time_length(spec_arr.shape[-1])
 
 flatness_arr = spectral_obj.flatness(spec_arr)
 novelty_arr = spectral_obj.novelty(spec_arr)
@@ -269,11 +269,11 @@ slope_arr = spectral_obj.slope(spec_arr)
 
 # Display
 fig, ax = plt.subplots(nrows=7, figsize=(8, 10), sharex=True)
-times = np.arange(0, len(flatness_arr)) * (bft_obj.slide_length / bft_obj.samplate)
+times = np.arange(0, flatness_arr.shape[-1]) * (bft_obj.slide_length / bft_obj.samplate)
 
 fill_wave(audio_arr, samplate=sr, axes=ax[0])
 fill_spec(spec_arr, axes=ax[1],
-          x_coords=bft_obj.x_coords(len(audio_arr)), y_coords=bft_obj.y_coords(),
+          x_coords=bft_obj.x_coords(audio_len), y_coords=bft_obj.y_coords(),
           y_axis='log')
 fill_plot(times, flatness_arr, axes=ax[2], label='flatness')
 fill_plot(times, novelty_arr, axes=ax[3], label='novelty')
@@ -308,7 +308,7 @@ fre_arr[fre_arr < 1] = np.nan
 
 # Display
 fig, ax = plt.subplots(nrows=2, figsize=(8, 6), sharex=True)
-times = np.arange(0, len(fre_arr)) * (obj.slide_length / obj.samplate)
+times = np.arange(0, fre_arr.shape[-1]) * (obj.slide_length / obj.samplate)
 
 fill_wave(audio_arr, samplate=sr, axes=ax[0])
 
@@ -370,7 +370,7 @@ ax = fill_wave(audio_arr, samplate=sr, axes=axes[1])
 ax.vlines(time_arr, -1, 1, color='r', alpha=0.9,
           linestyle='--', label='Onsets')
 
-times = np.arange(0, len(evn_arr)) * (bft_obj.slide_length / sr)
+times = np.arange(0, evn_arr.shape[-1]) * (bft_obj.slide_length / sr)
 ax = fill_plot(times, evn_arr, axes=axes[2], label='Onset strength')
 ax.vlines(time_arr, evn_arr.min(), evn_arr.max(), color='r', alpha=0.9,
           linestyle='--', label='Onsets')
@@ -422,7 +422,7 @@ fill_wave(audio_arr, samplate=sr, axes=axes[0])
 fill_wave(h_arr, samplate=sr, axes=axes[1])
 fill_wave(p_arr, samplate=sr, axes=axes[2])
 
-audio_len = audio_arr.shape[0]
+audio_len = audio_arr.shape[-1]
 fig, axes = plt.subplots(nrows=3, sharex=True, sharey=True)
 fill_spec(origin_spec_arr, axes=axes[0],
           x_coords=bft_obj.x_coords(audio_len),
