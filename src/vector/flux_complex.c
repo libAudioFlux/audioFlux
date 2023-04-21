@@ -5,6 +5,12 @@
 
 #include "flux_complex.h"
 
+#ifdef HAVE_OMP
+#include <omp.h>
+#endif
+
+extern int __kernelNum;
+
 // 针对 type 0即符合乘法
 void __mcdot(float *mRealArr1,float *mImageArr1,
 			float *mRealArr2,float *mImageArr2,
@@ -539,12 +545,27 @@ void __mcsquare2(float *mRealArr,float *mImageArr,int nLength,int mLength,int mL
 		return;
 	}
 
-	for(int i=0;i<nLength;i++){
-		for(int j=0;j<mLength2;j++){
-			mArr2[i*mLength2+j]=mRealArr[i*mLength+j]*mRealArr[i*mLength+j]+
-										mImageArr[i*mLength+j]*mImageArr[i*mLength+j];
-		}
-	}
+    #ifdef HAVE_OMP
+    if(nLength<__kernelNum){
+        omp_set_num_threads(nLength);
+    }else{
+        omp_set_num_threads(__kernelNum);
+    }
+    #endif
+
+    if(nLength==1){
+        for(int j=0;j<mLength2;j++){
+            mArr2[j]=mRealArr[j]*mRealArr[j]+mImageArr[j]*mImageArr[j];
+        }
+    }else{
+        #pragma omp parallel for
+        for(int i=0;i<nLength;i++){
+            for(int j=0;j<mLength2;j++){
+                mArr2[i*mLength2+j]=mRealArr[i*mLength+j]*mRealArr[i*mLength+j]+
+                                            mImageArr[i*mLength+j]*mImageArr[i*mLength+j];
+            }
+        }
+    }
 }
 
 // add/sub/mul/div

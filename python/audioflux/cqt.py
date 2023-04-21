@@ -110,12 +110,12 @@ class CQTBase(Base):
 
         Parameters
         ----------
-        data_arr: np.ndarray [shape=(n), dtype=np.float32]
+        data_arr: np.ndarray [shape=(..., n), dtype=np.float32]
             Input audio data
 
         Returns
         -------
-        out: np.ndarray [shape=(fre, time), dtype=np.complex]
+        out: np.ndarray [shape=(..., fre, time), dtype=np.complex]
         """
         data_arr = np.asarray(data_arr, dtype=np.float32, order='C')
         check_audio(data_arr, is_mono=False)

@@ -22,3 +22,4 @@ from .__version__ import (
 )
 from .feature import *
 from .core import *
+from .spectrogram import MelSpectrogram, BarkSpectrogram, ErbSpectrogram

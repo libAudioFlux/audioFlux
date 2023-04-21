@@ -11,6 +11,13 @@
 
 #include "stft_algorithm.h"
 
+#ifdef HAVE_OMP
+#include <omp.h>
+#endif
+
+// cpu core number
+int __kernelNum=0;
+
 typedef enum{
 	STFTExec_None=0,
 
@@ -24,6 +31,7 @@ struct OpaqueSTFT{
 	int useFlag;
 
 	FFTObj fftObj;
+	FFTObj *fftObjArr;
 
 	WindowType windowType;
 	float *windowDataArr;
@@ -69,7 +77,7 @@ static int __stftObj_dealData(STFTObj stftObj,float *dataArr,int dataLength);
 
 static int __stftObj_dealPadData(STFTObj stftObj,float *dataArr,int dataLength,int tLen,float *curDataArr);
 
-static void __stftObj_stft(STFTObj stftObj,float *mRealArr,float *mImageArr);
+static void __stftObj_stft(STFTObj stftObj,float *dataArr,float *mRealArr,float *mImageArr);
 
 static int __isCOA(float *winArr,int winLength,int overlapLength);
 
@@ -83,6 +91,19 @@ int stftObj_new(STFTObj *stftObj,int radix2Exp,WindowType *windowType,int *slide
 
 	STFTObj stft=NULL;
 	FFTObj fftObj=NULL;
+
+	if (__kernelNum==0){
+        #ifdef HAVE_OMP
+        __kernelNum=omp_get_max_threads()/2;
+        if (__kernelNum==0){
+            __kernelNum=1;
+        }
+        #else
+        __kernelNum=1;
+        #endif
+	}
+
+	FFTObj *fftObjArr=(FFTObj *)calloc(__kernelNum, sizeof(FFTObj ));
 
 	int fftLength=0;
 	int _slideLength=0;
@@ -117,6 +138,11 @@ int stftObj_new(STFTObj *stftObj,int radix2Exp,WindowType *windowType,int *slide
 	addDataArr=__vnew(fftLength, NULL);
 	fftObj_new(&fftObj, radix2Exp);
 
+    #pragma omp parallel for
+	for(int i=0;i<__kernelNum;i++){
+		fftObj_new(fftObjArr+i, radix2Exp);
+	}
+
 	realArr=(float *)calloc(fftLength, sizeof(float ));
 	tailDataArr=(float *)calloc(fftLength, sizeof(float ));
 
@@ -136,6 +162,7 @@ int stftObj_new(STFTObj *stftObj,int radix2Exp,WindowType *windowType,int *slide
 	stft->isPad=0;
 	stft->positionType=PaddingPosition_Center;
 	stft->modeType=PaddingMode_Constant;
+	stft->fftObjArr=fftObjArr;
 
 	return status;
 }
@@ -242,13 +269,18 @@ void stftObj_stft(STFTObj stftObj,float *dataArr,int dataLength,float *mRealArr,
 	}
 
 	// 1. 处理相关数据
-	status=__stftObj_dealData(stftObj,dataArr,dataLength);
-	if(!status){
-		return;
+	if (stftObj->isPad || stftObj->isContinue) {
+	    status=__stftObj_dealData(stftObj,dataArr,dataLength);
+        if(!status){
+            return;
+        }
+	}
+	else{
+	    stftObj->timeLength = stftObj_calTimeLength(stftObj, dataLength);
 	}
 
 	// 2. stft
-	__stftObj_stft(stftObj,mRealArr,mImageArr);
+	__stftObj_stft(stftObj,dataArr,mRealArr,mImageArr);
 	
 	stftObj->execType=STFTExec_STFT;
 
@@ -378,6 +410,7 @@ void stftObj_istft(STFTObj stftObj,float *mRealArr,float *mImageArr,int timeLeng
 
 void stftObj_free(STFTObj stftObj){
 	FFTObj fftObj=NULL;
+	FFTObj *fftObjArr=NULL;
 
 	float *windowDataArr=NULL;
 	float *addDataArr=NULL;
@@ -396,6 +429,7 @@ void stftObj_free(STFTObj stftObj){
 	}
 
 	fftObj=stftObj->fftObj;
+	fftObjArr=stftObj->fftObjArr;
 
 	windowDataArr=stftObj->windowDataArr;
 	addDataArr=stftObj->addDataArr;
@@ -410,6 +444,12 @@ void stftObj_free(STFTObj stftObj){
 	normArr=stftObj->normArr;
 
 	fftObj_free(fftObj);
+
+    #pragma omp parallel for
+	for(int i=0;i<__kernelNum;i++){
+		fftObj_free(fftObjArr[i]);
+	}
+	free(fftObjArr);
 
 	free(windowDataArr);
 	free(addDataArr);
@@ -653,8 +693,30 @@ static int __stftObj_dealPadData(STFTObj stftObj,float *dataArr,int dataLength,i
 	return totalLength;
 }
 
-static void __stftObj_stft(STFTObj stftObj,float *mRealArr,float *mImageArr){
+static void __fft(STFTObj stftObj,FFTObj fftObj,int step,float *dataArr,float *mRealArr,float *mImageArr){
+	int fftLength=0;
+	int slideLength=0;
+
+	float *windowDataArr=NULL;
+	float *addDataArr=NULL;
+
+	fftLength=stftObj->fftLength;
+	slideLength=stftObj->slideLength;
+	windowDataArr=stftObj->windowDataArr;
+	addDataArr=__vnew(fftLength, NULL);
+
+	for(int i=0;i<step;i++){
+		__vmul(dataArr+i*slideLength, windowDataArr, fftLength, addDataArr);
+//		__vdebug(addDataArr, fftLength, 1);
+		fftObj_fft(fftObj,addDataArr,NULL,mRealArr+i*fftLength,mImageArr+i*fftLength);
+	}
+
+	free(addDataArr);
+}
+
+static void __stftObj_stft(STFTObj stftObj,float *dataArr, float *mRealArr,float *mImageArr){
 	FFTObj fftObj=NULL;
+	FFTObj *fftObjArr=NULL;
 	int useFlag=0;
 
 	WindowType windowType=Window_Rect;
@@ -667,9 +729,16 @@ static void __stftObj_stft(STFTObj stftObj,float *mRealArr,float *mImageArr){
 	int slideLength=0;
 	int timeLength=0;// x=curSTFTCount
 
-	float *realArr=NULL;
+	int k=0;
+	int block=0;
+	int mod=0;
+
+//	float *realArr=NULL;
+    float *_arr = NULL;
 
 	fftObj=stftObj->fftObj;
+	fftObjArr=stftObj->fftObjArr;
+
 	useFlag=stftObj->useFlag;
 
 	windowType=stftObj->windowType;
@@ -682,19 +751,55 @@ static void __stftObj_stft(STFTObj stftObj,float *mRealArr,float *mImageArr){
 	slideLength=stftObj->slideLength;
 	timeLength=stftObj->timeLength;
 
-	realArr=stftObj->realArr;
-	for(int i=0;i<timeLength;i++){
-		// memcpy(realArr, curDataArr+i*slideLength, sizeof(float )*fftLength);
-		// fftObj_fft(fftObj,realArr,NULL,mRealArr+i*fftLength,mImageArr+i*fftLength);
-		
-		if(useFlag||windowType!=Window_Rect){
-			__vmul(curDataArr+i*slideLength, windowDataArr, fftLength, addDataArr);
-			fftObj_fft(fftObj,addDataArr,NULL,mRealArr+i*fftLength,mImageArr+i*fftLength);
-		}
-		else{
-			fftObj_fft(fftObj,curDataArr+i*slideLength,NULL,mRealArr+i*fftLength,mImageArr+i*fftLength);
-		}
-	}
+//	realArr=stftObj->realArr;
+
+	k=__kernelNum;
+    block=timeLength/k;
+    mod=timeLength%k;
+
+    if (stftObj->isPad||stftObj->isContinue){
+        _arr=curDataArr;
+    }
+    else{
+        _arr=dataArr;
+    }
+
+    #ifdef HAVE_OMP
+    if(timeLength==1){
+        __fft(stftObj,fftObj,1,_arr,mRealArr,mImageArr);
+    }else if(timeLength<__kernelNum){
+        omp_set_num_threads(timeLength);
+
+        #pragma omp parallel for
+        for(int i=0;i<timeLength;i++){
+            __fft(stftObj,fftObjArr[i],1,_arr+i*slideLength,mRealArr+i*fftLength,mImageArr+i*fftLength);
+        }
+    }else{
+        omp_set_num_threads(__kernelNum);
+
+        #pragma omp parallel for
+        for(int i=0;i<k;i++){
+            __fft(stftObj,fftObjArr[i],block,_arr+i*block*slideLength,mRealArr+i*block*fftLength,mImageArr+i*block*fftLength);
+        }
+
+        if(mod){
+            __fft(stftObj,fftObj,mod,_arr+k*block*slideLength,mRealArr+k*block*fftLength,mImageArr+k*block*fftLength);
+        }
+    }
+    #else
+    for(int i=0;i<timeLength;i++){
+        // memcpy(realArr, curDataArr+i*slideLength, sizeof(float )*fftLength);
+        // fftObj_fft(fftObj,realArr,NULL,mRealArr+i*fftLength,mImageArr+i*fftLength);
+
+        if(useFlag||windowType!=Window_Rect){
+            __vmul(_arr+i*slideLength, windowDataArr, fftLength, addDataArr);
+            fftObj_fft(fftObj,addDataArr,NULL,mRealArr+i*fftLength,mImageArr+i*fftLength);
+        }
+        else{
+            fftObj_fft(fftObj,_arr+i*slideLength,NULL,mRealArr+i*fftLength,mImageArr+i*fftLength);
+        }
+    }
+    #endif
 }
 
 /***

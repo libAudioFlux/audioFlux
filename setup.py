@@ -58,7 +58,7 @@ class BuildPyWinCommand(setuptools.command.build_py.build_py):
         print('Starting compile audioFlux of c')
         current_cwd = os.getcwd()
         os.chdir(os.path.join(os.getcwd(), './scripts'))
-        if platform == 'darwin':
+        if platform == 'darwin' or platform == 'linux':
             r = os.system('bash ./build_windows.sh')
             filename = 'libaudioflux.dll'
             src_lib_fp = './build/windowBuild/libaudioflux.so'.format(filename)
@@ -97,14 +97,14 @@ def get_package_data():
     }
 
     if sys.argv[1].startswith(('bdist', 'sdist')):
-        package_data['audioflux'].extend(["lib/*.so.3", "lib/*.so", "lib/*.dylib", "lib/*.dll"])
+        package_data['audioflux'].extend(["lib/lib/*", "lib/*"])
     else:
         cur_sys = platform
         if sys.argv[1] == 'build_py_win':
             cur_sys = 'win32'
 
         if cur_sys == 'linux':
-            package_data['audioflux'].extend(["lib/*.so.3", "lib/*.so"])
+            package_data['audioflux'].extend(["lib/*.so"])
         elif cur_sys == 'darwin':
             package_data['audioflux'].extend(["lib/*.dylib"])
         elif cur_sys == 'win32':

@@ -82,3 +82,5 @@ html_theme_options = {
 autodoc_member_order = 'bysource'
 
 autosectionlabel_prefix_document = True
+autoclass_content = 'class'
+

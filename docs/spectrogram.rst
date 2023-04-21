@@ -3,6 +3,18 @@ Spectrogram
 
 .. currentmodule:: audioflux
 
+
+Spectrogram class
+-----------------
+.. autosummary::
+    :toctree: _autosummary/
+
+
+    MelSpectrogram
+    BarkSpectrogram
+    ErbSpectrogram
+
+
 Spectral related
 ----------------
 .. autosummary::
