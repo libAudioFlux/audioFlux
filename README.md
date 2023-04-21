@@ -173,8 +173,6 @@ More example scripts are provided in the [Documentation](https://audioflux.top/)
 
 ## Benchmark
 
-### Server Performance
-
 server hardware:
 
     - CPU: AMD Ryzen Threadripper 3970X 32-Core Processor
