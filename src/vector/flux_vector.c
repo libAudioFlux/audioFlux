@@ -3,6 +3,16 @@
 #include <string.h>
 #include <math.h>
 
+#ifdef HAVE_ACCELERATE
+#include <Accelerate/Accelerate.h>
+#elif defined HAVE_OPENBLAS
+#include <cblas.h>
+#elif defined HAVE_MKL
+#include <mkl.h>
+//#elif defined HAVE_CUDABLAS
+//#include <cublas_v2.h>
+#endif
+
 #include "flux_vector.h"
 
 static float __arr_max(float *vArr,int length);
@@ -18,6 +28,14 @@ void __mdot(float *mArr1,float *mArr2,
 		return;
 	}
 
+    #if (defined HAVE_ACCELERATE) || (defined HAVE_OPENBLAS) || (defined HAVE_MKL)
+    cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
+                nLength1, mLength2,
+                mLength1, 1,
+                mArr1, mLength1,
+                mArr2, mLength2,
+                1, mArr3, mLength2);
+    #else
 	for(int i=0;i<nLength1;i++){
 		for(int j=0;j<mLength2;j++){
 			double _value=0;
@@ -29,9 +47,10 @@ void __mdot(float *mArr1,float *mArr2,
 			mArr3[i*mLength2+j]=_value;
 		}
 	}
+    #endif
 }
 
-// 针对 type 1即m2转置符合乘法 
+// 针对 type 1即m2转置符合乘法
 void __mdot1(float *mArr1,float *mArr2,
 			int nLength1,int mLength1,
 			int nLength2,int mLength2,
@@ -40,6 +59,16 @@ void __mdot1(float *mArr1,float *mArr2,
 		return;
 	}
 
+    #if (defined HAVE_ACCELERATE) || (defined HAVE_OPENBLAS) || (defined HAVE_MKL)
+    cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
+                nLength1, nLength2,
+                mLength1, 1,
+                mArr1, mLength1,
+                mArr2, mLength2,
+                1, mArr3, nLength2);
+    //#elif defined HAVE_CUDABLAS
+    //    __mdot1_cudablas(mArr1, mArr2, nLength1, mLength1, nLength2, mLength2, mArr3);
+    #else
 	for(int i=0;i<nLength1;i++){
 		for(int j=0;j<nLength2;j++){
 			double _value=0;
@@ -51,7 +80,55 @@ void __mdot1(float *mArr1,float *mArr2,
 			mArr3[i*nLength2+j]=_value;
 		}
 	}
+    #endif
 }
+
+//#ifdef HAVE_CUDABLAS
+//void __mdot1_cudablas(float* mArr1, float*mArr2,
+//			int nLength1,int mLength1,
+//			int nLength2,int mLength2,
+//			float *mArr3) {
+//	struct timeval tv;
+//    long t1=0,t2=0;
+//    gettimeofday(&tv, NULL);
+//    t1=tv.tv_sec*1000+tv.tv_usec/1000;
+//
+//    float alpha = 1;
+//    float beta = 1;
+//
+//    // 在 GPU 上分配内存
+//    float *d_A, *d_B, *d_C;
+//    cudaMalloc(&d_A, nLength1 * mLength1 * sizeof(float));
+//    cudaMalloc(&d_B, nLength2 * mLength2 * sizeof(float));
+//    cudaMalloc(&d_C, nLength1 * nLength2 * sizeof(float));
+//
+//    printf("%d,%d,%d,%d\n", nLength1, mLength1, nLength2, mLength2);
+//
+//    // 将数据从 CPU 复制到 GPU
+//    cudaMemcpy(d_A, mArr1, nLength1 * mLength1 * sizeof(float), cudaMemcpyHostToDevice);
+//    cudaMemcpy(d_B, mArr2, nLength2 * mLength2 * sizeof(float), cudaMemcpyHostToDevice);
+//    cudaMemcpy(d_C, mArr3, nLength1 * nLength2 * sizeof(float), cudaMemcpyHostToDevice);
+//
+//    // 初始化 cuBLAS
+//    cublasHandle_t handle;
+//    cublasCreate(&handle);
+//
+//    cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_T, nLength2, nLength1, nLength2, &alpha, d_B, mLength2, d_A, nLength1, &beta, d_C, nLength2);
+//
+//    // 将结果从 GPU 复制回 CPU
+//    cudaMemcpy(mArr3, d_C, nLength1 * nLength2 * sizeof(float), cudaMemcpyDeviceToHost);
+//
+//    // 清理 cuBLAS 资源和 GPU 内存
+//    cublasDestroy(handle);
+//    cudaFree(d_A);
+//    cudaFree(d_B);
+//    cudaFree(d_C);
+//    gettimeofday(&tv, NULL);
+//    t2=tv.tv_sec*1000+tv.tv_usec/1000;
+//    float time = (t2-t1)/1000.0;
+//    printf("cost time: %0.10f\n",time);
+//}
+//#endif
 
 /***
 	n1*m1 n2*m2 => n3*m3

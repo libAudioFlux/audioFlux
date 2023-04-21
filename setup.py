@@ -97,14 +97,14 @@ def get_package_data():
     }
 
     if sys.argv[1].startswith(('bdist', 'sdist')):
-        package_data['audioflux'].extend(["lib/*.so.3", "lib/*.so", "lib/*.dylib", "lib/*.dll"])
+        package_data['audioflux'].extend(["lib/lib/*", "lib/*"])
     else:
         cur_sys = platform
         if sys.argv[1] == 'build_py_win':
             cur_sys = 'win32'
 
         if cur_sys == 'linux':
-            package_data['audioflux'].extend(["lib/*.so.3", "lib/*.so"])
+            package_data['audioflux'].extend(["lib/*.so"])
         elif cur_sys == 'darwin':
             package_data['audioflux'].extend(["lib/*.dylib"])
         elif cur_sys == 'win32':

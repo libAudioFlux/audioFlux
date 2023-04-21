@@ -47,7 +47,7 @@ struct OpaqueSpectrogram{
 	// stft相关
 	float *mRealArr; // stft r,i(timeLength*fftLength) -> power r(timeLength*(fftLength/2+1)) 
 	float *mImageArr;
-	// float *mSArr; // timeLength*(fftLength/2+1)
+	float *mSArr; // timeLength*(fftLength/2+1)
 
 	float *energyArr; // timeLength
 	float *vArr1; // fftLength
@@ -884,6 +884,7 @@ static void __spectrogramObj_spectrogram(SpectrogramObj spectrogramObj,float *da
 	
 	float *mRealArr=NULL;
 	float *mImageArr=NULL;
+	float *mSArr=NULL;
 
 	float *energyArr=NULL;
 	float *vArr1=NULL;
@@ -923,6 +924,7 @@ static void __spectrogramObj_spectrogram(SpectrogramObj spectrogramObj,float *da
 
 	mRealArr=spectrogramObj->mRealArr; // timeLength*fftLength
 	mImageArr=spectrogramObj->mImageArr;
+	mSArr=spectrogramObj->mSArr; // timeLength*(fftLength/2+1)
 
 	energyArr=spectrogramObj->energyArr; // timeLength
 	vArr1=spectrogramObj->vArr1; // fftLength
@@ -972,6 +974,7 @@ static void __spectrogramObj_spectrogram(SpectrogramObj spectrogramObj,float *da
 		spectrogramObj->timeLength>timeLength*2){ // 更新缓存
 		free(mRealArr);
 		free(mImageArr);
+		free(mSArr);
 
 		free(energyArr);
 
@@ -985,6 +988,7 @@ static void __spectrogramObj_spectrogram(SpectrogramObj spectrogramObj,float *da
 		
 		mRealArr=__vnew(timeLength*fftLength, NULL);
 		mImageArr=__vnew(timeLength*fftLength, NULL);
+		mSArr=__vnew(timeLength*(fftLength/2+1), NULL);
 
 		energyArr=__vnew(timeLength, NULL);
 
@@ -1022,11 +1026,11 @@ static void __spectrogramObj_spectrogram(SpectrogramObj spectrogramObj,float *da
 		memcpy(mImageArr, mImageArr1, sizeof(float )*nLength*fftLength);
 	}
 
-	// energyArr ->base stft reslut
-	for(int i=0;i<timeLength;i++){
-		__vcsquare(mRealArr+i*fftLength,mImageArr+i*fftLength,fftLength,vArr1);
-		energyArr[i]=__vsum(vArr1, fftLength)/fftLength; // logf --> mfcc
-	}
+//	// energyArr ->base stft reslut
+//	for(int i=0;i<timeLength;i++){
+//		__vcsquare(mRealArr+i*fftLength,mImageArr+i*fftLength,fftLength,vArr1);
+//		energyArr[i]=__vsum(vArr1, fftLength)/fftLength; // logf --> mfcc
+//	}
 
 	// phase ->base stft reslut
 	if(mPhaseArr&&filterScaleType==SpectralFilterBankScale_Linear){
@@ -1074,27 +1078,27 @@ static void __spectrogramObj_spectrogram(SpectrogramObj spectrogramObj,float *da
 		}
 	}
 	else{
-		__mcsquare2(mRealArr, mImageArr, timeLength, fftLength, fftLength/2+1, mRealArr); // S^2
+		__mcsquare2(mRealArr, mImageArr, timeLength, fftLength, fftLength/2+1, mSArr); // S^2
 
 		if(dataType==SpectralData_Mag||
 			filterScaleType==SpectralFilterBankScale_Deep||
 			filterScaleType==SpectralFilterBankScale_DeepChroma){ // deep/deepChroma必须先amp
 
 			for(int i=0;i<timeLength*(fftLength/2+1);i++){
-				mRealArr[i]=sqrtf(mRealArr[i]);
+				mSArr[i]=sqrtf(mSArr[i]);
 			}
 		}
 		else if(dataType==SpectralData_Power){
 			if(normValue!=1){ 
 				for(int i=0;i<timeLength*(fftLength/2+1);i++){
-					mRealArr[i]=powf(mRealArr[i], normValue);
+					mSArr[i]=powf(mSArr[i], normValue);
 				}
 			}
 		}
 
 		if(spectrogramObj->isDebug){
 			printf("stft power spectrogram is :\n");
-			__mdebug(mRealArr, timeLength, fftLength/2+1, 1);
+			__mdebug(mSArr, timeLength, fftLength/2+1, 1);
 			printf("\n\n");
 		}
 
@@ -1106,7 +1110,7 @@ static void __spectrogramObj_spectrogram(SpectrogramObj spectrogramObj,float *da
 			filterScaleType==SpectralFilterBankScale_Linspace||
 			filterScaleType==SpectralFilterBankScale_Log){ // mel/bark/erb/log linspace/logspace
 
-			__mdot1(mRealArr,mFilterBankArr,
+			__mdot1(mSArr,mFilterBankArr,
 				timeLength,fftLength/2+1,
 				num,fftLength/2+1,
 				mDataArr);
@@ -1128,13 +1132,13 @@ static void __spectrogramObj_spectrogram(SpectrogramObj spectrogramObj,float *da
 				for(int i=0;i<timeLength;i++){
 					for(int j=0;j<fftLength/2+1;j++){
 						if(j<spectrogramObj->lowIndex||j>spectrogramObj->highIndex){
-							mRealArr[i*(fftLength/2+1)+j]=0;
+							mSArr[i*(fftLength/2+1)+j]=0;
 						}
 					}
 				}
 			}
 
-			__mdot1(mRealArr,mFilterBankArr,
+			__mdot1(mSArr,mFilterBankArr,
 				timeLength,fftLength/2+1,
 				num,fftLength/2+1,
 				mDataArr);
@@ -1176,7 +1180,7 @@ static void __spectrogramObj_spectrogram(SpectrogramObj spectrogramObj,float *da
 			int p1=1;
 			ChromaDataNormalType _normType=ChromaDataNormal_Max;
 
-			__mdot1(mRealArr,mFilterBankArr,
+			__mdot1(mSArr,mFilterBankArr,
 				timeLength,fftLength/2+1,
 				baseNum,fftLength/2+1,
 				mImageArr);
@@ -1232,7 +1236,7 @@ static void __spectrogramObj_spectrogram(SpectrogramObj spectrogramObj,float *da
 				k=5;
 			}
 
-			__spectrogramObj_deepFilter(spectrogramObj,mRealArr,mDataArr,1);
+			__spectrogramObj_deepFilter(spectrogramObj,mSArr,mDataArr,1);
 
 			if(dataType==SpectralData_Power){
 				for(int i=0;i<k*timeLength*num;i++){
@@ -1259,7 +1263,7 @@ static void __spectrogramObj_spectrogram(SpectrogramObj spectrogramObj,float *da
 			ChromaDataNormalType _normType=ChromaDataNormal_Max;
 
 			memset(mImageArr, 0, sizeof(float )*timeLength*baseNum);
-			__spectrogramObj_deepFilter(spectrogramObj,mRealArr,mImageArr,0);
+			__spectrogramObj_deepFilter(spectrogramObj,mSArr,mImageArr,0);
 
 			if(dataType==SpectralData_Power){
 				for(int i=0;i<timeLength*baseNum;i++){
@@ -1316,7 +1320,7 @@ static void __spectrogramObj_spectrogram(SpectrogramObj spectrogramObj,float *da
 			len=highIndex-lowIndex+1;
 			for(int i=0;i<timeLength;i++){
 				for(int j=lowIndex,k=0;j<=highIndex;j++,k++){
-					mDataArr[i*len+k]=mRealArr[i*(fftLength/2+1)+j];
+					mDataArr[i*len+k]=mSArr[i*(fftLength/2+1)+j];
 				}
 			}
 		}
@@ -1361,6 +1365,7 @@ static void __spectrogramObj_spectrogram(SpectrogramObj spectrogramObj,float *da
 
 	spectrogramObj->mRealArr=mRealArr;
 	spectrogramObj->mImageArr=mImageArr;
+	spectrogramObj->mSArr=mSArr;
 
 	spectrogramObj->energyArr=energyArr;
 
@@ -3040,6 +3045,7 @@ void spectrogramObj_free(SpectrogramObj spectrogramObj){
 	
 	float *mRealArr=NULL;
 	float *mImageArr=NULL;
+	float *mSArr=NULL;
 
 	float *energyArr=NULL;
 	float *vArr1=NULL;
@@ -3088,6 +3094,7 @@ void spectrogramObj_free(SpectrogramObj spectrogramObj){
 
 	mRealArr=spectrogramObj->mRealArr;
 	mImageArr=spectrogramObj->mImageArr;
+	mSArr=spectrogramObj->mSArr;
 
 	energyArr=spectrogramObj->energyArr;
 	vArr1=spectrogramObj->vArr1;
@@ -3131,6 +3138,7 @@ void spectrogramObj_free(SpectrogramObj spectrogramObj){
 	
 	free(mRealArr);
 	free(mImageArr);
+	free(mSArr);
 
 	free(energyArr);
 	free(vArr1);

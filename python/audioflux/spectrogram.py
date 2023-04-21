@@ -4,13 +4,16 @@ from ctypes import Structure, POINTER, pointer, c_int, c_float, c_void_p, c_size
 import numpy as np
 from audioflux.base import Base
 from audioflux.type import (WindowType, SpectralDataType, SpectralFilterBankType, SpectralFilterBankStyleType,
-                            SpectralFilterBankNormalType, ChromaDataNormalType, CepstralRectifyType, CepstralEnergyType,
+                            SpectralFilterBankNormalType, ChromaDataNormalType, CepstralRectifyType,
                             SpectralNoveltyMethodType, SpectralNoveltyDataType)
 from audioflux.utils import check_audio, ascontiguous_T, ascontiguous_swapaxex, format_channel, revoke_channel, \
     note_to_hz
 
 __all__ = [
     'Spectrogram',
+    'MelSpectrogram',
+    'BarkSpectrogram',
+    'ErbSpectrogram',
     'Linear',
     'Mel',
     'Bark',
@@ -32,8 +35,8 @@ class SpectrogramBase(Base):
                  slide_length=None,
                  data_type=SpectralDataType.POWER,
                  filter_bank_type=SpectralFilterBankType.LINEAR,
-                 filter_style_type=SpectralFilterBankStyleType.SLANEY,
-                 filter_normal_type=SpectralFilterBankNormalType.NONE,
+                 style_type=SpectralFilterBankStyleType.SLANEY,
+                 normal_type=SpectralFilterBankNormalType.NONE,
                  is_continue=False):
         super(SpectrogramBase, self).__init__(pointer(OpaqueSpectrogram()))
 
@@ -100,8 +103,8 @@ class SpectrogramBase(Base):
         self.is_continue = is_continue
         self.data_type = data_type
         self.filter_bank_type = filter_bank_type
-        self.filter_style_type = filter_style_type
-        self.filter_normal_type = filter_normal_type
+        self.style_type = style_type
+        self.normal_type = normal_type
 
         self.fft_length = fft_length
         self.deep_order = 1
@@ -374,9 +377,9 @@ class SpectrogramBase(Base):
         out: np.ndarray [shape=(cc_num, time)]
         """
         if not (self.filter_bank_type == SpectralFilterBankType.MEL
-                and self.filter_style_type == SpectralFilterBankStyleType.SLANEY):
+                and self.style_type == SpectralFilterBankStyleType.SLANEY):
             raise ValueError(f'``filter_bank_type`` must be ``MEL`` and '
-                             f'``filter_style_type`` must be ``SLANEY``')
+                             f'``style_type`` must be ``SLANEY``')
         if cc_num > self.num:
             raise ValueError(f'cc_num={cc_num} must be less than num={self.num}')
         m_data_arr = ascontiguous_T(m_data_arr)
@@ -411,9 +414,9 @@ class SpectrogramBase(Base):
         """
 
         if not (self.filter_bank_type == SpectralFilterBankType.BARK
-                and self.filter_style_type == SpectralFilterBankStyleType.SLANEY):
+                and self.style_type == SpectralFilterBankStyleType.SLANEY):
             raise ValueError(f'``filter_bank_type`` must be ``BARK`` and '
-                             f'``filter_style_type`` must be ``SLANEY``')
+                             f'``style_type`` must be ``SLANEY``')
         if cc_num > self.num:
             raise ValueError(f'cc_num={cc_num} must be less than num={self.num}')
         m_data_arr = ascontiguous_T(m_data_arr)
@@ -447,9 +450,9 @@ class SpectrogramBase(Base):
         out: np.ndarray [shape=(cc_num, time)]
         """
         if not (self.filter_bank_type == SpectralFilterBankType.ERB
-                and self.filter_style_type == SpectralFilterBankStyleType.GAMMATONE):
+                and self.style_type == SpectralFilterBankStyleType.GAMMATONE):
             raise ValueError(f'``filter_bank_type`` must be ``ERB`` and '
-                             f'``filter_style_type`` must be ``GAMMATONE``')
+                             f'``style_type`` must be ``GAMMATONE``')
         if cc_num > self.num:
             raise ValueError(f'cc_num={cc_num} must be less than num={self.num}')
         m_data_arr = ascontiguous_T(m_data_arr)
@@ -1828,12 +1831,12 @@ class Spectrogram(SpectrogramBase):
     filter_bank_type: SpectralFilterBankType
         Spectral filter bank type. It determines the type of spectrogram, like Linear/Mel/Bank/Erb etc.
 
-    filter_style_type: SpectralFilterBankStyleType
+    style_type: SpectralFilterBankStyleType
         Spectral filter bank style type. It determines the bank type of window.
 
         see: `type.SpectralFilterBankStyleType`
 
-    filter_normal_type: SpectralFilterBankNormalType
+    normal_type: SpectralFilterBankNormalType
         Spectral filter normal type. It determines the type of normalization.
 
         Linear/Chroma/Deep/DeepChroma is not provided.
@@ -1893,8 +1896,8 @@ class Spectrogram(SpectrogramBase):
                  slide_length=None,
                  data_type=SpectralDataType.POWER,
                  filter_bank_type=SpectralFilterBankType.LINEAR,
-                 filter_style_type=SpectralFilterBankStyleType.SLANEY,
-                 filter_normal_type=SpectralFilterBankNormalType.NONE):
+                 style_type=SpectralFilterBankStyleType.SLANEY,
+                 normal_type=SpectralFilterBankNormalType.NONE):
         super(Spectrogram, self).__init__(num=num, samplate=samplate,
                                           low_fre=low_fre, high_fre=high_fre,
                                           bin_per_octave=bin_per_octave,
@@ -1902,8 +1905,8 @@ class Spectrogram(SpectrogramBase):
                                           slide_length=slide_length,
                                           data_type=data_type,
                                           filter_bank_type=filter_bank_type,
-                                          filter_style_type=filter_style_type,
-                                          filter_normal_type=filter_normal_type)
+                                          style_type=style_type,
+                                          normal_type=normal_type)
 
         fn = self._lib['spectrogramObj_new']
         fn.argtypes = [POINTER(POINTER(OpaqueSpectrogram)),  # obj
@@ -1932,14 +1935,338 @@ class Spectrogram(SpectrogramBase):
            pointer(c_int(int(self.is_continue))),
            pointer(c_int(self.data_type.value)),
            pointer(c_int(self.filter_bank_type.value)),
-           pointer(c_int(self.filter_style_type.value)),
-           pointer(c_int(self.filter_normal_type.value)))
+           pointer(c_int(self.style_type.value)),
+           pointer(c_int(self.normal_type.value)))
 
         # 计算linear的num
         if filter_bank_type == SpectralFilterBankType.LINEAR:
             self.num = self.get_band_num()
 
         self._is_created = True
+
+
+class MelSpectrogram(Spectrogram):
+    """
+    Mel spectrogram class.
+
+    Parameters
+    ----------
+    num: int
+        Number of frequency bins to generate, starting at `low_fre`.
+
+    samplate: int
+        Sampling rate of the incoming audio
+
+    low_fre: float or None
+        Lowest frequency. `default: 0.0`
+
+    high_fre: float
+        Highest frequency. `default: 16000(samplate/2)`
+
+    radix2_exp: int
+        ``fft_length=2**radix2_exp``
+
+    window_type: WindowType
+        Window type. default: **hann**
+
+        See: `type.WindowType`
+
+    slide_length: int
+        Window sliding length
+
+    data_type: SpectralDataType
+        Spectrogram data type.
+
+        It cat be set to mag or power. If you needs `db` type,
+        you can set `power` type and then call the `power_to_db` method.
+
+        See: `type.SpectralDataType`
+
+    style_type: SpectralFilterBankStyleType
+        Spectral filter bank style type. It determines the bank type of window.
+
+        see: `type.SpectralFilterBankStyleType`
+
+    normal_type: SpectralFilterBankNormalType
+        Spectral filter normal type. It determines the type of normalization.
+
+        See: `type.SpectralFilterBankNormalType`
+
+    Methods
+    -------
+    cal_time_length
+    get_bin_band_arr
+    get_bin_band_length
+    get_fre_band_arr
+    spectrogram
+    x_coords
+    y_coords
+
+    See Also
+    --------
+    BarkSpectrogram
+    ErbSpectrogram
+
+    Examples
+    --------
+    .. plot::
+
+        Get 220hz audio
+
+        >>> import audioflux as af
+        >>> path = af.utils.sample_path('220')
+        >>> audio_arr, sr = af.read(path)
+
+        Get mel spectrogram data
+
+        >>> spec_obj = af.MelSpectrogram(num=128, samplate=32000, radix2_exp=12)
+        >>> spec_arr = spec_obj.spectrogram(audio_arr)
+        >>> spec_dB_arr = af.utils.power_to_db(spec_arr)
+
+        Show plot
+
+        >>> from audioflux.display import Plot
+        >>> audio_len = audio_arr.shape[-1]
+        >>> pt = Plot()
+        >>> pt.add_spec_data(spec_dB_arr,
+        ...                  x_coords=spec_obj.x_coords(audio_len),
+        ...                  y_coords=spec_obj.y_coords(),
+        ...                  scale='log', title='MelSpectrogram')
+    """
+
+    def __init__(self, num=0, samplate=32000, low_fre=None, high_fre=None,
+                 radix2_exp=12, window_type=None, slide_length=None,
+                 data_type=SpectralDataType.POWER,
+                 style_type=SpectralFilterBankStyleType.SLANEY,
+                 normal_type=SpectralFilterBankNormalType.NONE):
+        super(MelSpectrogram, self).__init__(num=num,
+                                             samplate=samplate,
+                                             low_fre=low_fre,
+                                             high_fre=high_fre,
+                                             bin_per_octave=12,
+                                             radix2_exp=radix2_exp,
+                                             window_type=window_type,
+                                             slide_length=slide_length,
+                                             data_type=data_type,
+                                             filter_bank_type=SpectralFilterBankType.MEL,
+                                             style_type=style_type,
+                                             normal_type=normal_type)
+
+
+class BarkSpectrogram(Spectrogram):
+    """
+    Bark spectrogram class.
+
+    Parameters
+    ----------
+    num: int
+        Number of frequency bins to generate, starting at `low_fre`.
+
+    samplate: int
+        Sampling rate of the incoming audio
+
+    low_fre: float or None
+        Lowest frequency. `default: 0.0`
+
+    high_fre: float
+        Highest frequency. `default: 16000(samplate/2)`
+
+    radix2_exp: int
+        ``fft_length=2**radix2_exp``
+
+    window_type: WindowType
+        Window type. default: **hann**
+
+        See: `type.WindowType`
+
+    slide_length: int
+        Window sliding length
+
+    data_type: SpectralDataType
+        Spectrogram data type.
+
+        It cat be set to mag or power. If you needs `db` type,
+        you can set `power` type and then call the `power_to_db` method.
+
+        See: `type.SpectralDataType`
+
+    style_type: SpectralFilterBankStyleType
+        Spectral filter bank style type. It determines the bank type of window.
+
+        see: `type.SpectralFilterBankStyleType`
+
+    normal_type: SpectralFilterBankNormalType
+        Spectral filter normal type. It determines the type of normalization.
+
+        See: `type.SpectralFilterBankNormalType`
+
+    Methods
+    -------
+    cal_time_length
+    get_bin_band_arr
+    get_bin_band_length
+    get_fre_band_arr
+    spectrogram
+    x_coords
+    y_coords
+
+    See Also
+    --------
+    BarkSpectrogram
+    ErbSpectrogram
+
+    Examples
+    --------
+    .. plot::
+
+        Get 220hz audio
+
+        >>> import audioflux as af
+        >>> path = af.utils.sample_path('220')
+        >>> audio_arr, sr = af.read(path)
+
+        Get bark spectrogram data
+
+        >>> spec_obj = af.BarkSpectrogram(num=128, samplate=32000, radix2_exp=12)
+        >>> spec_arr = spec_obj.spectrogram(audio_arr)
+        >>> spec_dB_arr = af.utils.power_to_db(spec_arr)
+
+        Show plot
+
+        >>> from audioflux.display import Plot
+        >>> audio_len = audio_arr.shape[-1]
+        >>> pt = Plot()
+        >>> pt.add_spec_data(spec_dB_arr,
+        ...                  x_coords=spec_obj.x_coords(audio_len),
+        ...                  y_coords=spec_obj.y_coords(),
+        ...                  scale='log', title='BarkSpectrogram')
+    """
+
+    def __init__(self, num=0, samplate=32000, low_fre=None, high_fre=None,
+                 radix2_exp=12, window_type=None, slide_length=None,
+                 data_type=SpectralDataType.POWER,
+                 style_type=SpectralFilterBankStyleType.SLANEY,
+                 normal_type=SpectralFilterBankNormalType.NONE):
+        super(BarkSpectrogram, self).__init__(num=num,
+                                              samplate=samplate,
+                                              low_fre=low_fre,
+                                              high_fre=high_fre,
+                                              bin_per_octave=12,
+                                              radix2_exp=radix2_exp,
+                                              window_type=window_type,
+                                              slide_length=slide_length,
+                                              data_type=data_type,
+                                              filter_bank_type=SpectralFilterBankType.BARK,
+                                              style_type=style_type,
+                                              normal_type=normal_type)
+
+
+class ErbSpectrogram(Spectrogram):
+    """
+    Erb spectrogram class.
+
+    Parameters
+    ----------
+    num: int
+        Number of frequency bins to generate, starting at `low_fre`.
+
+    samplate: int
+        Sampling rate of the incoming audio
+
+    low_fre: float or None
+        Lowest frequency. `default: 0.0`
+
+    high_fre: float
+        Highest frequency. `default: 16000(samplate/2)`
+
+    radix2_exp: int
+        ``fft_length=2**radix2_exp``
+
+    window_type: WindowType
+        Window type. default: **hann**
+
+        See: `type.WindowType`
+
+    slide_length: int
+        Window sliding length
+
+    data_type: SpectralDataType
+        Spectrogram data type.
+
+        It cat be set to mag or power. If you needs `db` type,
+        you can set `power` type and then call the `power_to_db` method.
+
+        See: `type.SpectralDataType`
+
+    style_type: SpectralFilterBankStyleType
+        Spectral filter bank style type. It determines the bank type of window.
+
+        see: `type.SpectralFilterBankStyleType`
+
+    normal_type: SpectralFilterBankNormalType
+        Spectral filter normal type. It determines the type of normalization.
+
+        See: `type.SpectralFilterBankNormalType`
+
+    Methods
+    -------
+    cal_time_length
+    get_bin_band_arr
+    get_bin_band_length
+    get_fre_band_arr
+    spectrogram
+    x_coords
+    y_coords
+
+    See Also
+    --------
+    BarkSpectrogram
+    ErbSpectrogram
+
+    Examples
+    --------
+    .. plot::
+
+        Get 220hz audio
+
+        >>> import audioflux as af
+        >>> path = af.utils.sample_path('220')
+        >>> audio_arr, sr = af.read(path)
+
+        Get erb spectrogram data
+
+        >>> spec_obj = af.ErbSpectrogram(num=128, samplate=32000, radix2_exp=12)
+        >>> spec_arr = spec_obj.spectrogram(audio_arr)
+        >>> spec_dB_arr = af.utils.power_to_db(spec_arr)
+
+        Show plot
+
+        >>> from audioflux.display import Plot
+        >>> audio_len = audio_arr.shape[-1]
+        >>> pt = Plot()
+        >>> pt.add_spec_data(spec_dB_arr,
+        ...                  x_coords=spec_obj.x_coords(audio_len),
+        ...                  y_coords=spec_obj.y_coords(),
+        ...                  scale='log', title='ErbSpectrogram')
+    """
+
+    def __init__(self, num=0, samplate=32000, low_fre=None, high_fre=None,
+                 radix2_exp=12, window_type=None, slide_length=None,
+                 data_type=SpectralDataType.POWER,
+                 style_type=SpectralFilterBankStyleType.SLANEY,
+                 normal_type=SpectralFilterBankNormalType.NONE):
+        super(ErbSpectrogram, self).__init__(num=num,
+                                             samplate=samplate,
+                                             low_fre=low_fre,
+                                             high_fre=high_fre,
+                                             bin_per_octave=12,
+                                             radix2_exp=radix2_exp,
+                                             window_type=window_type,
+                                             slide_length=slide_length,
+                                             data_type=data_type,
+                                             filter_bank_type=SpectralFilterBankType.ERB,
+                                             style_type=style_type,
+                                             normal_type=normal_type)
 
 
 class Linear(SpectrogramBase):
@@ -2003,8 +2330,8 @@ class Linear(SpectrogramBase):
                                      slide_length=(1 << radix2_exp) // 4,
                                      data_type=SpectralDataType.POWER,
                                      filter_bank_type=SpectralFilterBankType.LINEAR,
-                                     filter_style_type=SpectralFilterBankStyleType.SLANEY,
-                                     filter_normal_type=SpectralFilterBankNormalType.NONE)
+                                     style_type=SpectralFilterBankStyleType.SLANEY,
+                                     normal_type=SpectralFilterBankNormalType.NONE)
         fn = self._lib['spectrogramObj_newLinear']
         fn.argtypes = [POINTER(POINTER(OpaqueSpectrogram)), c_int, c_int, POINTER(c_int)]
         fn(self._obj,
@@ -2081,8 +2408,8 @@ class Mel(SpectrogramBase):
                                   slide_length=(1 << radix2_exp) // 4,
                                   data_type=SpectralDataType.POWER,
                                   filter_bank_type=SpectralFilterBankType.MEL,
-                                  filter_style_type=SpectralFilterBankStyleType.SLANEY,
-                                  filter_normal_type=SpectralFilterBankNormalType.NONE)
+                                  style_type=SpectralFilterBankStyleType.SLANEY,
+                                  normal_type=SpectralFilterBankNormalType.NONE)
         fn = self._lib['spectrogramObj_newMel']
         fn.argtypes = [POINTER(POINTER(OpaqueSpectrogram)), c_int, c_int, c_int, POINTER(c_int)]
         fn(self._obj,
@@ -2163,8 +2490,8 @@ class Bark(SpectrogramBase):
                                    slide_length=(1 << radix2_exp) // 4,
                                    data_type=SpectralDataType.POWER,
                                    filter_bank_type=SpectralFilterBankType.BARK,
-                                   filter_style_type=SpectralFilterBankStyleType.SLANEY,
-                                   filter_normal_type=SpectralFilterBankNormalType.NONE)
+                                   style_type=SpectralFilterBankStyleType.SLANEY,
+                                   normal_type=SpectralFilterBankNormalType.NONE)
         fn = self._lib['spectrogramObj_newBark']
         fn.argtypes = [POINTER(POINTER(OpaqueSpectrogram)), c_int, c_int, c_int, POINTER(c_int)]
         fn(self._obj,
@@ -2241,8 +2568,8 @@ class Erb(SpectrogramBase):
                                   slide_length=(1 << radix2_exp) // 4,
                                   data_type=SpectralDataType.POWER,
                                   filter_bank_type=SpectralFilterBankType.ERB,
-                                  filter_style_type=SpectralFilterBankStyleType.SLANEY,
-                                  filter_normal_type=SpectralFilterBankNormalType.NONE)
+                                  style_type=SpectralFilterBankStyleType.SLANEY,
+                                  normal_type=SpectralFilterBankNormalType.NONE)
         fn = self._lib['spectrogramObj_newErb']
         fn.argtypes = [POINTER(POINTER(OpaqueSpectrogram)), c_int, c_int, c_int, POINTER(c_int)]
         fn(self._obj,
@@ -2314,8 +2641,8 @@ class Chroma(SpectrogramBase):
                                      slide_length=(1 << radix2_exp) // 4,
                                      data_type=SpectralDataType.POWER,
                                      filter_bank_type=SpectralFilterBankType.CHROMA,
-                                     filter_style_type=SpectralFilterBankStyleType.SLANEY,
-                                     filter_normal_type=SpectralFilterBankNormalType.NONE)
+                                     style_type=SpectralFilterBankStyleType.SLANEY,
+                                     normal_type=SpectralFilterBankNormalType.NONE)
         fn = self._lib['spectrogramObj_newChroma']
         fn.argtypes = [POINTER(POINTER(OpaqueSpectrogram)), c_int, c_int, POINTER(c_int)]
         fn(self._obj,
@@ -2397,8 +2724,8 @@ class Deep(SpectrogramBase):
                                    slide_length=(1 << radix2_exp) // 4,
                                    data_type=SpectralDataType.POWER,
                                    filter_bank_type=SpectralFilterBankType.DEEP,
-                                   filter_style_type=SpectralFilterBankStyleType.SLANEY,
-                                   filter_normal_type=SpectralFilterBankNormalType.NONE)
+                                   style_type=SpectralFilterBankStyleType.SLANEY,
+                                   normal_type=SpectralFilterBankNormalType.NONE)
         fn = self._lib['spectrogramObj_newDeep']
         fn.argtypes = [POINTER(POINTER(OpaqueSpectrogram)), c_int, c_int, c_int, POINTER(c_int)]
         fn(self._obj,
@@ -2470,8 +2797,8 @@ class DeepChroma(SpectrogramBase):
                                          slide_length=(1 << radix2_exp) // 4,
                                          data_type=SpectralDataType.POWER,
                                          filter_bank_type=SpectralFilterBankType.DEEP_CHROMA,
-                                         filter_style_type=SpectralFilterBankStyleType.SLANEY,
-                                         filter_normal_type=SpectralFilterBankNormalType.NONE)
+                                         style_type=SpectralFilterBankStyleType.SLANEY,
+                                         normal_type=SpectralFilterBankNormalType.NONE)
 
         fn = self._lib['spectrogramObj_newDeepChroma']
         fn.argtypes = [POINTER(POINTER(OpaqueSpectrogram)), c_int, c_int, POINTER(c_int)]

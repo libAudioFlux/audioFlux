@@ -12,6 +12,7 @@ mkdir build && cd build
 
 cmake ../src -BmacOSBuild  \
 	-DCMAKE_SYSTEM_NAME=darwin \
-   
+#	"-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64" \
+
 
 cmake --build macOSBuild --config Release

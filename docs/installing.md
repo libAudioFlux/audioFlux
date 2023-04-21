@@ -74,41 +74,77 @@ Build and compile successfully, the project build compilation results are in the
 
 #### Linux build
 
-1. Installing **fft3w** lib dependencies on Linux
+1. Install compilation dependencies
 
-   For Ubuntu:
+    ```shell
+    # For Ubuntu:
+    $ sudo apt install cmake clang
+    
+    # For CentOS:
+    $ sudo yum install -y cmake clang
+    ```
 
+2. Installing **MKL** lib dependencies on Linux
+
+   You can
+   use [this installation document](https://www.intel.cn/content/www/cn/zh/developer/tools/oneapi/onemkl-download.html?operatingsystem=linux)
+   to install MKL
+
+   After installation, you need to set the environment variable `MKL_INCLUDE_PATH` and `MKL_LIB_PATH` for MKL.
+
+   For example:
+
+   ```shell
+   $ export MKL_INCLUDE_PATH=/opt/intel/oneapi/mkl/latest/include
+   $ export MKL_LIB_PATH=/opt/intel/oneapi/mkl/latest/lib/intel64
    ```
-   sudo apt install libfftw3-dev
+<!-- 
+
+* Install MKL using pip.
+   ```shell
+   $ pip3 install mkl mkl-include
    ```
 
-   For CentOS:
+* (Optional) If you use pip in a non-system directory, such as a virtual environment created by virtualenv, you need to
+  set the environment variables `MKL_INCLUDE_PATH` and `MKL_LIB_PATH` of the MKL directory
+   ```shell
+   $ export MKL_INCLUDE_PATH=/opt/intel/oneapi/mkl/latest/include
+   $ export MKL_LIB_PATH=/opt/intel/oneapi/mkl/latest/lib/intel64
+   ```
 
-   ```
-   sudo yum install -y fftw3-devel
-   ```
+* Add soft link for compilation.
+-->
 
-2. Python setup:
+3. Python setup:
 
-   ```
-   $ python setup.py build
-   $ python setup.py install
-   ```
+    ```shell
+    $ python setup.py build
+    $ python setup.py install
+    ```
 
 #### macOS build
 
 1. Installing dependencies on macOS
 
-   Install Command Line Tools for Xcode. Even if you install Xcode from the app store you must configure command-line
-   compilation by running:
+    * Install Command Line Tools for Xcode. Even if you install Xcode from the app store you must configure command-line
+      compilation by running:
 
-   ```
-   xcode-select --install
-   ```
+        ```shell
+        $ xcode-select --install
+        ```
+
+    * Install **llvm**.
+        ```shell
+        $ brew install llvm
+      
+        $ # After installation, you need to set the environment variable C_COMPILER_PATH and CXX_COMPILER_PATH for MKL. For example:
+        $ export C_COMPILER_PATH=/usr/local/opt/llvm/bin/clang
+        $ export CXX_COMPILER_PATH=/usr/local/opt/llvm/bin/clang++
+        ```
 
 2. Python setup:
 
-   ```
+   ```shell
    $ python setup.py build
    $ python setup.py install
    ```
@@ -116,4 +152,9 @@ Build and compile successfully, the project build compilation results are in the
 #### Windows build
 
 Building from source is currently not supported. Only supports pip installation. If you need to build from source, The
-easiest way to build audioFlux is by cross-compilation on Linux using MinGW.
+easiest way to build audioFlux is by cross-compilation on Linux/macOS using MinGW.
+
+ ```shell
+ $ python setup.py build_py_win
+ $ python setup.py install
+ ```

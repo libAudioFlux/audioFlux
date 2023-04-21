@@ -1,6 +1,6 @@
 import numpy as np
 from audioflux import BFT, XXCC, CQT
-from audioflux.spectrogram import Spectrogram
+from audioflux.spectrogram import Spectrogram, MelSpectrogram, BarkSpectrogram, ErbSpectrogram
 from audioflux.type import WindowType, SpectralFilterBankScaleType, SpectralFilterBankStyleType, \
     SpectralFilterBankNormalType, SpectralDataType, SpectralFilterBankType, CepstralRectifyType
 from audioflux.utils import note_to_hz
@@ -146,8 +146,7 @@ def mel_spectrogram(X, num=128, radix2_exp=12, samplate=32000,
                     window_type=WindowType.HANN, slide_length=None,
                     style_type=SpectralFilterBankStyleType.SLANEY,
                     normal_type=SpectralFilterBankNormalType.NONE,
-                    data_type=SpectralDataType.POWER,
-                    is_reassign=False):
+                    data_type=SpectralDataType.POWER):
     """
     Mel-scale spectrogram.
 
@@ -200,9 +199,6 @@ def mel_spectrogram(X, num=128, radix2_exp=12, samplate=32000,
         you can set `power` type and then call the `power_to_db` method.
 
         See: `type.SpectralDataType`
-
-    is_reassign: bool
-        Whether to use reassign.
 
     Returns
     -------
@@ -258,14 +254,13 @@ def mel_spectrogram(X, num=128, radix2_exp=12, samplate=32000,
     >>> fig.colorbar(img, ax=ax, format="%+2.0f dB")
 
     """
-    bft_obj = BFT(num=num, radix2_exp=radix2_exp, samplate=samplate,
-                  low_fre=low_fre, high_fre=high_fre,
-                  window_type=window_type, slide_length=slide_length,
-                  scale_type=SpectralFilterBankScaleType.MEL, style_type=style_type,
-                  normal_type=normal_type, data_type=data_type,
-                  is_reassign=is_reassign)
-    spec_arr = bft_obj.bft(X, result_type=1)
-    fre_band_arr = bft_obj.get_fre_band_arr()
+    spec_obj = MelSpectrogram(num=num, radix2_exp=radix2_exp, samplate=samplate,
+                              low_fre=low_fre, high_fre=high_fre,
+                              window_type=window_type, slide_length=slide_length,
+                              style_type=style_type,
+                              normal_type=normal_type, data_type=data_type)
+    spec_arr = spec_obj.spectrogram(X)
+    fre_band_arr = spec_obj.get_fre_band_arr()
     return spec_arr, fre_band_arr
 
 
@@ -274,8 +269,7 @@ def bark_spectrogram(X, num=128, radix2_exp=12, samplate=32000,
                      window_type=WindowType.HANN, slide_length=None,
                      style_type=SpectralFilterBankStyleType.SLANEY,
                      normal_type=SpectralFilterBankNormalType.NONE,
-                     data_type=SpectralDataType.POWER,
-                     is_reassign=False):
+                     data_type=SpectralDataType.POWER):
     """
     Bark-scale spectrogram.
 
@@ -328,9 +322,6 @@ def bark_spectrogram(X, num=128, radix2_exp=12, samplate=32000,
         you can set `power` type and then call the `power_to_db` method.
 
         See: `type.SpectralDataType`
-
-    is_reassign: bool
-        Whether to use reassign.
 
     Returns
     -------
@@ -385,14 +376,13 @@ def bark_spectrogram(X, num=128, radix2_exp=12, samplate=32000,
     >>>                 title='Bark Spectrogram')
     >>> fig.colorbar(img, ax=ax, format="%+2.0f dB")
     """
-    bft_obj = BFT(num=num, radix2_exp=radix2_exp, samplate=samplate,
-                  low_fre=low_fre, high_fre=high_fre,
-                  window_type=window_type, slide_length=slide_length,
-                  scale_type=SpectralFilterBankScaleType.BARK, style_type=style_type,
-                  normal_type=normal_type, data_type=data_type,
-                  is_reassign=is_reassign)
-    spec_arr = bft_obj.bft(X, result_type=1)
-    fre_band_arr = bft_obj.get_fre_band_arr()
+    spec_obj = BarkSpectrogram(num=num, radix2_exp=radix2_exp, samplate=samplate,
+                               low_fre=low_fre, high_fre=high_fre,
+                               window_type=window_type, slide_length=slide_length,
+                               style_type=style_type,
+                               normal_type=normal_type, data_type=data_type)
+    spec_arr = spec_obj.spectrogram(X)
+    fre_band_arr = spec_obj.get_fre_band_arr()
     return spec_arr, fre_band_arr
 
 
@@ -401,8 +391,7 @@ def erb_spectrogram(X, num=128, radix2_exp=12, samplate=32000,
                     window_type=WindowType.HANN, slide_length=None,
                     style_type=SpectralFilterBankStyleType.SLANEY,
                     normal_type=SpectralFilterBankNormalType.NONE,
-                    data_type=SpectralDataType.POWER,
-                    is_reassign=False):
+                    data_type=SpectralDataType.POWER):
     """
     Erb-scale spectrogram.
 
@@ -455,9 +444,6 @@ def erb_spectrogram(X, num=128, radix2_exp=12, samplate=32000,
         you can set `power` type and then call the `power_to_db` method.
 
         See: `type.SpectralDataType`
-
-    is_reassign: bool
-        Whether to use reassign.
 
     Returns
     -------
@@ -512,14 +498,13 @@ def erb_spectrogram(X, num=128, radix2_exp=12, samplate=32000,
     >>>                 title='Erb Spectrogram')
     >>> fig.colorbar(img, ax=ax, format="%+2.0f dB")
     """
-    bft_obj = BFT(num=num, radix2_exp=radix2_exp, samplate=samplate,
-                  low_fre=low_fre, high_fre=high_fre,
-                  window_type=window_type, slide_length=slide_length,
-                  scale_type=SpectralFilterBankScaleType.ERB, style_type=style_type,
-                  normal_type=normal_type, data_type=data_type,
-                  is_reassign=is_reassign)
-    spec_arr = bft_obj.bft(X, result_type=1)
-    fre_band_arr = bft_obj.get_fre_band_arr()
+    spec_obj = ErbSpectrogram(num=num, radix2_exp=radix2_exp, samplate=samplate,
+                              low_fre=low_fre, high_fre=high_fre,
+                              window_type=window_type, slide_length=slide_length,
+                              style_type=style_type,
+                              normal_type=normal_type, data_type=data_type)
+    spec_arr = spec_obj.spectrogram(X)
+    fre_band_arr = spec_obj.get_fre_band_arr()
     return spec_arr, fre_band_arr
 
 
@@ -1264,7 +1249,7 @@ def chroma_linear(X, chroma_num=12, radix2_exp=12, samplate=32000, low_fre=0., h
                            low_fre=low_fre, high_fre=high_fre, window_type=window_type,
                            slide_length=slide_length,
                            filter_bank_type=SpectralFilterBankType.CHROMA,
-                           filter_style_type=style_type, filter_normal_type=normal_type,
+                           style_type=style_type, normal_type=normal_type,
                            data_type=data_type)
 
     spec_arr = spec_obj.spectrogram(X)
@@ -1364,7 +1349,7 @@ def chroma_octave(X, chroma_num=12, radix2_exp=12, samplate=32000, low_fre=note_
                            low_fre=low_fre, high_fre=high_fre, window_type=window_type,
                            slide_length=slide_length, data_type=data_type,
                            filter_bank_type=SpectralFilterBankType.OCTAVE_CHROMA,
-                           filter_style_type=style_type, filter_normal_type=normal_type)
+                           style_type=style_type, normal_type=normal_type)
 
     spec_arr = spec_obj.spectrogram(X)
     return spec_arr

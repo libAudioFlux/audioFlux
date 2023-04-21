@@ -68,31 +68,69 @@ Build and compile successfully, the project build compilation results are in the
 Building from source
 --------------------
 
-1. **Prerequisites**
+Linux build
+^^^^^^^^^^^
 
-    Install fft library
+1. Install compilation dependencies::
 
-    * Linux:
+    # For Ubuntu:
+    $ sudo apt install cmake clang
 
-        Install **fftw-3f**, detail see: `Install fftw <https://www.fftw.org/download.html>`_
+    # For CentOS:
+    $ sudo yum install -y cmake clang
 
-            For Ubuntu::
+2. Installing **MKL** lib dependencies on Linux
 
-                sudo apt install libfftw3-dev
+   You can
+   use `this installation document <https://www.intel.cn/content/www/cn/zh/developer/tools/oneapi/onemkl-download.html?operatingsystem=linux>`_
+   to install MKL
+
+   After installation, you need to set the environment variable `MKL_INCLUDE_PATH` and `MKL_LIB_PATH` for MKL.
+
+   For example::
+
+   $ export MKL_INCLUDE_PATH=/opt/intel/oneapi/mkl/latest/include
+   $ export MKL_LIB_PATH=/opt/intel/oneapi/mkl/latest/lib/intel64
 
 
-            For CentOS::
 
-                sudo yum install fftw3-devel
-
-
-    * macOS:
-
-        If version>=13, need to install Xcode and ``xcode-select``.
-
-2. **Build and install**::
+3. Python setup::
 
     $ python setup.py build
     $ python setup.py install
 
+macOS build
+^^^^^^^^^^^
+
+1. Installing dependencies on macOS
+
+    * Install Command Line Tools for Xcode. Even if you install Xcode from the app store you must configure command-line
+      compilation by running::
+
+        $ xcode-select --install
+
+
+    * Install **llvm**::
+
+        $ brew install llvm
+
+        $ # After installation, you need to set the environment variable C_COMPILER_PATH and CXX_COMPILER_PATH for MKL. For example:
+        $ export C_COMPILER_PATH=/usr/local/opt/llvm/bin/clang
+        $ export CXX_COMPILER_PATH=/usr/local/opt/llvm/bin/clang++
+
+
+2. Python setup::
+
+   $ python setup.py build
+   $ python setup.py install
+
+
+Windows build
+^^^^^^^^^^^^^
+
+Building from source is currently not supported. Only supports pip installation. If you need to build from source, The
+easiest way to build audioFlux is by cross-compilation on Linux/macOS using MinGW::
+
+ $ python setup.py build_py_win
+ $ python setup.py install
 

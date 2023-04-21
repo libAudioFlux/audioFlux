@@ -56,12 +56,14 @@ field such as Classification, Separation, Music Information Retrieval(MIR) and A
 
 ## Overview
 
-**`audioFlux`** is based on data stream design. It decouples each algorithm module in structure, and can quickly and efficiently extract features of multiple dimensions. The following is the main feature architecture diagram.
+**`audioFlux`** is based on data stream design. It decouples each algorithm module in structure, and can quickly and
+efficiently extract features of multiple dimensions. The following is the main feature architecture diagram.
 
 <img src='./image/feature_all.png'>
 <!--<img src='./feature_all.pdf'>-->
 
-You can use multiple dimensional feature combinations, select different deep learning networks training,  study various tasks in the audio field such as Classification, Separation, MIR etc.
+You can use multiple dimensional feature combinations, select different deep learning networks training, study various
+tasks in the audio field such as Classification, Separation, MIR etc.
 
 <img src='./image/flow.png'>
 
@@ -127,7 +129,6 @@ The mir module contains the following algorithms:
 - **`onset`** - Spectrum flux, novelty, etc algorithm.
 - **`hpss`** - Median filtering, NMF algorithm.
 
-
 ## Installation
 
 ![language](https://img.shields.io/badge/platform-%20Linux%20%7C%20macOS%20%7C%20Windows%20%7C%20iOS%20%7C%20Android%20-lyellow.svg)
@@ -179,31 +180,10 @@ More example scripts are provided in the [Documentation](https://audioflux.top/)
 server hardware:
 
     - CPU: AMD Ryzen Threadripper 3970X 32-Core Processor
-    - Memory: 128GB
 
-Each sample data is 128ms(sampling rate: 32000, data length: 4096).
+<img src='./docs/image/benchmark/linux_amd_1.png'>
 
-The total time spent on extracting features for 1000 sample data.
-
-| Package    | [audioFlux](https://github.com/libAudioFlux/audioFlux) | [librosa](https://github.com/librosa/librosa) | [pyAudioAnalysis](https://github.com/tyiannak/pyAudioAnalysis) | [python\_speech\_features](https://github.com/jameslyons/python_speech_features) |
-| ------ |  ------ |  ------ |  ------ |  ------ | 
-| Mel    | 0.777s    | 2.967s  | --              | --                       |
-| MFCC   | 0.797s    | 2.963s  | 0.805s          | 2.150s                   |
-| CQT    | 5.743s    | 21.477s | --              | --                       |
-| Chroma | 0.155s    | 2.174s  | 1.287s          | --                       |
-
-### Mobile Performance
-
-For 128ms audio data per frame(sampling rate: 32000, data length: 4096).
-
-The time spent on extracting features for 1 frame data.
-
-| Mobile | iPhone 13 Pro | iPhone X | Honor V40 | OPPO Reno4 SE 5G |
-| ------ |  ------ |  ------ |  ------ |  ------ | 
-| Mel    | 0.249ms       | 0.359ms  | 0.313ms   | 0.891ms          |
-| MFCC   | 0.249ms       | 0.361ms  | 0.315ms   | 1.116ms          |
-| CQT    | 0.350ms       | 0.609ms  | 0.786ms   | 1.779ms          |
-| Chroma | 0.354ms       | 0.615ms  | 0.803ms   | 1.775ms          |
+[More detailed performance testing](./docs/benchmark/performance_more.md)
 
 ## Documentation
 

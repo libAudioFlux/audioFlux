@@ -44,7 +44,7 @@ cmake ../src -Barmeabi-v7a \
 
 
 # make -j8
-cmake --build armeabi-v7a --config Release 
+cmake --build armeabi-v7a --config Release
 
 cmake ../src -Barmeabi \
 	-DCMAKE_ANDROID_API=21 \
@@ -57,7 +57,7 @@ cmake ../src -Barmeabi \
 
 
 # make -j8
-cmake --build armeabi --config Release 
+cmake --build armeabi --config Release
 
 
 
