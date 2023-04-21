@@ -47,8 +47,6 @@ field such as Classification, Separation, Music Information Retrieval(MIR) and A
     - [Other Build](#other-build)
 - [Quickstart](#quickstart)
 - [Benchmark](#benchmark)
-    - [Server Performance](#server-performance)
-    - [Mobile Performance](#mobile-performance)
 - [Documentation](#documentation)
 - [Contributing](#contributing)
 - [Citing](#citing)
