@@ -179,7 +179,8 @@ server hardware:
 
 <img src='./docs/image/benchmark/linux_amd_1.png'>
 
-[More detailed performance testing](./docs/benchmark/performance_more.md)
+#### More detailed performance testing
+[https://github.com/libAudioFlux/audioFlux/blob/master/docs/benchmark/performance_more.md](https://github.com/libAudioFlux/audioFlux/blob/master/docs/benchmark/performance_more.md)
 
 ## Documentation
 
