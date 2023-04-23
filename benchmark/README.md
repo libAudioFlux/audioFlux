@@ -6,9 +6,9 @@ In the field of deep learning for audio, the mel spectrogram is the most commonl
 | Library |  Language | Version | About |
 | ---- | ---- | ---- |  ---- |   
 | [audioFlux](https://github.com/libAudioFlux/audioFlux)  |  C/Python  |  0.1.5  |  A library for audio and music analysis, feature extraction  |  
-|  [torchaudio](https://github.com/pytorch/audio)  | Python |  2.0.0  |  Data manipulation and transformation for audio signal processing, powered by PyTorch  | 
+|  [torchaudio](https://github.com/pytorch/audio)  | Python |  0.11.0  |  Data manipulation and transformation for audio signal processing, powered by PyTorch  | 
 |  [librosa](https://github.com/librosa/librosa) |  Python   | 0.10.0  |  C++ library for audio and music analysis, description and synthesis, including Python bindings  | 
-|  [essentia](https://github.com/MTG/essentia) |  C++/Python   | 2.0.0  |  Python library for audio and music analysis  | 
+|  [essentia](https://github.com/MTG/essentia) |  C++/Python   | 2.0.1  |  Python library for audio and music analysis  | 
 
 - audioFlux: developed in C with a Python wrapper, it has different bridging processes for different platforms, and supports OpenBLAS, MKL, etc.
 - TorchAudio: developed in PyTorch, which is optimized for CPUs and uses MKL as its backend. This evaluation does not include the GPU version of PyTorch.
@@ -138,6 +138,11 @@ The time required to calculate the mel-spectrogram for 1000 sample data accordin
 | 1000     | 3.00926s  | 6.76275s   | 25.24646s |
 | 2000     | 5.99781s  | 12.69573s  | 47.84029s |
 | 3000     | 8.76306s  | 19.03391s  | 69.40428s |
+
+
+In summary, from the performance comparison results of the three libraries, librosa takes the most time, which is also in line with common sense.    
+On linux/amd processors, audioflux is slightly faster than torchaudio, but slightly slower on linux/intel.    
+On the macOS system, for large-size sample data, audioflux is faster than torchaudio, and intel is more obvious than m1; for small-size sample data, torchaudio is faster than audioflux.   
 
 ### Other Test
 
