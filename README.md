@@ -177,10 +177,9 @@ server hardware:
 
     - CPU: AMD Ryzen Threadripper 3970X 32-Core Processor
 
-<img src='./docs/image/benchmark/linux_amd_1.png'>
+<img src='./docs/image/benchmark/linux_amd_1.png' width="800" >
 
-#### More detailed performance testing
-[https://github.com/libAudioFlux/audioFlux/blob/master/docs/benchmark/performance_more.md](https://github.com/libAudioFlux/audioFlux/blob/master/docs/benchmark/performance_more.md)
+More detailed performance benchmark are provided in the [Benchmark](https://github.com/libAudioFlux/audioFlux/tree/master/benchmark) module.
 
 ## Documentation
 
