@@ -47,8 +47,6 @@ field such as Classification, Separation, Music Information Retrieval(MIR) and A
     - [Other Build](#other-build)
 - [Quickstart](#quickstart)
 - [Benchmark](#benchmark)
-    - [Server Performance](#server-performance)
-    - [Mobile Performance](#mobile-performance)
 - [Documentation](#documentation)
 - [Contributing](#contributing)
 - [Citing](#citing)
@@ -175,15 +173,14 @@ More example scripts are provided in the [Documentation](https://audioflux.top/)
 
 ## Benchmark
 
-### Server Performance
-
 server hardware:
 
     - CPU: AMD Ryzen Threadripper 3970X 32-Core Processor
 
 <img src='./docs/image/benchmark/linux_amd_1.png'>
 
-[More detailed performance testing](./docs/benchmark/performance_more.md)
+#### More detailed performance testing
+[https://github.com/libAudioFlux/audioFlux/blob/master/docs/benchmark/performance_more.md](https://github.com/libAudioFlux/audioFlux/blob/master/docs/benchmark/performance_more.md)
 
 ## Documentation
 
