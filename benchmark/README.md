@@ -6,9 +6,9 @@ In the field of deep learning for audio, the mel spectrogram is the most commonl
 | Library |  Language | Version | About |
 | ---- | ---- | ---- |  ---- |   
 | [audioFlux](https://github.com/libAudioFlux/audioFlux)  |  C/Python  |  0.1.5  |  A library for audio and music analysis, feature extraction  |  
-|  [TorchAudio](https://github.com/pytorch/audio)  | Python |  2.0.0  |  Data manipulation and transformation for audio signal processing, powered by PyTorch  | 
+|  [torchaudio](https://github.com/pytorch/audio)  | Python |  2.0.0  |  Data manipulation and transformation for audio signal processing, powered by PyTorch  | 
 |  [librosa](https://github.com/librosa/librosa) |  Python   | 0.10.0  |  C++ library for audio and music analysis, description and synthesis, including Python bindings  | 
-|  [Essentia](https://github.com/MTG/essentia) |  C++/Python   | 2.0.0  |  Python library for audio and music analysis  | 
+|  [essentia](https://github.com/MTG/essentia) |  C++/Python   | 2.0.0  |  Python library for audio and music analysis  | 
 
 - audioFlux: developed in C with a Python wrapper, it has different bridging processes for different platforms, and supports OpenBLAS, MKL, etc.
 - TorchAudio: developed in PyTorch, which is optimized for CPUs and uses MKL as its backend. This evaluation does not include the GPU version of PyTorch.
@@ -63,7 +63,7 @@ There are many factors that can affect the performance evaluation results, such 
 
 ### Base benchmark
 
-Use audioFlux/TorchAudio/librosa script, for AMD/Intel/M1 CPUs and Linux/macOS operating system. 
+Use audioFlux/torchaudio/librosa script, for AMD/Intel/M1 CPUs and Linux/macOS operating system. 
 
 The time required to calculate the mel-spectrogram for 1000 sample data according to a TimeStep of 1/5/10/100/500/1000/2000/3000. Where fft_len=2048, slide_len=512, sampling_rate=32000.   
 
