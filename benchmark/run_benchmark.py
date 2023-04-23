@@ -18,6 +18,7 @@ FEATURES = ['mel']
 def show(data, save_path=None):
     show_data = {}
     xticks = []
+    project_set = set()
     for key in sorted(data):
         _, project = key
         use_times = []
@@ -26,20 +27,23 @@ def show(data, save_path=None):
             if xtick not in xticks:
                 xticks.append(xtick)
             use_times.append(use_time)
+        project_set.add(project)
         show_data[key] = np.asarray(use_times)
 
-    bar_width = 0.25
+    fig, axes = plt.subplots(1, 1, figsize=(15, 8))
+
+    bar_width = 0.2
     for i, key in enumerate(sorted(show_data)):
         _, project = key
-        bar_pos = np.arange(len(xticks)) + (i * bar_width)
-        plt.bar(bar_pos, show_data[key], width=bar_width, label=project)
+        bar_pos = np.arange(len(xticks)) + (i * bar_width) - ((len(project_set) - 1) / 2 * bar_width)
+        axes.bar(bar_pos, show_data[key], width=bar_width, label=project)
 
-    plt.xlabel('TimeStep')
-    plt.ylabel('UseTime(s)')
+    axes.set_xlabel('TimeStep')
+    axes.set_ylabel('1000 Sample Use Time(s)')
 
-    plt.xticks(np.arange(len(xticks)), xticks)
+    axes.set_xticks(np.arange(len(xticks)), xticks)
+    axes.legend()
 
-    plt.legend()
     if save_path:
         plt.savefig(save_path)
     plt.show()

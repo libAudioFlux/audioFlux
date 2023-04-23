@@ -47,7 +47,7 @@ def mel(time_step, runtimes, radix2_exp=11, slide_length=512):
         e = time.time()
         total_time += e - s
 
-    return total_time
+    return total_time * 1000
 
 
 FEATURES_DIC = {'mel': mel}
@@ -65,7 +65,7 @@ def main(runtimes, time_steps, feature_name, radix2_exp, slide_length):
 
     for time_step in map(int, time_steps.split(',')):
         use_time = fn(time_step, runtimes, radix2_exp, slide_length)
-        print(essentia.__name__, fn.__name__, time_step, use_time)
+        print(essentia.__name__, fn.__name__, time_step, f'{use_time:>.8f}')
 
 
 if __name__ == '__main__':

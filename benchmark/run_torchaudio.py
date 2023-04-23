@@ -30,7 +30,7 @@ def mel(time_step, runtimes, radix2_exp=11, slide_length=512):
         e = time.time()
         total_time += e - s
 
-    return total_time
+    return total_time * 1000
 
 
 FEATURES_DIC = {'mel': mel}
