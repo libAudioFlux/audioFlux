@@ -10,16 +10,16 @@ In the field of deep learning for audio, the mel spectrogram is the most commonl
 |  [librosa](https://github.com/librosa/librosa) |  Python   | 0.10.0  |  C++ library for audio and music analysis, description and synthesis, including Python bindings  | 
 |  [essentia](https://github.com/MTG/essentia) |  C++/Python   | 2.0.1  |  Python library for audio and music analysis  | 
 
-- audioFlux: developed in C with a Python wrapper, it has different bridging processes for different platforms, and supports OpenBLAS, MKL, etc.
-- TorchAudio: developed in PyTorch, which is optimized for CPUs and uses MKL as its backend. This evaluation does not include the GPU version of PyTorch.
-- librosa: developed purely in Python, mainly based on NumPy and SciPy, with NumPy using OpenBLAS as its backend.
-- Essentia: developed in C++ with a Python wrapper, it uses Eigen and FFTW as its backend.
+- audioFlux: developed in C with a Python wrapper, it has different bridging processes for different platforms, and supports **OpenBLAS**, **MKL**, etc.
+- torchaudio: developed in PyTorch, which is optimized for CPUs and uses **MKL** as its backend. This evaluation does not include the GPU version of PyTorch.
+- librosa: developed purely in Python, mainly based on **NumPy** and **SciPy**, with NumPy using **OpenBLAS** as its backend.
+- essentia: developed in C++ with a Python wrapper, it uses **Eigen** and **FFTW** as its backend.
 
 There are many factors that can affect the performance evaluation results, including CPU architecture, operating system, compilation system, selection of basic linear algebra libraries, and usage of project APIs, all of which can have a certain impact on the evaluation results.
 
 For the most common mel features in the audio field, the major performance bottlenecks are FFT computation, matrix computation, and multi-threaded parallel processing, while minor bottlenecks include algorithmic business implementation and Python packaging.
 
-- Regarding FFT computation, librosa uses scipy's fftpack for accelerated FFT computation, which is slower than FFTW3, MKL, and Accelerate.    
+- Regarding FFT computation, librosa uses SciPy's fftpack for accelerated FFT computation, which is slower than FFTW3, MKL, and Accelerate.    
 - Regarding matrix computation, MKL is faster than OpenBLAS, while OpenBLAS is faster than Eigen.    
 - Regarding multi-threaded parallel processing, it depends on whether each project has support for it.
 
@@ -140,9 +140,12 @@ The time required to calculate the mel-spectrogram for 1000 sample data accordin
 | 3000     | 8.76306s  | 19.03391s  | 69.40428s |
 
 
+### Summarize
 In summary, from the performance comparison results of the three libraries, librosa takes the most time, which is also in line with common sense.    
 On linux/amd processors, audioflux is slightly faster than torchaudio, but slightly slower on linux/intel.    
 On the macOS system, for large-size sample data, audioflux is faster than torchaudio, and intel is more obvious than m1; for small-size sample data, torchaudio is faster than audioflux.   
+
+⚠️ Although the development of benchmark is attempted to be as objective and fair as possible, every benchmarks have their drawbacks, and are limited to particular testing procedures, datasets and platforms. And also, this benchmark does not compare additional features that a library may support, or other APIs,  cross-platform, etc. We encourage users to benchmarks with their own data sets and platforms.  
 
 ### Other Test
 
@@ -151,6 +154,9 @@ On the macOS system, for large-size sample data, audioflux is faster than torcha
 Each sample data is 128ms(sampling rate: 32000, data length: 4096).
 
 The total time spent on extracting features for 1000 sample data.
+
+	- OS: Ubuntu 20.04.4 LTS
+	- CPU: AMD Ryzen Threadripper 3970X 32-Core Processor
 
 | Package    | [audioFlux](https://github.com/libAudioFlux/audioFlux) | [librosa](https://github.com/librosa/librosa) | [pyAudioAnalysis](https://github.com/tyiannak/pyAudioAnalysis) | [python\_speech\_features](https://github.com/jameslyons/python_speech_features) |
 | ------ |  ------ |  ------ |  ------ |  ------ | 
