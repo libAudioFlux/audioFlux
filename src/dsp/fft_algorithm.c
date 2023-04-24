@@ -34,12 +34,12 @@ struct OpaqueFFT{
 
 	int radix2Exp; // 2 power
 	int fftLength; // length
-	int *indexArr; // reverse order cache
+	int wLength; // w length; fftLength/2
 
 	float s0; // dct scale coef
 	float s1;
 
-	int wLength; // w length; fftLength/2
+	int *indexArr; // reverse order cache
 
 	float *wCosArr; // fft w cache
 	float *wSinArr;
@@ -62,8 +62,8 @@ struct OpaqueFFT{
 	DSPSplitComplex outData;
 
 	#elif defined HAVE_FFTW3F
-	fftwf_plan planRealForward; // real
-	fftwf_plan planForward; // complex
+	fftwf_plan planReal; // real
+	fftwf_plan planComplex; // complex
 	fftwf_plan planInverse; // inverse
 
 	float *inData1;
@@ -76,9 +76,17 @@ struct OpaqueFFT{
 	fftwf_complex *outData3;
 
 	#elif defined HAVE_MKL
-	DFTI_DESCRIPTOR_HANDLE handleReal;
+	DFTI_DESCRIPTOR_HANDLE handleReal; // real
+	DFTI_DESCRIPTOR_HANDLE handleComplex; // complex
+	DFTI_DESCRIPTOR_HANDLE handleInverse; // inverse
 
 	float *outData1;
+
+	MKL_Complex8 *inData2;
+	MKL_Complex8 *outData2;
+
+	MKL_Complex8 *inData3;
+	MKL_Complex8 *outData3;
 
 	#endif
 };
@@ -100,23 +108,23 @@ int fftObj_new(FFTObj *fftObj,int radix2Exp){
 	FFTObj fft=NULL;
 
 	int length=0;
-	int *indexArr=NULL; // reverse order cache
+	int wLength=0;
 
 	float s0=0;
 	float s1=0;
-
-	int wLength=0;
-	float *wCosArr=NULL; // fft w cache
-	float *wSinArr=NULL;
-
-	float *wCosArr1=NULL; // dct w cache; length
-	float *wSinArr1=NULL;
 
 	float *realArr1=NULL;
 	float *imageArr1=NULL;
 
 	float *realArr2=NULL;
 	float *imageArr2=NULL;
+
+	// int *indexArr=NULL; // reverse order cache
+	// float *wCosArr=NULL; // fft w cache
+	// float *wSinArr=NULL;
+
+	// float *wCosArr1=NULL; // dct w cache; length
+	// float *wSinArr1=NULL;
 
 	if(radix2Exp<1||radix2Exp>30){
 		status=-100;
@@ -137,32 +145,24 @@ int fftObj_new(FFTObj *fftObj,int radix2Exp){
 	realArr2=(float *)calloc(length, sizeof(float ));
 	imageArr2=(float *)calloc(length,sizeof(float ));
 
-	// w cache
-	wCosArr=(float *)calloc(wLength, sizeof(float ));
-	wSinArr=(float *)calloc(wLength, sizeof(float ));
-	_createWArr(wCosArr, wSinArr, wLength);
-
-	wCosArr1=(float *)calloc(length, sizeof(float ));
-	wSinArr1=(float *)calloc(length, sizeof(float ));
-	_createWArr1(wCosArr1, wSinArr1, length);
-
 	// reverse order cache
-	indexArr=_createIndexArr(radix2Exp, length);
+	// indexArr=_createIndexArr(radix2Exp, length);
+
+	// // w cache
+	// wCosArr=(float *)calloc(wLength, sizeof(float ));
+	// wSinArr=(float *)calloc(wLength, sizeof(float ));
+	// _createWArr(wCosArr, wSinArr, wLength);
+
+	// wCosArr1=(float *)calloc(length, sizeof(float ));
+	// wSinArr1=(float *)calloc(length, sizeof(float ));
+	// _createWArr1(wCosArr1, wSinArr1, length);
 
 	fft->radix2Exp=radix2Exp;
 	fft->fftLength=length;
-	fft->indexArr=indexArr;
+	fft->wLength=wLength;
 
 	fft->s0=s0;
 	fft->s1=s1;
-
-	fft->wLength=wLength;
-
-	fft->wCosArr=wCosArr;
-	fft->wSinArr=wSinArr;
-
-	fft->wCosArr1=wCosArr1;
-	fft->wSinArr1=wSinArr1;
 
 	fft->realArr1=realArr1;
 	fft->imageArr1=imageArr1;
@@ -170,7 +170,15 @@ int fftObj_new(FFTObj *fftObj,int radix2Exp){
 	fft->realArr2=realArr2;
 	fft->imageArr2=imageArr2;
 
-	_fftObj_init(fft);
+	// fft->indexArr=indexArr;
+	
+	// fft->wCosArr=wCosArr;
+	// fft->wSinArr=wSinArr;
+
+	// fft->wCosArr1=wCosArr1;
+	// fft->wSinArr1=wSinArr1;
+
+	// _fftObj_init(fft);
 
 	return status;
 }
@@ -189,14 +197,14 @@ static void _fftObj_init(FFTObj fftObj){
 	fftObj->inData1=(float *)fftwf_malloc(fftLength*sizeof(float ));
 	fftObj->outData1=(fftwf_complex *)fftwf_malloc(fftLength*sizeof(fftwf_complex ));
 
-	fftObj->planRealForward=fftwf_plan_dft_r2c_1d(fftLength,
+	fftObj->planReal=fftwf_plan_dft_r2c_1d(fftLength,
 												fftObj->inData1,fftObj->outData1,
 												FFTW_ESTIMATE);
 
 	fftObj->inData2=(fftwf_complex *)fftwf_malloc(fftLength*sizeof(fftwf_complex ));
 	fftObj->outData2=(fftwf_complex *)fftwf_malloc(fftLength*sizeof(fftwf_complex ));
 
-	fftObj->planForward=fftwf_plan_dft_1d(fftLength,
+	fftObj->planComplex=fftwf_plan_dft_1d(fftLength,
 										fftObj->inData2,fftObj->outData2,
 										FFTW_FORWARD,FFTW_ESTIMATE);
 
@@ -214,8 +222,23 @@ static void _fftObj_init(FFTObj fftObj){
 
 	fftObj->outData1=(float *)calloc(fftLength+2, sizeof(float ));
 
-	#endif
+	DftiCreateDescriptor(&fftObj->handleComplex, DFTI_SINGLE, DFTI_COMPLEX, 1, fftLength);
+	DftiSetValue(fftObj->handleComplex, DFTI_PLACEMENT, DFTI_NOT_INPLACE);
+	DftiCommitDescriptor(fftObj->handleComplex);
 
+	fftObj->inData2=(MKL_Complex8 *)mkl_calloc(fftLength,sizeof(MKL_Complex8 ),64);
+	fftObj->outData2=(MKL_Complex8 *)mkl_calloc(fftLength,sizeof(MKL_Complex8 ),64);
+
+	DftiCreateDescriptor(&fftObj->handleInverse, DFTI_SINGLE, DFTI_COMPLEX, 1, fftLength);
+	DftiSetValue(fftObj->handleInverse, DFTI_PLACEMENT, DFTI_NOT_INPLACE);
+	DftiSetValue(fftObj->handleInverse, DFTI_BACKWARD_SCALE, 1.0/fftLength);
+	DftiCommitDescriptor(fftObj->handleInverse);
+
+	fftObj->inData3=(MKL_Complex8 *)mkl_calloc(fftLength,sizeof(MKL_Complex8 ),64);
+	fftObj->outData3=(MKL_Complex8 *)mkl_calloc(fftLength,sizeof(MKL_Complex8 ),64);
+
+	#endif
+	
 }
 
 #ifdef HAVE_ACCELERATE
@@ -229,6 +252,10 @@ static void _fftObj_fft(FFTObj fftObj,float *realArr1,float *imageArr1,float *re
 	fftLength=fftObj->fftLength;
 
 	rFlag=fftObj->rFlag;
+
+	if(!fftObj->setup){
+		fftObj->setup=vDSP_create_fftsetup(radix2Exp,FFT_RADIX2);
+	}
 
 	fftObj->inData.realp=realArr1;
 	fftObj->inData.imagp=imageArr1;
@@ -266,9 +293,18 @@ static void _fftObj_fft(FFTObj fftObj,float *realArr1,float *imageArr1,float *re
 	rFlag=fftObj->rFlag;
 
 	if(rFlag&&!flag){ // real&&forward
+		if(!fftObj->planReal){
+			fftObj->inData1=(float *)fftwf_malloc(fftLength*sizeof(float ));
+			fftObj->outData1=(fftwf_complex *)fftwf_malloc(fftLength*sizeof(fftwf_complex ));
+
+			fftObj->planReal=fftwf_plan_dft_r2c_1d(fftLength,
+												fftObj->inData1,fftObj->outData1,
+												FFTW_ESTIMATE);
+		}
+
 		memcpy(fftObj->inData1, realArr1, sizeof(float )*fftLength);
 
-		fftwf_execute(fftObj->planRealForward);
+		fftwf_execute(fftObj->planReal);
 
 		for(int i=0;i<=fftLength/2;i++){
 			realArr2[i]=fftObj->outData1[i][0];
@@ -282,12 +318,21 @@ static void _fftObj_fft(FFTObj fftObj,float *realArr1,float *imageArr1,float *re
 	}
 	else{ // complex
 		if(!flag){ // forward
+			if(!fftObj->planComplex){
+				fftObj->inData2=(fftwf_complex *)fftwf_malloc(fftLength*sizeof(fftwf_complex ));
+				fftObj->outData2=(fftwf_complex *)fftwf_malloc(fftLength*sizeof(fftwf_complex ));
+
+				fftObj->planComplex=fftwf_plan_dft_1d(fftLength,
+													fftObj->inData2,fftObj->outData2,
+													FFTW_FORWARD,FFTW_ESTIMATE);
+			}
+
 			for(int i=0;i<fftLength;i++){
 				fftObj->inData2[i][0]=realArr1[i];
 				fftObj->inData2[i][1]=imageArr1[i];
 			}
 
-			fftwf_execute(fftObj->planForward);
+			fftwf_execute(fftObj->planComplex);
 
 			for(int i=0;i<fftLength;i++){
 				realArr2[i]=fftObj->outData2[i][0];
@@ -295,6 +340,15 @@ static void _fftObj_fft(FFTObj fftObj,float *realArr1,float *imageArr1,float *re
 			}
 		}
 		else{ // inverse
+			if(!fftObj->planInverse){
+				fftObj->inData3=(fftwf_complex *)fftwf_malloc(fftLength*sizeof(fftwf_complex ));
+				fftObj->outData3=(fftwf_complex *)fftwf_malloc(fftLength*sizeof(fftwf_complex ));
+
+				fftObj->planInverse=fftwf_plan_dft_1d(fftLength,
+													fftObj->inData3,fftObj->outData3,
+													FFTW_BACKWARD,FFTW_ESTIMATE);
+			}
+
 			for(int i=0;i<fftLength;i++){
 				fftObj->inData3[i][0]=realArr1[i];
 				fftObj->inData3[i][1]=imageArr1[i];
@@ -308,28 +362,87 @@ static void _fftObj_fft(FFTObj fftObj,float *realArr1,float *imageArr1,float *re
 			}
 		}
 	}
-
 }
 
 #elif defined HAVE_MKL
 static void _fftObj_fft(FFTObj fftObj,float *realArr1,float *imageArr1,float *realArr2,float *imageArr2,int flag){
+	int radix2Exp=0;
 	int fftLength=0;
 
-	float *outData1=NULL;
+	int rFlag=0;
 
+	radix2Exp=fftObj->radix2Exp;
 	fftLength=fftObj->fftLength;
-	outData1=fftObj->outData1;
 
-	DftiComputeForward(fftObj->handleReal, realArr1, outData1);
+	rFlag=fftObj->rFlag;
 
-	for(int i=0;i<fftLength/2+1;i++){
-		realArr2[i]=outData1[2*i];
-		imageArr2[i]=outData1[2*i+1];
+	if(rFlag&&!flag){ // real&&forward
+		if(!fftObj->handleReal){
+			DftiCreateDescriptor(&fftObj->handleReal, DFTI_SINGLE, DFTI_REAL, 1, fftLength);
+			DftiSetValue(fftObj->handleReal, DFTI_PLACEMENT, DFTI_NOT_INPLACE);
+			DftiCommitDescriptor(fftObj->handleReal);
+
+			fftObj->outData1=(float *)calloc(fftLength+2, sizeof(float ));
+		}
+
+		DftiComputeForward(fftObj->handleReal, realArr1, fftObj->outData1);
+
+		for(int i=0;i<fftLength/2+1;i++){
+			realArr2[i]=fftObj->outData1[2*i];
+			imageArr2[i]=fftObj->outData1[2*i+1];
+		}
+
+		for(int i=fftLength/2+1;i<fftLength;i++){
+		    realArr2[i]=realArr2[fftLength-i];
+		    imageArr2[i]=-imageArr2[fftLength-i];
+		}
 	}
+	else{ // complex
+		if(!flag){ // forward
+			if(!fftObj->handleComplex){
+				DftiCreateDescriptor(&fftObj->handleComplex, DFTI_SINGLE, DFTI_COMPLEX, 1, fftLength);
+				DftiSetValue(fftObj->handleComplex, DFTI_PLACEMENT, DFTI_NOT_INPLACE);
+				DftiCommitDescriptor(fftObj->handleComplex);
 
-	for(int i=fftLength/2+1;i<fftLength;i++){
-	    realArr2[i]=realArr2[fftLength-i];
-	    imageArr2[i]=-imageArr2[fftLength-i];
+				fftObj->inData2=(MKL_Complex8 *)mkl_calloc(fftLength,sizeof(MKL_Complex8 ),64);
+				fftObj->outData2=(MKL_Complex8 *)mkl_calloc(fftLength,sizeof(MKL_Complex8 ),64);
+			}
+
+			for(int i=0;i<fftLength;i++){
+				fftObj->inData2[i].real=realArr1[i];
+				fftObj->inData2[i].imag=imageArr1[i];
+			}
+
+			DftiComputeForward(fftObj->handleComplex, fftObj->inData2, fftObj->outData2);
+
+			for(int i=0;i<fftLength;i++){
+				realArr2[i]=fftObj->outData2[i].real;
+				imageArr2[i]=fftObj->outData2[i].imag;
+			}
+		}
+		else{ // inverse
+			if(!fftObj->handleInverse){
+				DftiCreateDescriptor(&fftObj->handleInverse, DFTI_SINGLE, DFTI_COMPLEX, 1, fftLength);
+				DftiSetValue(fftObj->handleInverse, DFTI_PLACEMENT, DFTI_NOT_INPLACE);
+				DftiSetValue(fftObj->handleInverse, DFTI_BACKWARD_SCALE, 1.0/fftLength);
+				DftiCommitDescriptor(fftObj->handleInverse);
+
+				fftObj->inData3=(MKL_Complex8 *)mkl_calloc(fftLength,sizeof(MKL_Complex8 ),64);
+				fftObj->outData3=(MKL_Complex8 *)mkl_calloc(fftLength,sizeof(MKL_Complex8 ),64);
+			}
+
+			for(int i=0;i<fftLength;i++){
+				fftObj->inData3[i].real=realArr1[i];
+				fftObj->inData3[i].imag=imageArr1[i];
+			}
+
+			DftiComputeBackward(fftObj->handleInverse, fftObj->inData3, fftObj->outData3);
+
+			for(int i=0;i<fftLength;i++){
+				realArr2[i]=fftObj->outData3[i].real;
+				imageArr2[i]=fftObj->outData3[i].imag;
+			}
+		}
 	}
 }
 
@@ -337,6 +450,7 @@ static void _fftObj_fft(FFTObj fftObj,float *realArr1,float *imageArr1,float *re
 static void _fftObj_fft(FFTObj fftObj,float *realArr1,float *imageArr1,float *realArr2,float *imageArr2,int flag){
 	int radix2Exp=0;
 	int length=0;
+	int wLength=0;
 
 	int *indexArr=NULL; // reverse order cache
 
@@ -357,6 +471,17 @@ static void _fftObj_fft(FFTObj fftObj,float *realArr1,float *imageArr1,float *re
 
 	radix2Exp=fftObj->radix2Exp;
 	length=fftObj->fftLength;
+	wLength=fftObj->wLength;
+
+	if(!fftObj->indexArr){
+		// reverse order cache
+		fftObj->indexArr=_createIndexArr(radix2Exp, length);
+
+		// w cache
+		fftObj->wCosArr=(float *)calloc(wLength, sizeof(float ));
+		fftObj->wSinArr=(float *)calloc(wLength, sizeof(float ));
+		_createWArr(fftObj->wCosArr, fftObj->wSinArr, wLength);
+	}
 
 	indexArr=fftObj->indexArr;
 
@@ -511,6 +636,12 @@ void fftObj_dct(FFTObj fftObj,float *dataArr1,float *dataArr2,int isNorm){
 
 	length=fftObj->fftLength;
 
+	if(!fftObj->wCosArr1){
+		fftObj->wCosArr1=(float *)calloc(length, sizeof(float ));
+		fftObj->wSinArr1=(float *)calloc(length, sizeof(float ));
+		_createWArr1(fftObj->wCosArr1, fftObj->wSinArr1, length);
+	}
+
 	wCosArr1=fftObj->wCosArr1;
 	wSinArr1=fftObj->wSinArr1;
 
@@ -555,6 +686,12 @@ void fftObj_idct(FFTObj fftObj,float *dataArr1,float *dataArr2,int isNorm){
 	float *_imageArr2=NULL;
 
 	length=fftObj->fftLength;
+
+	if(!fftObj->wCosArr1){
+		fftObj->wCosArr1=(float *)calloc(length, sizeof(float ));
+		fftObj->wSinArr1=(float *)calloc(length, sizeof(float ));
+		_createWArr1(fftObj->wCosArr1, fftObj->wSinArr1, length);
+	}
 
 	wCosArr1=fftObj->wCosArr1;
 	wSinArr1=fftObj->wSinArr1;
@@ -676,8 +813,8 @@ void fftObj_free(FFTObj fftObj){
 	vDSP_destroy_fftsetup(fftObj->setup);
 
 	#elif defined HAVE_FFTW3F
-	fftwf_destroy_plan(fftObj->planRealForward);
-	fftwf_destroy_plan(fftObj->planForward);
+	fftwf_destroy_plan(fftObj->planReal);
+	fftwf_destroy_plan(fftObj->planComplex);
 	fftwf_destroy_plan(fftObj->planInverse);
 
 	fftwf_free(fftObj->inData1);
@@ -691,8 +828,16 @@ void fftObj_free(FFTObj fftObj){
 
 	#elif defined HAVE_MKL
 	DftiFreeDescriptor(&fftObj->handleReal);
+	DftiFreeDescriptor(&fftObj->handleComplex);
+	DftiFreeDescriptor(&fftObj->handleInverse);
 
 	free(fftObj->outData1);
+
+	mkl_free(fftObj->inData2);
+	mkl_free(fftObj->outData2);
+
+	mkl_free(fftObj->inData3);
+	mkl_free(fftObj->outData3);
 
 	#endif
 
