@@ -3,6 +3,7 @@ build/
 scripts/android
 scripts/windows
 python/audioflux/lib
+.DS_Store*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

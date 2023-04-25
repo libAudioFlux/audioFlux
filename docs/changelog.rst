@@ -1,5 +1,10 @@
 ChangeLog
 =========
+v0.1.6
+------
+* Fix bug:
+    * Fix the v0.1.5 bug.
+    * Fix conda bug for macOS.
 
 v0.1.5
 ------
