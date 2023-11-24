@@ -529,6 +529,26 @@ float util_qaudInterp(float value1,float value2,float value3,float *outValue){
 	return p;
 }
 
+// peak pick
+void util_peakPick(float *pArr,int length,int start,int end,int distance,int num,float *vArr,int *cArr){
+	int index1=0;
+	int index2=0;
+
+	if(distance<=0){
+		distance=1;
+	}
+
+	for(int i=0;i<num;i++){
+		cArr[i]=__vmax(pArr+start, end-start+1, vArr+i)+start;
+
+		index1=(cArr[i]-distance>start?cArr[i]-distance:start);
+		index2=(cArr[i]+distance<end?cArr[i]+distance:end);
+		for(int j=index1;j<=index2;j++){
+			pArr[j]=NAN;
+		}
+	}
+}
+
 // order must odd; delta/deltaDelta
 void util_delta(float *dataArr1,int length,int order,float *dataArr2){
 	float *bArr=NULL;

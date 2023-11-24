@@ -159,6 +159,7 @@ float *__vnew(int length,float *value);
 int *__vnewi(int length,int *value);
 
 float *__vlinspace(float start,float stop,int length,int type);
+float *__vlogspace(float start,float stop,int length,int type);
 int __varange(float start,float stop,float step,float **outArr);
 int __varangei(int start,int stop,int step,int **outArr);
 
