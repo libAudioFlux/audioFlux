@@ -1888,6 +1888,118 @@ void __vsort(float *vArr1,int length,int type,float *vArr2){
 	}
 }
 
+void __vcorrsort(float *arr1,float *arr2,float *arr3,int length,int type){
+	float value1=0;
+	float value2=0;
+	float value3=0;
+
+	for(int i=0;i<length;i++){
+		for(int j=i+1;j<length;j++){
+			if(!type){ // asc
+				if(arr1[i]>arr1[j]){
+					value1=arr1[i];
+					arr1[i]=arr1[j];
+					arr1[j]=value1;
+
+					if(arr2){
+						value2=arr2[i];
+						arr2[i]=arr2[j];
+						arr2[j]=value2;
+					}
+					
+					if(arr3){
+						value3=arr3[i];
+						arr3[i]=arr3[j];
+						arr3[j]=value3;
+					}
+				}
+			}
+			else{ // desc
+				if(arr1[i]<arr1[j]){
+					value1=arr1[i];
+					arr1[i]=arr1[j];
+					arr1[j]=value1;
+
+					if(arr2){
+						value2=arr2[i];
+						arr2[i]=arr2[j];
+						arr2[j]=value2;
+					}
+					
+					if(arr3){
+						value3=arr3[i];
+						arr3[i]=arr3[j];
+						arr3[j]=value3;
+					}
+				}
+			}
+		}
+	}
+}
+
+void __vcorrsort1(float *arr1,float *arr2,float *arr3,int *arr4,int length,int type){
+	float value1=0;
+	float value2=0;
+	float value3=0;
+	
+	int value4=0;
+
+	for(int i=0;i<length;i++){
+		for(int j=i+1;j<length;j++){
+			if(!type){ // asc
+				if(arr1[i]>arr1[j]){
+					value1=arr1[i];
+					arr1[i]=arr1[j];
+					arr1[j]=value1;
+
+					if(arr2){
+						value2=arr2[i];
+						arr2[i]=arr2[j];
+						arr2[j]=value2;
+					}
+					
+					if(arr3){
+						value3=arr3[i];
+						arr3[i]=arr3[j];
+						arr3[j]=value3;
+					}
+
+					if(arr4){
+						value4=arr4[i];
+						arr4[i]=arr4[j];
+						arr4[j]=value4;
+					}
+				}
+			}
+			else{ // desc
+				if(arr1[i]<arr1[j]){
+					value1=arr1[i];
+					arr1[i]=arr1[j];
+					arr1[j]=value1;
+
+					if(arr2){
+						value2=arr2[i];
+						arr2[i]=arr2[j];
+						arr2[j]=value2;
+					}
+					
+					if(arr3){
+						value3=arr3[i];
+						arr3[i]=arr3[j];
+						arr3[j]=value3;
+					}
+
+					if(arr4){
+						value4=arr4[i];
+						arr4[i]=arr4[j];
+						arr4[j]=value4;
+					}
+				}
+			}
+		}
+	}
+}
+
 void __vsorti(int *vArr1,int length,int type,int *vArr2){
 	int *arr=NULL;
 
@@ -1903,14 +2015,14 @@ void __vsorti(int *vArr1,int length,int type,int *vArr2){
 		for(int j=i+1;j<length;j++){
 			int _value=0;
 
-			if(!type){ // 升
+			if(!type){ // asc
 				if(arr[i]>arr[j]){
 					_value=arr[i];
 					arr[i]=arr[j];
 					arr[j]=_value;
 				}
 			}
-			else{ // 降
+			else{ // desc
 				if(arr[i]<arr[j]){
 					_value=arr[i];
 					arr[i]=arr[j];
@@ -1919,6 +2031,58 @@ void __vsorti(int *vArr1,int length,int type,int *vArr2){
 			}
 		}
 	}
+}
+
+int __vindex(float *vArr1,int length,float value){
+	int index=-1;
+
+	for(int i=0;i<length;i++){
+		if(fabsf(vArr1[i]-value)<1e-6){
+			index=i;
+			break;
+		}
+	}
+
+	return index;
+}
+
+int __vindexi(int *vArr1,int length,int value){
+	int index=-1;
+
+	for(int i=0;i<length;i++){
+		if(vArr1[i]==value){
+			index=i;
+			break;
+		}
+	}
+
+	return index;
+}
+
+int __vhas(float *vArr1,int length,float value){
+	int flag=0;
+
+	for(int i=0;i<length;i++){
+		if(fabsf(vArr1[i]-value)<1e-6){
+			flag=1;
+			break;
+		}
+	}
+
+	return flag;
+}
+
+int __vhasi(int *vArr1,int length,int value){
+	int flag=0;
+
+	for(int i=0;i<length;i++){
+		if(vArr1[i]==value){
+			flag=1;
+			break;
+		}
+	}
+
+	return flag;
 }
 
 // element math相关
