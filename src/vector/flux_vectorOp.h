@@ -52,6 +52,9 @@ void __vsinc_stop(float *vArr1,int length,float cut1,float cut2,float *vArr2);
 // gradient edge 1/2
 void __vgradient(float *vArr1,int length,int edgeOrder,float *vArr2);
 
+// interpolation
+void __vinterp_linear(float *xArr1,float *yArr1,int length1,float *xArr2,int length2,float *yArr2);
+
 // pad type 0 'constant' 1 'refect' 2 'wrap' 3 'symmetric' 4 'edge'
 void __vpad(float *vArr1,int length,
 			int headLen,int tailLen,int type,

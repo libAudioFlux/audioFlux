@@ -1995,6 +1995,17 @@ float *__vlinspace(float start,float stop,int length,int type){
 	return arr;
 }
 
+float *__vlogspace(float start,float stop,int length,int type){
+	float *arr=NULL;
+
+	arr=__vlinspace(start,stop,length,type);
+	for(int i=0;i<length;i++){
+		arr[i]=powf(10, arr[i]);
+	}
+
+	return arr;
+}
+
 int __varange(float start,float stop,float step,float **outArr){
 	float *arr=NULL;
 	int length=0;

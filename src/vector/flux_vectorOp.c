@@ -576,6 +576,39 @@ void __vgradient(float *vArr1,int length,int edgeOrder,float *vArr2){
 	}
 }
 
+// interpolation
+void __vinterp_linear(float *xArr1,float *yArr1,int length1,float *xArr2,int length2,float *yArr2){
+	int index1=0;
+
+	float x1=0;
+	float y1=0;
+
+	float x2=0;
+	float y2=0;
+
+	float value=0;
+
+	for(int i=0;i<length2;i++){
+		while(index1<length1-1&&xArr2[i]>xArr1[index1+1]){
+			index1++;
+		}
+
+		if(index1<length1-1){
+			x1=xArr1[index1];
+			y1=yArr1[index1];
+
+			x2=xArr1[index1+1];
+			y2=yArr1[index1+1];
+
+			value=y1+(xArr2[i]-x1)*(y2-y1)/(x2-x1);
+			yArr2[i]=value;
+		}
+		else{
+			yArr2[i]=yArr1[length1-1];
+		}
+	}
+}
+
 // pad type 0 'constant' 1 'refect' 2 'wrap'
 void __vpad(float *vArr1,int length,
 			int headLen,int tailLen,int type,

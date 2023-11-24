@@ -61,6 +61,9 @@ long double util_gammal(long double x,long double *eps);
 // quadratically interpolated return p ∈[-1/2,1/2]
 float util_qaudInterp(float value1,float value2,float value3,float *outValue);
 
+// peak pick
+void util_peakPick(float *pArr,int length,int start,int end,int distance,int num,float *vArr,int *cArr);
+
 // order must odd; delta/deltaDelta
 void util_delta(float *dataArr1,int length,int order,float *dataArr2);
 
