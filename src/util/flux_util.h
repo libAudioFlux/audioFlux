@@ -54,6 +54,9 @@ void util_magToAbsDB(float *pArr,int length,int fftLength,int isNorm,float min,f
 void util_logCompress(float *vArr1,float *gamma,int length,float *vArr2);
 void util_log10Compress(float *vArr1,float *gamma,int length,float *vArr2);
 
+// temproal, return maxDb, percent is < -base
+float util_temproal(float *dataArr,int length,float base,float *avgDb,float *percent);
+
 // gamma eps=1e-5
 float util_gamma(float x,float *eps);
 long double util_gammal(long double x,long double *eps);

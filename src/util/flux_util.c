@@ -433,6 +433,41 @@ void util_log10Compress(float *vArr1,float *gamma,int length,float *vArr2){
 	__vlog10_compress(vArr1, gamma,NULL, length, vArr2);
 }
 
+// temproal, return maxDb, percent is < -base
+float util_temproal(float *dataArr,int length,float base,float *avgValue,float *percentValue){
+	float max=-100;
+
+	int count=0;
+	float value=0;
+	float total=0;
+	
+	if(!dataArr||!length){
+		return 0;
+	}
+
+	for(int i=0;i<length;i++){
+		value=20*log10f(fabsf(dataArr[i])+1e-8);
+		if(value<-36){
+			value=-36;
+		}
+
+		if(max<value){
+			max=value;
+		}
+
+		total+=value;
+
+		if(value>-base){
+			count++;
+		}
+	}
+
+	*avgValue=total/length;
+	*percentValue=1.0*(length-count)/length;
+
+	return max;
+}
+
 /***
 	x=1 1
 	0<x<1 
