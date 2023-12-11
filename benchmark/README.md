@@ -7,8 +7,8 @@ In the field of deep learning for audio, the mel spectrogram is the most commonl
 | ---- | ---- | ---- |  ---- |   
 | [audioFlux](https://github.com/libAudioFlux/audioFlux)  |  C/Python  |  0.1.5  |  A library for audio and music analysis, feature extraction  |  
 |  [torchaudio](https://github.com/pytorch/audio)  | Python |  0.11.0  |  Data manipulation and transformation for audio signal processing, powered by PyTorch  | 
-|  [librosa](https://github.com/librosa/librosa) |  Python   | 0.10.0  |  C++ library for audio and music analysis, description and synthesis, including Python bindings  | 
-|  [essentia](https://github.com/MTG/essentia) |  C++/Python   | 2.0.1  |  Python library for audio and music analysis  | 
+|  [librosa](https://github.com/librosa/librosa) |  Python   | 0.10.0  |  Python library for audio and music analysis  | 
+|  [essentia](https://github.com/MTG/essentia) |  C++/Python   | 2.0.1  |  C++ library for audio and music analysis, description and synthesis, including Python bindings  | 
 
 - audioFlux: developed in C with a Python wrapper, it has different bridging processes for different platforms, and supports **OpenBLAS**, **MKL**, etc.
 - torchaudio: developed in PyTorch, which is optimized for CPUs and uses **MKL** as its backend. This evaluation does not include the GPU version of PyTorch.
