@@ -11,6 +11,7 @@ Convert
     audioflux.utils.mag_to_abs_db
     audioflux.utils.log_compress
     audioflux.utils.log10_compress
+    audioflux.utils.temproal_db
     audioflux.utils.delta
     audioflux.utils.get_phase
 
