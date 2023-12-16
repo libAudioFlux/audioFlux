@@ -1,5 +1,15 @@
 ChangeLog
 =========
+v0.1.7
+------
+* New features:
+    * Add Cepstrogram algorithm.
+    * Add PitchCEP/PitchHPS/PitchLHS/PitchNCF/PitchPEF/PitchSTFT/PitchYIN algorithm.
+* Modified API:
+    * `audioflux.display.fill_wave` add `times` params.
+* Fix bug:
+    * Fix `flux` param: `is_no_exp` to `is_exp`.
+
 v0.1.6
 ------
 * Fix bug:
