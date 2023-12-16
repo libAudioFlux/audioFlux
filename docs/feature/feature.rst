@@ -9,6 +9,7 @@ The feature module contains the following algorithms:
     spectral
     xxcc
     deconv
+    cepstrogram
     temporal
     featureExtractor
 

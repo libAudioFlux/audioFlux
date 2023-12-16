@@ -49,7 +49,7 @@ class PitchSTFT(Base):
     Extract pitch
 
     >>> pitch_obj = af.PitchSTFT(samplate=sr)
-    >>> fre_arr = pitch_obj.pitch(audio_arr)
+    >>> fre_arr, db_arr = pitch_obj.pitch(audio_arr)
 
     Show pitch plot
 

@@ -46,7 +46,7 @@ class PitchYIN(Base):
     Extract pitch
 
     >>> pitch_obj = af.PitchYIN(samplate=sr)
-    >>> fre_arr = pitch_obj.pitch(audio_arr)
+    >>> fre_arr, v1_arr, v2_arr = pitch_obj.pitch(audio_arr)
 
     Show pitch plot
 
