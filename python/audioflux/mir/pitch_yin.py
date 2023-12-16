@@ -1,33 +1,29 @@
 import numpy as np
 from ctypes import Structure, POINTER, pointer, c_int, c_void_p, c_float
 from audioflux.base import Base
-from audioflux.type import PitchType
-from audioflux.utils import check_audio, format_channel, revoke_channel, note_to_hz
+from audioflux.utils import check_audio, format_channel, revoke_channel
 
-__all__ = ["Pitch"]
+__all__ = ["PitchYIN"]
 
 
-class OpaquePitch(Structure):
+class OpaquePitchYIN(Structure):
     _fields_ = []
 
 
-class Pitch(Base):
+class PitchYIN(Base):
     """
-    Pitch - YIN, STFT, etc algorithm
+    Pitch YIN algorithm
 
     Parameters
     ----------
-    pitch_type: PitchType
-        Pitch type
-
     samplate: int
         Sampling rate of the incoming audio.
 
     low_fre: float
-        Lowest frequency.
+        Lowest frequency. Default is `27.0`.
 
     high_fre: float
-        Highest frequency.
+        Highest frequency. Default is `2000.0`.
 
     radix2_exp: int
         ``fft_length=2**radix2_exp``
@@ -36,59 +32,53 @@ class Pitch(Base):
         Window sliding length.
 
     auto_length: int
-        Auto length
+        Auto correlation length. Default is `2048`.
 
     Examples
     --------
 
-    Get a 220Hz's audio file
+    Read 220Hz audio data
 
     >>> import audioflux as af
-    >>> audio_arr, sr = af.read(af.utils.sample_path('220'))
-    # >>> audio_arr = audio_arr[:8192]
+    >>> audio_path = af.utils.sample_path('220')
+    >>> audio_arr, sr = af.read(audio_path)
 
-    Create Pitch object and get frequency
+    Extract pitch
 
-    >>> from audioflux.type import PitchType
-    >>> obj = af.Pitch(pitch_type=PitchType.YIN)
-    >>> fre_arr, value_arr1, value_arr2 = obj.pitch(audio_arr)
+    >>> pitch_obj = af.PitchYIN(samplate=sr)
+    >>> fre_arr, v1_arr, v2_arr = pitch_obj.pitch(audio_arr)
 
-    Display plot
+    Show pitch plot
 
     >>> import matplotlib.pyplot as plt
-    >>> from audioflux.display import fill_wave, fill_plot
-    >>> import numpy as np
-    >>> audio_len = audio_arr.shape[-1]
-    >>> fig, axes = plt.subplots(nrows=2)
-    >>> fill_wave(audio_arr, samplate=sr, axes=axes[0])
-    >>>
-    >>> ax = fill_plot(np.arange(len(fre_arr)), fre_arr, label='fre', axes=axes[1])
-    >>> ax.set_ylabel('frequency(Hz)')
+    >>> from audioflux.display import fill_plot
+    >>> times = np.arange(fre_arr.shape[-1]) * (pitch_obj.slide_length / sr)
+    >>> fig, ax = plt.subplots()
+    >>> ax.set_title('PitchYIN')
+    >>> fill_plot(times, fre_arr, axes=ax)
+    >>> ax.set_ylim(0, 300)
     """
 
-    def __init__(self, pitch_type=None, samplate=32000,
-                 low_fre=note_to_hz('A0'), high_fre=note_to_hz('C7'),
+    def __init__(self, samplate=32000, low_fre=27.0, high_fre=2000.0,
                  radix2_exp=12, slide_length=1024, auto_length=2048):
-        super(Pitch, self).__init__(pointer(OpaquePitch()))
+        super(PitchYIN, self).__init__(pointer(OpaquePitchYIN()))
 
-        self.pitch_type = pitch_type
         self.samplate = samplate
         self.low_fre = low_fre
         self.high_fre = high_fre
         self.radix2_exp = radix2_exp
         self.slide_length = slide_length
         self.auto_length = auto_length
+        self.thresh = 0.1
         self.is_continue = False
 
-        fn = self._lib['pitchObj_new']
-        fn.argtypes = [POINTER(POINTER(OpaquePitch)),
-                       POINTER(c_int), POINTER(c_int),
-                       POINTER(c_float), POINTER(c_float),
-                       POINTER(c_int), POINTER(c_int),
-                       POINTER(c_int), POINTER(c_int)]
+        fn = self._lib['pitchYINObj_new']
+        fn.argtypes = [POINTER(POINTER(OpaquePitchYIN)),
+                       POINTER(c_int), POINTER(c_float), POINTER(c_float),
+                       POINTER(c_int), POINTER(c_int), POINTER(c_int),
+                       POINTER(c_int)]
 
         fn(self._obj,
-           None if self.pitch_type is None else pointer(c_int(self.pitch_type.value)),
            pointer(c_int(self.samplate)),
            pointer(c_float(self.low_fre)),
            pointer(c_float(self.high_fre)),
@@ -106,16 +96,20 @@ class Pitch(Base):
         ----------
         thresh: float
         """
-        fn = self._lib['pitchObj_setThresh']
-        fn.argtypes = [POINTER(OpaquePitch), c_float]
+        if thresh <= 0.0 or thresh >= 1.0:
+            raise ValueError(f'`thresh` must be between 0.0 and 1.0.')
+
+        fn = self._lib['pitchYINObj_setThresh']
+        fn.argtypes = [POINTER(OpaquePitchYIN), c_float]
         fn(self._obj, c_float(thresh))
+        self.thresh = thresh
 
     def cal_time_length(self, data_length):
         """
         Calculate the length of a frame from audio data.
 
         - ``fft_length = 2 ** radix2_exp``
-        - ``(data_length - fft_length) / slide_length + 1``
+        - ``(data_length - fft_length) // slide_length + 1``
 
         Parameters
         ----------
@@ -126,8 +120,8 @@ class Pitch(Base):
         -------
         out: int
         """
-        fn = self._lib['pitchObj_calTimeLength']
-        fn.argtypes = [POINTER(OpaquePitch), c_int]
+        fn = self._lib['pitchYINObj_calTimeLength']
+        fn.argtypes = [POINTER(OpaquePitchYIN), c_int]
         fn.restype = c_int
         return fn(self._obj, c_int(data_length))
 
@@ -149,8 +143,8 @@ class Pitch(Base):
         data_arr = np.asarray(data_arr, dtype=np.float32, order='C')
         check_audio(data_arr, is_mono=False)
 
-        fn = self._lib['pitchObj_pitch']
-        fn.argtypes = [POINTER(OpaquePitch),
+        fn = self._lib['pitchYINObj_pitch']
+        fn.argtypes = [POINTER(OpaquePitchYIN),
                        np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS'),
                        c_int,
                        np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS'),
@@ -184,7 +178,7 @@ class Pitch(Base):
 
     def __del__(self):
         if self._is_created:
-            fn = self._lib['pitchObj_free']
-            fn.argtypes = [POINTER(OpaquePitch)]
+            fn = self._lib['pitchYINObj_free']
+            fn.argtypes = [POINTER(OpaquePitchYIN)]
             fn.restype = c_void_p
             fn(self._obj)

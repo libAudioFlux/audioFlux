@@ -194,7 +194,7 @@ class Spectral(Base):
             ret_arr = revoke_channel(ret_arr, o_channel_shape, 1)
         return ret_arr
 
-    def flux(self, m_data_arr, step=1, p=2, is_positive=False, is_no_exp=True, tp=0):
+    def flux(self, m_data_arr, step=1, p=2, is_positive=False, is_exp=False, tp=0):
         """
         Compute the spectral flux feature.
 
@@ -219,7 +219,7 @@ class Spectral(Base):
         is_positive: bool
             Whether to set negative numbers to 0
 
-        is_no_exp: bool
+        is_exp: bool
             Whether to exp
 
         tp: int, 0 or 1
@@ -284,7 +284,7 @@ class Spectral(Base):
                c_int(step),
                c_float(p),
                c_int(int(is_positive)),
-               pointer(c_int(int(is_no_exp))),
+               pointer(c_int(int(is_exp))),
                pointer(c_int(tp)),
                ret_arr)
         else:
@@ -298,7 +298,7 @@ class Spectral(Base):
                    c_int(step),
                    c_float(p),
                    c_int(int(is_positive)),
-                   pointer(c_int(int(is_no_exp))),
+                   pointer(c_int(int(is_exp))),
                    pointer(c_int(tp)),
                    ret_arr[i])
             ret_arr = revoke_channel(ret_arr, o_channel_shape, 1)
