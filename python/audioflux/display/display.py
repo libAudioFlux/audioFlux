@@ -279,7 +279,7 @@ def fill_plot(x, y, axes=None, label='', is_legend=True, *,
     return axes
 
 
-def fill_wave(data, samplate=32000, axes=None):
+def fill_wave(data, samplate=32000, axes=None, times=None):
     """
     Display a wave data
 
@@ -288,11 +288,14 @@ def fill_wave(data, samplate=32000, axes=None):
     data: np.ndarray [shape=(n,)]
         Input audio data
 
+    samplate: int
+        Sampling rate of the incoming audio
+
     axes: matplotlib.axes.Axes or None
         Axes to plot on instead of the default `plt.subplot()`.
 
-    samplate: int
-        Sampling rate of the incoming audio
+    times: np.ndarray [shape=(n,)]
+        time array
 
     Returns
     -------
@@ -301,7 +304,8 @@ def fill_wave(data, samplate=32000, axes=None):
     if data.ndim != 1:
         raise ValueError(f"data[ndim={data.ndim}] must be a 1D array")
 
-    times = np.arange(data.shape[-1]) / samplate
+    if times is None:
+        times = np.arange(data.shape[-1]) / samplate
     return fill_plot(times, data, axes=axes,
                      x_lims=(times[0], times[-1]),
                      is_legend=False, y_blank_threshold=0.15)
