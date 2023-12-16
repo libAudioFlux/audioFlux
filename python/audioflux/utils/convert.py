@@ -11,6 +11,7 @@ __all__ = [
     'mag_to_abs_db',
     'log_compress',
     'log10_compress',
+    'temproal_db',
     'delta',
     'get_phase',
     'note_to_midi',
@@ -221,6 +222,49 @@ def log10_compress(X, gamma=1.0):
     fn(arr, pointer(c_float(gamma)), c_int(arr.shape[-1]), ret_arr)
     ret_arr = ret_arr.reshape(shape)
     return ret_arr
+
+
+def temproal_db(X, base=18.):
+    """
+    Calculate the time domain DB
+
+    Parameters
+    ----------
+    X: np.ndarray [shape=(frame,)]
+        Input array
+
+    base: float
+        default: 18.
+
+    Returns
+    -------
+    max_Db: float
+        max Db
+    avgDb: float
+        average Db
+    percent: float
+        The current domain is smaller than-based db percentage
+    """
+    X = np.asarray(X, dtype=np.float32, order='C')
+    if X.ndim != 1:
+        raise ValueError(f"X[ndim={x.ndim}] must be a 1D array")
+
+    fn = get_fft_lib()['util_temproal']
+    fn.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS'),
+        c_int,
+        c_float,
+        POINTER(c_float),
+        POINTER(c_float)
+    ]
+    fn.restype = c_float
+
+    avg_Db_p = pointer(c_float(0))
+    percent_p = pointer(c_float(0))
+    max_Db = fn(X, c_int(X.shape[0]), c_float(base), avg_Db_p, percent_p)
+    avg_Db = avg_Db_p.contents.value
+    percent = percent_p.contents.value
+    return max_Db, avg_Db, percent
 
 
 def delta(X, order=9):

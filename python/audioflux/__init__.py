@@ -1,4 +1,5 @@
 from .bft import *
+from .cepstrogram import *
 from .dsp import *
 from .mir import *
 from .cqt import *
@@ -23,3 +24,6 @@ from .__version__ import (
 from .feature import *
 from .core import *
 from .spectrogram import MelSpectrogram, BarkSpectrogram, ErbSpectrogram
+from . import utils
+from . import type
+from . import display
