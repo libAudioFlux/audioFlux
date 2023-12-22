@@ -19,11 +19,6 @@ static float __sub_valid(float *freArr,float *heightArr,float *dbArr,int length)
 
 static int __isEqual(float v1,float v2);
 
-/***
-	height分布情况???
-	1. 优先高频,然后低频
-	2. 
-****/
 int trist(float *corrArr,float *dbArr,float *heightArr,int *midiArr1,int length,
 		float *freArr,float *dbArr2,float *heightArr2,int *midiArr2,int count1,int count2,
 		float *outFre){

@@ -11,6 +11,10 @@
 #include "../util/flux_wave.h"
 #include "../util/flux_util.h"
 
+static int __isEqual(float value1,float value2);
+static int __isGreater(float value1,float value2);
+static int __isLess(float value1,float value2);
+
 // 2^n相关
 int util_isPowerTwo(int value){
 	int flag=1;
@@ -131,6 +135,217 @@ int util_gcd(int a,int b){
 	else{
 		return util_gcd(b,c);
 	}
+}
+
+// tone
+float util_freToMidiRange(float fre,int *midi1,int *midi2){
+	float per=0;
+
+	float curFre=0;
+	float preFre=0;
+	float nextFre=0;
+
+	float sub1=0;
+	float sub2=0;
+
+	int m1=0;
+	int m2=0;
+
+	m1=round(12*log2(fre/440)+69);
+
+	curFre=powf(2,1.0*(m1-69)/12)*440;
+	preFre=powf(2,1.0*(m1-1-69)/12)*440;
+	nextFre=powf(2,1.0*(m1+1-69)/12)*440;
+
+	sub1=curFre-preFre;
+	sub2=nextFre-curFre;
+
+	if(nextFre-fre<fre-preFre){
+		m2=m1+1;
+	}
+	else{
+		m2=m1-1;
+	}
+
+	if(fre>curFre){
+		if(m2==m1+1){
+			per=(nextFre-fre)/sub2;
+		}
+		else{
+			per=(sub1-(fre-curFre))/sub1;
+		}
+	}
+	else{
+		per=(sub1-(curFre-fre))/sub1;
+	}
+
+	if(midi1){
+		*midi1=m1;
+	}
+
+	if(midi2){
+		*midi2=m2;
+	}
+
+	return per;
+}
+
+void util_calTone(float value,float *value1,float *value2){
+	float curFre=0;
+	float preFre=0;
+	float nextFre=0;
+
+	int midi=0;
+
+	midi=round(12*log2(value/440)+69);
+
+	curFre=powf(2,1.0*(midi-69)/12)*440;
+	if(value1){
+		*value1=curFre;
+	}
+
+	if(value2){
+		preFre=powf(2,1.0*(midi-1-69)/12)*440;
+		nextFre=powf(2,1.0*(midi+1-69)/12)*440;
+
+		if(nextFre-value<value-preFre){
+			*value2=nextFre;
+		}
+		else{
+			*value2=preFre;
+		}
+	}
+}
+
+int util_calToneTimes(float value1,float value2,int *type){
+	int k=0;
+
+	float _value=0;
+
+	if(!value1||!value2){
+		return 0;
+	}
+
+	if(type){
+		*type=0;
+	}
+
+	if(__isEqual(value1, value2)){ // value1==value2
+		k=1;
+	}
+	else if(__isLess(value1, value2)){ // value1<value2
+		k=roundf(value2/value1);
+		util_calTone(k*value1, &_value, NULL);
+		if(!__isEqual(value2, _value)){
+			k=0;
+		}
+	}
+	else { // value1>value2
+		k=roundf(value1/value2);
+		util_calTone(k*value2, &_value, NULL);
+		if(!__isEqual(value1, _value)){
+			k=0;
+		}
+
+		if(type){
+			*type=1;
+		}
+	}
+
+	return k;
+}
+
+int util_calFreTimes(float value1,float value2,int *type){
+	int flag=0;
+
+	float _value1=0;
+	float _value2=0;
+
+	util_calTone(value1,&_value1,NULL);
+	util_calTone(value2,&_value2,NULL);
+
+	flag=util_calToneTimes(_value1,_value2,type);
+
+	return flag;
+}
+
+/***
+	1. sub:value
+	2. sub1:sub2
+****/
+int util_calRangeTimes(float value1,float value2,int *type){
+	int k=0;
+
+	float _value1=0;
+	float _value2=0;
+
+	float _select1=0;
+	float _select2=0;
+
+	int flag1=0;
+	int flag2=0;
+
+	float s1=0;
+	float s2=0;
+
+	util_calTone(value1, &_value1, &_select1);
+	util_calTone(value2, &_value2, &_select2);
+	
+	if(value1>660){
+		s1=10;
+	}
+	else if(value1>330){
+		s1=5;
+	}
+
+	if(fabsf(fabsf(_value1-value1)-fabsf(_select1-value1))<s1){
+		flag1=1;
+	}
+
+	if(value2>660){
+		s2=10;
+	}
+	else if(value2>330){
+		s2=5;
+	}
+
+	if(fabsf(fabsf(_value2-value2)-fabsf(_select2-value2))<s2){
+		flag2=1;
+	}
+
+	k=util_calToneTimes(_value1, _value2, type);
+	if(!k&&(value1<330||flag1)){ // 338/340 330->440
+		k=util_calToneTimes(_select1, _value2, type);
+		if(!k&&(value2<330||flag2)){ // 338/340 330->440
+			k=util_calToneTimes(_value1, _select2, type);
+			if(!k){
+				k=util_calToneTimes(_select1, _select2, type);
+			}
+		}
+	}
+
+	if(k>10){
+		float e1=0,e2=0,e3=0;
+
+		e1=fabsf((k-1)*value1-value2);
+		e2=fabsf(k*value1-value2);
+		e3=fabsf((k+1)*value1-value2);
+
+		if(e1<e2&&e1<e3){
+			k--;
+		}
+		else if(e3<e1&&e3<e2){
+			k++;
+		}
+	}
+
+	return k;
+}
+
+int util_calApproTimes(float value1,float value2,int *type){
+	int k=0;
+
+	return k;
 }
 
 // midi 12*log2(fre/440)+69
@@ -652,7 +867,36 @@ void util_writeWave(char *name,float *dataArr,int length){
 	}
 }
 
+static int __isEqual(float value1,float value2){
+	int flag=0;
 
+	if(fabsf(value1-value2)<0.81){
+		return 1;
+	}
+
+	return flag;
+}
+
+static int __isGreater(float value1,float value2){
+	int flag=0;
+
+	if(value1-value2>0.81){
+		return 1;
+	}
+
+	return flag;
+}
+
+static int __isLess(float value1,float value2){
+	int flag=0;
+
+	if(value2-value1>0.81){
+		return 1;
+	}
+
+
+	return flag;
+}
 
 
 
