@@ -37,8 +37,8 @@ struct OpaqueResample{
 	int sourceDataLength;
 	int targetDataLength;
 
-	// continue==1 缓存相关
-	float *tailDataArr; // 最小公倍数 
+	// continue==1 cache
+	float *tailDataArr; // gcd
 	int tailDataLength;
 
 };
@@ -51,8 +51,8 @@ static float *_resampleObj_dealData(ResampleObj resampleObj,float *dataArr1,int 
 static void _resampleObj_resample(ResampleObj resampleObj,float *dataArr1,float *dataArr2);
 
 /***
-	qualType beat 使用kaiser
-	Beat zeroNum 64 nbit 9 beta 14.7697 roll-off 0.9476
+	qualType beat, use kaiser
+	Best zeroNum 64 nbit 9 beta 14.7697 roll-off 0.9476
 	Mid zeroNum 32 nbit 9 beta 11.6626  roll-off 0.8988
 	Fast zeroNum 16 nbit 9 beta 8.5555	roll-off 0.85
 ****/
@@ -61,13 +61,13 @@ int resampleObj_new(ResampleObj *resampleObj,ResampleQualityType *qualType,int *
 
 	ResampleQualityType _qualType=ResampleQuality_Best;
 
-	int zeroNum=64;
-	int nbit=9;
+	int zeroNum=64; // 64 ->50
+	int nbit=9; // 9 ->13
 
 	WindowType winType=Window_Kaiser;
-	float value=14.7696565;
+	float value=14.7696565; // 14.7696565 ->12.9846
 
-	float rollOff=0.9475937;
+	float rollOff=0.9475937; // 0.9475937 ->0.917347
 	
 	if(qualType){
 		_qualType=*qualType;
@@ -77,11 +77,13 @@ int resampleObj_new(ResampleObj *resampleObj,ResampleQualityType *qualType,int *
 		zeroNum=32;
 		value=11.6625806;
 		rollOff=0.8987969;
+		nbit=9;
 	}
 	else if(_qualType==ResampleQuality_Fast){
 		zeroNum=16;
 		value=8.5555046;
 		rollOff=0.85;
+		nbit=9;
 	}
 
 	status=resampleObj_newWithWindow(resampleObj,
@@ -96,11 +98,11 @@ int resampleObj_new(ResampleObj *resampleObj,ResampleQualityType *qualType,int *
 
 /***
 	sinc right
-	zeroNum 64 一般16/32/64
-	nbit 9 一般5~9 每个zero-cross 1<<nbit samples
+	zeroNum 64, 16/32/64
+	nbit 9, 5~9 each zero-cross 1<<nbit samples
 	winType hann
 	value kaiser/gauss 5/2.5
-	rollOff 0.945 一般0.8~0.95
+	rollOff 0.945, 0.8~0.95
 ****/
 int resampleObj_newWithWindow(ResampleObj *resampleObj,
 							int *zeroNum,int *nbit,
@@ -174,7 +176,7 @@ int resampleObj_newWithWindow(ResampleObj *resampleObj,
 	
 	resObj=*resampleObj=(ResampleObj )calloc(1, sizeof(struct OpaqueResample ));
 
-	// 1. 初始化数据
+	// 1. init
 	bitLength=(1<<_nbit);
 	interpLength=_zeroNum*bitLength+1;
 
@@ -198,10 +200,10 @@ int resampleObj_newWithWindow(ResampleObj *resampleObj,
 	resObj->sourceRate=32000;
 	resObj->targetRate=16000;
 
-	// 2. 计算interpArr
+	// 2. cal interpArr
 	_resampleObj_calInterpArr(resObj);
 
-	// 3. 计算interpDeltaArr
+	// 3. cal interpDeltaArr
 	resObj->interpDeltaArr=__vnew(interpLength, NULL);
 	_resampleObj_calInterpDeltaArr(resObj);
 
@@ -209,7 +211,7 @@ int resampleObj_newWithWindow(ResampleObj *resampleObj,
 }
 
 /***
-	continue 0 默认
+	continue 0 
 		sourceDataLength=dataLength
 	conttinue 1
 		sourceDataLength=dataLength-dataLength%q
@@ -235,7 +237,7 @@ int resampleObj_calDataLength(ResampleObj resampleObj,int dataLength){
 		targetDataLength=floorf(dataLength*ratio);
 	}
 	else{
-		if(q>1){ // 存在down
+		if(q>1){ // down
 			sourceDataLength=dataLength-dataLength%q;
 			targetDataLength=sourceDataLength*p/q;
 		}
@@ -277,15 +279,15 @@ void resampleObj_setSamplate(ResampleObj resampleObj,int sourceRate,int targetRa
 
 	ratio=targetRate/(float )sourceRate;
 	if(ratio!=resampleObj->ratio&&
-		(resampleObj->ratio<1||ratio<1)){ // 不相同 满足条件 更新interpArr/interpDeltaArr
-		// 1. 恢复
+		(resampleObj->ratio<1||ratio<1)){ // update interpArr/interpDeltaArr
+		// 1. restore
 		if(resampleObj->ratio<1){
 			for(int i=0;i<interpLength;i++){
 				interpArr[i]/=resampleObj->ratio;
 			}
 		}
 
-		// 2. 更新ratio interpDeltaArr
+		// 2. update ratio interpDeltaArr
 		resampleObj->ratio=ratio;
 		_resampleObj_calInterpDeltaArr(resampleObj);
 	}
@@ -298,9 +300,40 @@ void resampleObj_setSamplate(ResampleObj resampleObj,int sourceRate,int targetRa
 	resampleObj->q=q;
 }
 
+void resampleObj_setSamplateRatio(ResampleObj resampleObj,float ratio){
+	float *interpArr=NULL; 
+	int interpLength=0;
+	
+	if(ratio<0){
+		return;
+	}
+
+	interpArr=resampleObj->interpArr;
+	interpLength=resampleObj->interpLength;
+
+	if(ratio!=resampleObj->ratio&&
+		(resampleObj->ratio<1||ratio<1)){ // update interpArr/interpDeltaArr
+		// 1. restore
+		if(resampleObj->ratio<1){
+			for(int i=0;i<interpLength;i++){
+				interpArr[i]/=resampleObj->ratio;
+			}
+		}
+
+		// 2. update ratio interpDeltaArr
+		resampleObj->ratio=ratio;
+		_resampleObj_calInterpDeltaArr(resampleObj);
+	}
+
+	resampleObj->ratio=ratio;
+
+	resampleObj->p=0;
+	resampleObj->q=0;
+}
+
 void resampleObj_enableContinue(ResampleObj resampleObj,int flag){
 
-	if(!flag){ // 非实时切换
+	if(!flag){ // not real-time change
 		resampleObj->tailDataLength=0;
 	}
 	resampleObj->isContinue=flag;
@@ -325,7 +358,7 @@ int resampleObj_resample(ResampleObj resampleObj,float *dataArr1,int dataLength1
 
 	// 1. dealData
 	dealArr=_resampleObj_dealData(resampleObj,dataArr1,dataLength1);
-	if(dealArr){ // 存在
+	if(dealArr){ 
 		curArr=dealArr;
 		length1=dataLength1+resampleObj->tailDataLength;
 	}
@@ -341,7 +374,7 @@ int resampleObj_resample(ResampleObj resampleObj,float *dataArr1,int dataLength1
 	_resampleObj_resample(resampleObj,curArr,dataArr2);
 
 	// 4. tailData
-	if(resampleObj->isContinue&&dealArr){ // 实时
+	if(resampleObj->isContinue&&dealArr){ // real-time
 		tailDataLength=length1-resampleObj->sourceDataLength;
 		for(int i=0;i<tailDataLength;i++){
 			resampleObj->tailDataArr[i]=dealArr[resampleObj->sourceDataLength+i];
@@ -447,6 +480,7 @@ static void _resampleObj_resample(ResampleObj resampleObj,float *dataArr1,float 
 		int _value1=0;
 		int _value2=0;
 
+		t=i*1.0/ratio;
 		n=floorf(t);
 
 		// 1. left cal
@@ -481,7 +515,8 @@ static void _resampleObj_resample(ResampleObj resampleObj,float *dataArr1,float 
 		}
 
 		// 3. update t
-		t+=1.0/ratio;
+		// t+=1.0/ratio;
+
 	}
 }
 
@@ -532,7 +567,7 @@ static void _resampleObj_calInterpArr(ResampleObj resampleObj){
 		type=Window_Hann;
 	}
 	
-	// 1. sinc计算
+	// 1. sinc
 	interpArr=__vlinspace(0, zeroNum, interpLength, 0);
 	// == __vsinc_low
 	for(int i=0;i<interpLength;i++){
@@ -543,7 +578,7 @@ static void _resampleObj_calInterpArr(ResampleObj resampleObj){
 		interpArr[i]*=rollOff;
 	}
 
-	// 2. window计算
+	// 2. window
 	order=(interpLength-1)*2;
 	if(type==Window_Rect){
 		float _value=1;
@@ -601,7 +636,7 @@ static void _resampleObj_calInterpArr(ResampleObj resampleObj){
 void resampleObj_free(ResampleObj resampleObj){
 	float *interpArr=NULL; // ratio<1 *ration
 	float *interpDeltaArr=NULL;
-	float *tailDataArr=NULL; // 最小公倍数
+	float *tailDataArr=NULL; // gcd
 
 	if(!resampleObj){
 		return;
