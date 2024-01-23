@@ -66,6 +66,9 @@ char __wav_header[44]={
 						0x00, 0x00, 0x00, 0x00 
 };
 
+static int __readChunkSize(FILE *file);
+static void __readChunkName(FILE *file);
+
 int waveReadObj_new(WaveReadObj *waveObj,char *fileName){
 	int status=0;
 	WaveReadObj wave=NULL;
@@ -76,8 +79,10 @@ int waveReadObj_new(WaveReadObj *waveObj,char *fileName){
 	unsigned int offset=0;
 	unsigned int dataSize=0;
 
+	char *chunkName=NULL;
+
 	wave=*waveObj=(WaveReadObj )calloc(1, sizeof(struct OpaqueWaveRead ));
-	fp=fopen(fileName, "rb+");
+	fp=fopen(fileName, "rb");
 
 	fread(&header, 1, sizeof(header), fp);
 	if(header.fmtSize<16){
@@ -93,6 +98,24 @@ int waveReadObj_new(WaveReadObj *waveObj,char *fileName){
 
 	offset=20+header.fmtSize+4; // ???
 	fseek(fp, offset, SEEK_SET);
+
+	// LIST
+	chunkName=(char *)calloc(5, sizeof(char ));
+	strncpy(chunkName,header.data,4);
+	while(strncmp(chunkName, "data", 4)){
+		int skipSize=0;
+
+		fread(&skipSize, 1, sizeof(int ), fp);
+		offset+=4;
+
+		offset+=skipSize;
+		fseek(fp, offset, SEEK_SET);
+		fread(chunkName, 4, sizeof(char ), fp);
+
+		offset+=4;
+	}
+
+	fseek(fp, offset, SEEK_SET);
 	fread(&dataSize, 1, sizeof(unsigned int ), fp);
 
 	wave->fp=fp;
@@ -105,6 +128,7 @@ int waveReadObj_new(WaveReadObj *waveObj,char *fileName){
 
 	wave->dataLength=dataSize/(header.bit/ 8);
 
+	free(chunkName);
 	return status;
 }
 
@@ -215,7 +239,7 @@ int waveWriteObj_new(WaveWriteObj *waveObj,char *fileName,
 	int _channelNum=1;
 
 	wave=*waveObj=(WaveWriteObj )calloc(1, sizeof(struct OpaqueWaveWrite ));
-	fp=fopen(fileName, "wb+");
+	fp=fopen(fileName, "wb");
 
 	if(samplate){
 		if(*samplate>0&&*samplate<=196000){

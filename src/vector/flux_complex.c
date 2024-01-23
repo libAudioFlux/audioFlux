@@ -316,6 +316,21 @@ void __vcnew(int length,float *value,float **realArr,float **imageArr){
 	}
 }
 
+void __vcangle(float *realArr1,float *imageArr1,int length,float *vArr1){
+	float *arr=NULL;
+
+	if(vArr1){
+		arr=vArr1;
+	}
+	else{
+		arr=imageArr1;
+	}
+
+	for(int i=0;i<length;i++){
+		arr[i]=atan2f(imageArr1[i], realArr1[i]);
+	}
+}
+
 void __vcabs(float *realArr1,float *imageArr1,int length,float *vArr3){
 	float *arr=NULL;
 

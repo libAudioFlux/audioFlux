@@ -146,9 +146,18 @@ float __vzcr(float *vArr1,int length);
 
 void __vunwrap(float *vArr1,int length,float *vArr2);
 
-// type 0 升 1降
+// type 0 asc 1 desc
 void __vsort(float *vArr1,int length,int type,float *vArr2);
 void __vsorti(int *vArr1,int length,int type,int *vArr2);
+
+void __vcorrsort(float *vArr1,float *vArr2,float *vArr3,int length,int type);
+void __vcorrsort1(float *vArr1,float *vArr2,float *vArr3,int *vArr4,int length,int type);
+
+int __vindex(float *vArr1,int length,float value);
+int __vindexi(int *vArr1,int length,int value);
+
+int __vhas(float *vArr1,int length,float value);
+int __vhasi(int *vArr1,int length,int value);
 
 // univers function op
 void __vmap(float *vArr1,int length,void *callback,float *vArr2);
@@ -159,6 +168,7 @@ float *__vnew(int length,float *value);
 int *__vnewi(int length,int *value);
 
 float *__vlinspace(float start,float stop,int length,int type);
+float *__vlogspace(float start,float stop,int length,int type);
 int __varange(float start,float stop,float step,float **outArr);
 int __varangei(int start,int stop,int step,int **outArr);
 

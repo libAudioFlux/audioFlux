@@ -65,6 +65,7 @@ void __vcp2z(float *rArr,float *tArr,int length,float *realArr,float *imageArr);
 
 // arg/abs/conj   
 void __vcarg(float *realArr1,float *imageArr1,int length,float *vArr1);
+void __vcangle(float *realArr1,float *imageArr1,int length,float *vArr1);
 void __vcabs(float *realArr1,float *imageArr1,int length,float *vArr1);
 void __vcsquare(float *realArr1,float *imageArr1,int length,float *vArr1);
 void __vcconj(float *realArr1,float *imageArr1,int length,float *realArr3,float *imageArr3);

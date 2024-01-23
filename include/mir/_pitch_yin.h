@@ -28,7 +28,7 @@ int pitchYINObj_new(PitchYINObj *pitchYINObj,
 				int *radix2Exp,int *slideLength,int *autoLength,
 				int *isContinue);
 
-// default 0.1 thresh>0&&thresh<1
+// default 0.6 thresh>0&&thresh<1
 void pitchYINObj_setThresh(PitchYINObj pitchYINObj,float thresh);
 int pitchYINObj_calTimeLength(PitchYINObj pitchYINObj,int dataLength);
 
