@@ -29,6 +29,7 @@ void __mdot(float *mArr1,float *mArr2,
 	}
 
     #if (defined HAVE_ACCELERATE) || (defined HAVE_OPENBLAS) || (defined HAVE_MKL)
+    memset(mArr3, 0, nLength1 * mLength2 * sizeof(float));
     cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
                 nLength1, mLength2,
                 mLength1, 1,
@@ -60,6 +61,7 @@ void __mdot1(float *mArr1,float *mArr2,
 	}
 
     #if (defined HAVE_ACCELERATE) || (defined HAVE_OPENBLAS) || (defined HAVE_MKL)
+    memset(mArr3, 0, nLength1 * nLength2 * sizeof(float));
     cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans,
                 nLength1, nLength2,
                 mLength1, 1,
