@@ -247,7 +247,7 @@ def temproal_db(X, base=18.):
     """
     X = np.asarray(X, dtype=np.float32, order='C')
     if X.ndim != 1:
-        raise ValueError(f"X[ndim={x.ndim}] must be a 1D array")
+        raise ValueError(f"X[ndim={X.ndim}] must be a 1D array")
 
     fn = get_fft_lib()['util_temproal']
     fn.argtypes = [
