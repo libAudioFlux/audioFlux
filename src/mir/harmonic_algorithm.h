@@ -19,7 +19,7 @@ typedef struct OpaqueHarmonic *HarmonicObj;
 	windowType hamm
 ****/
 int harmonicObj_new(HarmonicObj *harmonicObj,
-					int *samplate,
+					int *samplate,float *lowFre,float *highFre,
 					int *radix2Exp,WindowType *windowType,int *slideLength);
 
 int harmonicObj_calTimeLength(HarmonicObj harmonicObj,int dataLength);

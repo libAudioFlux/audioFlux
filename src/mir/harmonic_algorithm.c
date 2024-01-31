@@ -87,12 +87,13 @@ static void __harmonicObj_filterDB(HarmonicObj harmonicObj);
 static int __arr_maxIndex(float *arr,int length);
 
 int harmonicObj_new(HarmonicObj *harmonicObj,
-					int *samplate,
+					int *samplate,float *lowFre,float *highFre,
 					int *radix2Exp,WindowType *windowType,int *slideLength){
 	int status=0;
 
 	int _samplate=32000;
-
+	float _lowFre=27; // 27.5
+	float _highFre=4000; // 2093/4186
 	int _radix2Exp=12;
 	int _slideLength=0;
 	WindowType _winType=Window_Hamm;
@@ -111,6 +112,22 @@ int harmonicObj_new(HarmonicObj *harmonicObj,
 	if(samplate){
 		if(*samplate>0&&*samplate<=196000){
 			_samplate=*samplate;
+		}
+	}
+
+	if(lowFre){
+		if(*lowFre>=27){
+			_lowFre=*lowFre;
+		}
+	}
+
+	if(highFre){
+		if(*highFre>_lowFre&&*highFre<_samplate/2){
+			_highFre=*highFre;
+		}
+		else{
+			_lowFre=27;
+			_highFre=4000;
 		}
 	}
 
@@ -134,7 +151,17 @@ int harmonicObj_new(HarmonicObj *harmonicObj,
 		}
 	}
 
-	maxIndex=fftLength/2-1;
+	minIndex=floorf(_lowFre*fftLength/_samplate);
+	maxIndex=ceilf(_highFre*fftLength/_samplate);
+	if(maxIndex>=fftLength/2){
+		maxIndex=fftLength/2-1;
+	}
+
+	if(minIndex>=maxIndex){
+		minIndex=3;
+		maxIndex=ceilf(4000*fftLength/_samplate);
+	}
+
 	peakLength=(maxIndex-minIndex)/2+1;
 
 	stftObj_new(&stftObj, _radix2Exp, &_winType, &_slideLength, NULL);
