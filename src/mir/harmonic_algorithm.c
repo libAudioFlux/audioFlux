@@ -3,17 +3,17 @@
 #include <string.h>
 #include <math.h>
 
-#include "vector/flux_vector.h"
-#include "vector/flux_vectorOp.h"
-#include "vector/flux_complex.h"
+#include "../vector/flux_vector.h"
+#include "../vector/flux_vectorOp.h"
+#include "../vector/flux_complex.h"
 
-#include "util/flux_util.h"
+#include "../util/flux_util.h"
 
-#include "dsp/flux_window.h"
-#include "dsp/flux_correct.h"
-#include "dsp/fft_algorithm.h"
+#include "../dsp/flux_window.h"
+#include "../dsp/flux_correct.h"
+#include "../dsp/fft_algorithm.h"
 
-#include "stft_algorithm.h"
+#include "../stft_algorithm.h"
 
 #include "harmonic_algorithm.h"
 

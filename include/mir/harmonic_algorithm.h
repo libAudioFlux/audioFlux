@@ -9,7 +9,7 @@ extern "C" {
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "flux_base.h"
+#include "../flux_base.h"
 
 typedef struct OpaqueHarmonic *HarmonicObj;
 
