@@ -9,3 +9,5 @@ from .pitch_ncf import *
 from .pitch_pef import *
 from .pitch_stft import *
 from .pitch_yin import *
+from .pitch_shift import *
+from .time_stretch import *
