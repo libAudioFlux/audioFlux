@@ -1,8 +1,13 @@
 [
     {
-        "name": "0.1.7 (stable)",
-        "version": "0.1.7",
+        "name": "0.1.8 (stable)",
+        "version": "0.1.8",
         "url": "https://audioflux.top/stable/"
+    },
+    {
+        "name": "0.1.7",
+        "version": "0.1.7",
+        "url": "https://audioflux.top/v0.1.7/"
     },
     {
         "name": "0.1.6",
