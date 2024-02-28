@@ -5,6 +5,7 @@ v0.1.8
 * New features:
     * Add `audioflux.STFT` algorithm.
     * Add `audioflux.PitchFFP` algorithm.
+    * Add `audioflux.PitchShift` and `audioflux.TimeStretch` algorithms.
     * Add method `temporal` to `audioflux.Temporal`.
     * Optimize performance.
 * Fix bug:
