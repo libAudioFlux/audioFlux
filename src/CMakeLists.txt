@@ -90,7 +90,7 @@ elseif (${CMAKE_SYSTEM_NAME} MATCHES "linux")
 	if (DEFINED ENV{AF_BUILD_PY_BDIST})
 		message("Build py_bdist version")
 		set(OMP_PATH "../scripts/linux/openmp")
-		set(MKL_INCLUDE_PATH "../scripts/linux/mkl")
+		set(MKL_INCLUDE_PATH "../scripts/linux/mkl/include")
 		set(MKL_LIB_PATH "../scripts/linux/mkl")
 
 		include_directories(${OMP_PATH})
@@ -98,14 +98,15 @@ elseif (${CMAKE_SYSTEM_NAME} MATCHES "linux")
 	else()
 		set(MKL_INCLUDE_PATH $ENV{MKL_INCLUDE_PATH})
 		set(MKL_LIB_PATH $ENV{MKL_LIB_PATH})
-		message("Using MKL_INCLUDE_PATH: ${MKL_INCLUDE_PATH}")
-		message("Using MKL_LIB_PATH: ${MKL_LIB_PATH}")
 	endif()
+
+    message("Using MKL_INCLUDE_PATH: ${MKL_INCLUDE_PATH}")
+    message("Using MKL_LIB_PATH: ${MKL_LIB_PATH}")
 
 	if (MKL_LIB_PATH)
 		set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -O3 -DHAVE_MKL -DHAVE_OMP -fopenmp=libomp -Wl,-rpath,${MKL_LIB_PATH} ")
 	else()
-		set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -O3 -DHAVE_MKL -DHAVE_OMP -fopenmp=libomp ")
+		set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -O3 -DHAVE_OMP -fopenmp=libomp ")
 	endif()
 
 	if (MKL_INCLUDE_PATH)
@@ -123,12 +124,19 @@ elseif (${CMAKE_SYSTEM_NAME} MATCHES "linux")
 				${SOURCES})
 
 	# link target lib
-	target_link_libraries(audioflux
-						 mkl_intel_lp64
-						 mkl_core
-						 mkl_intel_thread
-						 omp
-						 m)
+	if (MKL_LIB_PATH)
+        target_link_libraries(audioflux
+						      mkl_intel_lp64
+						      mkl_core
+						      mkl_intel_thread
+						      omp
+						      m)
+    else()
+        target_link_libraries(audioflux
+                              omp
+                              m)
+	endif()
+
 
 	install(TARGETS audioflux DESTINATION lib)
 
