@@ -160,7 +160,7 @@ static void _xcorrObj_dealFFT(XcorrObj xcorrbj,int fftLength){
 		
 		xcorrbj->fftObj=fftObj;
 		xcorrbj->fftLength=fftLength;
-		printf("fftLength is %d\n",fftLength);
+//		printf("fftLength is %d\n",fftLength);
 
 		xcorrbj->vRealArr1=vRealArr1;
 		xcorrbj->vImageArr1=vImageArr1;
