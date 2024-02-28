@@ -10,6 +10,7 @@ from .nsgt import *
 from .pwt import *
 from .reassign import *
 from .st import *
+from .stft import *
 from .swt import *
 from .synsq import *
 from .temporal import *
