@@ -34,6 +34,29 @@ class HarmonicRatio(Base):
     slide_length: int
         Window sliding length.
 
+
+    Examples
+    --------
+
+    Read guitar_chord2 audio data
+
+    >>> import audioflux as af
+    >>> audio_path = af.utils.sample_path('guitar_chord2')
+    >>> audio_arr, sr = af.read(audio_path)
+
+    Compute harmonic_count
+
+    >>> hr_obj = af.HarmonicRatio(radix2_exp=12, samplate=sr, slide_length=1024)
+    >>> ratio_arr = hr_obj.harmonic_ratio(audio_arr)
+
+    Show harmonic_count plot
+
+    >>> import matplotlib.pyplot as plt
+    >>> fig, axes = plt.subplots(2, figsize=(16, 9), sharex=True)
+    >>> af.display.fill_wave(audio_arr, axes=axes[0])
+    >>> times = np.arange(ratio_arr.shape[-1]) * (hr_obj.slide_length / sr)
+    >>> af.display.fill_plot(times, ratio_arr, axes=axes[1], label='Harmonic Ratio')
+
     """
 
     def __init__(self, samplate=32000, low_fre=note_to_hz('C1'), radix2_exp=12,

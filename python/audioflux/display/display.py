@@ -82,24 +82,20 @@ class TimeFormatter(Formatter):
     def __init__(self, lag=False, unit=None):
 
         if unit not in ["s", "ms", None]:
-            raise ValueError("Unknown time unit: {}".format(unit))
+            raise ValueError("Time unit is not support: {}".format(unit))
 
         self.unit = unit
         self.lag = lag
 
     def __call__(self, x, pos=None):
-        """Return the time format as pos"""
 
         _, dmax = self.axis.get_data_interval()
         vmin, vmax = self.axis.get_view_interval()
 
-        # In lag-time axes, anything greater than dmax / 2 is negative time
         if self.lag and x >= dmax * 0.5:
-            # In lag mode, don't tick past the limits of the data
             if x > dmax:
                 return ""
             value = np.abs(x - dmax)
-            # Do we need to tweak vmin/vmax here?
             sign = "-"
         else:
             value = x
@@ -111,7 +107,6 @@ class TimeFormatter(Formatter):
             s = "{:.3g}".format(value * 1000)
         else:
             if vmax - vmin > 3600:
-                # Hours viz
                 s = "{:d}:{:02d}:{:02d}".format(
                     int(value / 3600.0),
                     int(np.mod(value / 60.0, 60)),
@@ -121,10 +116,8 @@ class TimeFormatter(Formatter):
                 # Minutes viz
                 s = "{:d}:{:02d}".format(int(value / 60.0), int(np.mod(value, 60)))
             elif vmax - vmin >= 1:
-                # Seconds viz
                 s = "{:.2g}".format(value)
             else:
-                # Milliseconds viz
                 s = "{:.3f}".format(value)
 
         return "{:s}{:s}".format(sign, s)
@@ -274,7 +267,7 @@ def fill_plot(x, y, axes=None, label='', is_legend=True, *,
     axes.set_ylim(*y_lims)
 
     axes.plot(x, y, label=label)
-    if is_legend:
+    if is_legend and label:
         axes.legend()
     return axes
 

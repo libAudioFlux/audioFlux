@@ -231,7 +231,7 @@ class BFT(Base):
         Calculate the length of a frame from audio data.
 
         - ``fft_length = 2 ** radix2_exp``
-        - ``(data_length - fft_length) / slide_length + 1``
+        - ``(data_length - fft_length) // slide_length + 1``
 
         Parameters
         ----------
@@ -444,15 +444,15 @@ class BFT(Base):
 
         fn = self._lib['bftObj_getTemporalData']
         fn.argtypes = [POINTER(OpaqueBFT),
-                       POINTER(POINTER(c_float)),
-                       POINTER(POINTER(c_float)),
-                       POINTER(POINTER(c_float)),
+                       POINTER(c_void_p),
+                       POINTER(c_void_p),
+                       POINTER(c_void_p),
                        ]
         time_length = self.cal_time_length(data_length)
 
-        pp_energy_arr = pointer(pointer(c_float()))
-        pp_rms_arr = pointer(pointer(c_float()))
-        pp_zcr_arr = pointer(pointer(c_float()))
+        pp_energy_arr = pointer(c_void_p())
+        pp_rms_arr = pointer(c_void_p())
+        pp_zcr_arr = pointer(c_void_p())
 
         fn(self._obj,
            pp_energy_arr,
@@ -460,9 +460,9 @@ class BFT(Base):
            pp_zcr_arr
            )
 
-        energy_arr = np.array([pp_energy_arr.contents[x] for x in range(time_length)], dtype=np.float32)
-        rms_arr = np.array([pp_rms_arr.contents[x] for x in range(time_length)], dtype=np.float32)
-        zcr_arr = np.array([pp_zcr_arr.contents[x] for x in range(time_length)], dtype=np.float32)
+        energy_arr = np.frombuffer((c_float * time_length).from_address(pp_energy_arr[0]), np.float32).copy()
+        rms_arr = np.frombuffer((c_float * time_length).from_address(pp_rms_arr[0]), np.float32).copy()
+        zcr_arr = np.frombuffer((c_float * time_length).from_address(pp_zcr_arr[0]), np.float32).copy()
 
         return energy_arr, rms_arr, zcr_arr
 

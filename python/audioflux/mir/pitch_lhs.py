@@ -13,7 +13,10 @@ class OpaquePitchLHS(Structure):
 
 class PitchLHS(Base):
     """
-    Pitch LHS algorithm
+    Log-Harmonic Summation(LHS). Pitch is estimated by adopting sum operations on the harmonics of the spectrum. [#]_
+
+    .. [#] Hermes, Dik J. "Measurement of Pitch by Subharmonic Summation."The Journal of the Acoustical
+           Society of America. Vol. 83, No. 1, 1988, pp. 257–264.
 
     Parameters
     ----------
@@ -43,10 +46,10 @@ class PitchLHS(Base):
     Examples
     --------
 
-    Read 220Hz audio data
+    Read voice audio data
 
     >>> import audioflux as af
-    >>> audio_path = af.utils.sample_path('220')
+    >>> audio_path = af.utils.sample_path('voice')
     >>> audio_arr, sr = af.read(audio_path)
 
     Extract pitch
@@ -57,12 +60,11 @@ class PitchLHS(Base):
     Show pitch plot
 
     >>> import matplotlib.pyplot as plt
-    >>> from audioflux.display import fill_plot
     >>> times = np.arange(fre_arr.shape[-1]) * (pitch_obj.slide_length / sr)
-    >>> fig, ax = plt.subplots()
-    >>> ax.set_title('PitchLHS')
-    >>> fill_plot(times, fre_arr, axes=ax)
-    >>> ax.set_ylim(0, 300)
+    >>> fig, ax = plt.subplots(nrows=2, sharex=True)
+    >>> ax[0].set_title('PitchLHS')
+    >>> af.display.fill_wave(audio_arr, samplate=sr, axes=ax[0])
+    >>> ax[1].scatter(times, fre_arr, s=2)
     """
 
     def __init__(self, samplate=32000, low_fre=32.0, high_fre=2000.0,

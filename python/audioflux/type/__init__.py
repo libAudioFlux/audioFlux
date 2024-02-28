@@ -4,3 +4,4 @@ from .onset import *
 from .resample import *
 from .reassign import *
 from .pitch import *
+from .xcorr import *

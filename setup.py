@@ -10,13 +10,23 @@ class BuildPyCommand(setuptools.command.build_py.build_py):
 
     def run(self):
         if sys.argv[1].startswith('build'):
-            self.compile_c()
+            if platform.startswith('win'):
+                raise ValueError('Platform=%s is not supported. Please use macOS to build the package. '
+                                 'Or use `pip install audioflux` to install the package.' % platform)
+
+            if sys.argv[1] == 'build_py_win':
+                self.compile_c_win()
+            else:
+                is_whl = sys.argv[1] == 'build_py_whl'
+                self.compile_c(is_whl=is_whl)
         setuptools.command.build_py.build_py.run(self)
 
-    def compile_c(self):
+    def compile_c(self, is_whl=False):
         """Only supports macOS/linux"""
         print('=' * 20)
         print('Starting compile audioFlux of c')
+        if is_whl:
+            os.environ['AF_BUILD_PY_BDIST'] = '1'
         current_cwd = os.getcwd()
         os.chdir(os.path.join(os.getcwd(), './scripts'))
         if platform == 'darwin':
@@ -32,6 +42,11 @@ class BuildPyCommand(setuptools.command.build_py.build_py):
         if r != 0:
             exit(-1)
         os.chdir(current_cwd)
+        if is_whl:
+            if platform == 'darwin':
+                os.system("install_name_tool -change @rpath/libomp.dylib @loader_path/lib/libomp.dylib %s" % src_lib_fp)
+            elif platform == 'linux':
+                os.system("patchelf --set-rpath '$ORIGIN/lib' %s" % src_lib_fp)
         print('Compile audioFlux successful.')
 
         import shutil
@@ -46,14 +61,7 @@ class BuildPyCommand(setuptools.command.build_py.build_py):
         print('Copying {src_lib_fp} to {dst_lib_fp}'.format(src_lib_fp=src_lib_fp, dst_lib_fp=dst_lib_fp))
         print('=' * 20)
 
-
-class BuildPyWinCommand(setuptools.command.build_py.build_py):
-
-    def run(self):
-        self.compile_c()
-        setuptools.command.build_py.build_py.run(self)
-
-    def compile_c(self):
+    def compile_c_win(self):
         """Only supports macOS"""
         print('Starting compile audioFlux of c')
         current_cwd = os.getcwd()
@@ -150,9 +158,11 @@ setup(
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
     ],
     cmdclass={
         'build_py': BuildPyCommand,
-        'build_py_win': BuildPyWinCommand,
+        'build_py_whl': BuildPyCommand,
+        'build_py_win': BuildPyCommand,
     }
 )
