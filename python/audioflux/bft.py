@@ -231,7 +231,7 @@ class BFT(Base):
         Calculate the length of a frame from audio data.
 
         - ``fft_length = 2 ** radix2_exp``
-        - ``(data_length - fft_length) / slide_length + 1``
+        - ``(data_length - fft_length) // slide_length + 1``
 
         Parameters
         ----------
