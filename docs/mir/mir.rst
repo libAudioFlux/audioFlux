@@ -9,6 +9,10 @@ The mir module contains the following algorithms:
     pitch
     onsetBase
     hpss
+    harmonics
+    pitchShift
+    timeStretch
+
 
 +-----------------+---------------------------------+
 | MIR             | algorithm                       |

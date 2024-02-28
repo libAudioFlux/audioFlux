@@ -1,9 +1,19 @@
 ChangeLog
 =========
+v0.1.8
+------
+* New features:
+    * Add `audioflux.STFT` algorithm.
+    * Add `audioflux.PitchFFP` algorithm.
+    * Add method `temporal` to `audioflux.Temporal`.
+    * Optimize performance.
+* Fix bug:
+    * Fix `nfm` bug.
+
 v0.1.7
 ------
 * New features:
-    * Add Cepstrogram algorithm.
+    * Add `audioflux.Cepstrogram` algorithm.
     * Add PitchCEP/PitchHPS/PitchLHS/PitchNCF/PitchPEF/PitchSTFT/PitchYIN algorithm.
 * Modified API:
     * `audioflux.display.fill_wave` add `times` params.

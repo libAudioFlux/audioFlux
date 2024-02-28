@@ -2,17 +2,6 @@
 
 # audioFlux
 
-<!--<p align="center">
-<img src='./image/logo.png'  width="380"  style="max-width: 100%;" > 
-</p>-->
-
-
-<!-- 
-[![Pypi Downloads](https://img.shields.io/pypi/dm/aubio.svg?label=Pypi%20downloads)](https://pypi.org/project/aubio/)
-[![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/aubio.svg?label=Conda%20downloads)](https://anaconda.org/conda-forge/aubio)
-[![Documentation](https://readthedocs.org/projects/aubio/badge/?version=latest)](http://aubio.readthedocs.io/en/latest/?badge=latest "Latest documentation") -->
-<!--![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/libAudioFlux/audioFlux)-->
-
 <!-- shields.io -->
 ![GitHub Workflow Status (with branch)](https://img.shields.io/github/actions/workflow/status/libAudioFlux/audioFlux/build.yml?branch=master)
 ![example branch parameter](https://github.com/libAudioFlux/audioFlux/actions/workflows/build.yml/badge.svg?branch=master)
@@ -38,6 +27,13 @@ field such as Classification, Separation, Music Information Retrieval(MIR) and A
 - Systematic and multi-dimensional feature extraction and combination can be flexibly used for various task research and analysis.
 - High performance, core part C implementation, FFT hardware acceleration based on different platforms, convenient for large-scale data feature extraction.
 - It supports the mobile end and meets the real-time calculation of audio stream at the mobile end. -->
+
+
+##### New Features
+* v0.1.8
+  * Add a variety of Pitch algorithms: `YIN`, `CEP`, `PEF`, `NCF`, `HPS`, `LHS`, `STFT` and `FFP`.
+  * Add `PitchShift` and `TimeStretch` algorithms.
+
 
 ### Table of Contents
 

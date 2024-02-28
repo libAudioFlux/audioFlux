@@ -84,10 +84,10 @@ Build and compile successfully, the project build compilation results are in the
     $ sudo yum install -y cmake clang
     ```
 
-2. Installing **MKL** lib dependencies on Linux
+2. Installing **MKL** lib dependencies on Linux (Optional, Recommended installation)
 
    You can
-   use [this installation document](https://www.intel.cn/content/www/cn/zh/developer/tools/oneapi/onemkl-download.html?operatingsystem=linux)
+   use [this installation document](https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl-download.html?operatingsystem=linux)
    to install MKL
 
    After installation, you need to set the environment variable `MKL_INCLUDE_PATH` and `MKL_LIB_PATH` for MKL.
@@ -151,8 +151,9 @@ Build and compile successfully, the project build compilation results are in the
 
 #### Windows build
 
-Building from source is currently not supported. Only supports pip installation. If you need to build from source, The
-easiest way to build audioFlux is by cross-compilation on Linux/macOS using MinGW.
+Building from source code is currently not supported on Windows; it is recommended to use pip installation.
+
+If you need to build from source, The easiest way to build audioFlux is by cross-compilation on Linux/macOS using MinGW.
 
  ```shell
  $ python setup.py build_py_win

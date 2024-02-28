@@ -1,6 +1,12 @@
 Pitch
 =====
 
+.. autoclass:: audioflux.PitchYIN
+   :members:
+
+.. autoclass:: audioflux.PitchPEF
+   :members:
+
 .. autoclass:: audioflux.PitchCEP
    :members:
 
@@ -13,11 +19,8 @@ Pitch
 .. autoclass:: audioflux.PitchNCF
    :members:
 
-.. autoclass:: audioflux.PitchPEF
-   :members:
-
 .. autoclass:: audioflux.PitchSTFT
    :members:
 
-.. autoclass:: audioflux.PitchYIN
+.. autoclass:: audioflux.PitchFFP
    :members:

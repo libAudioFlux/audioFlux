@@ -51,6 +51,7 @@ The following transform are not supports multiple frequency scale types, only us
     dwt
     wpt
     swt
+    stft
 
 
 Synchronized Squeezing
