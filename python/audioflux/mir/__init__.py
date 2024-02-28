@@ -2,6 +2,7 @@ from .harmonic_ratio import *
 from .hpss import *
 from .onset import *
 from .pitch_cep import *
+from .pitch_ffp import *
 from .pitch_hps import *
 from .pitch_lhs import *
 from .pitch_ncf import *
