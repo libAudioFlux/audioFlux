@@ -8,7 +8,7 @@ v0.1.8
     * Add method `temporal` to `audioflux.Temporal`.
     * Optimize performance.
 * Fix bug:
-    * Fix `nfm` bug.
+    * Fix `nmf` bug.
 
 v0.1.7
 ------
