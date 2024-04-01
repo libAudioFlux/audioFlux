@@ -52,6 +52,7 @@ class PitchYIN(Base):
     >>> fre_arr, v1_arr, v2_arr = pitch_obj.pitch(audio_arr)
 
     Show pitch plot
+
     >>> import matplotlib.pyplot as plt
     >>> times = np.arange(fre_arr.shape[-1]) * (pitch_obj.slide_length / sr)
     >>> fig, ax = plt.subplots(nrows=2, sharex=True)
