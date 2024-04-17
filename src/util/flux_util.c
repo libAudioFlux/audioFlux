@@ -825,6 +825,64 @@ void util_preEmphasis(float *vArr1,int length,float coef,float *vArr2){
 	}
 }
 
+// synthesized f0; length1=floor(time*fs), ampArr can NULL, default is 1
+float *util_synthF0(float *timeArr,float *freArr,int length,int samplate,float *ampArr){
+	float *fArr=NULL;
+	float *tArr=NULL;
+
+	float *fArr1=NULL;
+	float *tArr1=NULL;
+	float *aArr1=NULL;
+
+	float *dataArr=NULL;
+
+	int length1=0;
+
+	float cum=0;
+
+	length1=floorf(timeArr[length-1]*samplate);
+
+	fArr=__vnew(length, NULL);
+	tArr=__vnew(length, NULL);
+
+	__vmul_value(timeArr, samplate, length, tArr);
+	__vmul_value(freArr, 2*M_PI/samplate, length, fArr);
+
+	fArr1=__vnew(length1, NULL);
+	__varange(0, length1, 1, &tArr1);
+
+	__vinterp_linear(tArr,fArr,length,tArr1,length1,fArr1);
+
+	aArr1=__vnew(length1, NULL);
+	if(ampArr){
+		__vinterp_linear(tArr,ampArr,length,tArr1,length1,aArr1);
+	}
+	else{
+		for(int i=0;i<length1;i++){
+			aArr1[i]=1;
+		}
+	}
+
+	// synth wave
+	dataArr=__vnew(length1, NULL);
+	for(int i=0;i<length1;i++){
+		cum+=fArr1[i];
+		dataArr[i]=cum;
+	}
+
+	__vsin(dataArr, length1, NULL);
+	__vmul(dataArr, aArr1, length1, NULL);
+
+	free(fArr);
+	free(tArr);
+
+	free(fArr1);
+	free(tArr1);
+	free(aArr1);
+
+	return dataArr;
+}
+
 int util_readWave(char *name,float **dataArr){
 	int status=0;
 	WaveReadObj waveRead=NULL;

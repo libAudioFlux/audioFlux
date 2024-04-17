@@ -81,6 +81,9 @@ void util_delta(float *dataArr1,int length,int order,float *dataArr2);
 // pre_emphasis; coef 0.97
 void util_preEmphasis(float *vArr1,int length,float coef,float *vArr2);
 
+// synthesized f0; length1=floor(time*fs), ampArr can NULL, default is 1
+float *util_synthF0(float *timeArr,float *freArr,int samplate,int length,float *ampArr);
+
 // wave
 int util_readWave(char *name,float **dataArr);
 void util_writeWave(char *name,float *dataArr,int length);
