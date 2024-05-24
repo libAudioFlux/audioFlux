@@ -1,5 +1,8 @@
 import warnings
 import numpy as np
+from ctypes import c_int, c_float, c_void_p, POINTER
+
+from audioflux.fftlib import get_fft_lib
 
 __all__ = [
     'ascontiguous_T',
@@ -7,7 +10,8 @@ __all__ = [
     'format_channel',
     'revoke_channel',
     'check_audio',
-    'check_audio_length'
+    'check_audio_length',
+    'synth_f0'
 ]
 
 
@@ -104,3 +108,76 @@ def check_audio_length(X, radix2_exp):
                       f'only the first fft_length={fft_length} data are valid')
         X = X[..., :fft_length].copy()
     return X
+
+
+def synth_f0(times, frequencies, samplate, amplitudes=None):
+    """
+    Generate an audio array based on the frequency f0.
+
+    Parameters
+    ----------
+    times: ndarray  [shape=(n)]
+        Time points for each frequency, in seconds.
+
+    frequencies: ndarray [shape=(n)]
+        Array of frequencies, in Hz.
+
+    samplate: int
+        The output sampling rate.
+
+    amplitudes: ndarray [shape=(n)]
+        The amplitude of each frequency, ranging from 0 to 1.
+
+        Default is None, which means that the amplitude is 1. Like: `np.ones((n,))`
+
+    Returns
+    -------
+    out: ndarray
+        Return the audio array generated based on the frequencies
+
+
+    Examples
+    --------
+
+    >>> import audioflux as af
+    >>> import numpy as np
+    >>> f0_arr = np.ones((1024,)) * 220
+    >>> times = np.arange(0, f0_arr.shape[0]) * (1024 / 32000)
+    >>> amplitude_arr = np.ones_like(f0_arr) * 0.4
+    >>> audio_arr = af.utils.synth_f0(times, f0_arr, 32000, amplitude_arr)
+
+    """
+    times = np.asarray(times, dtype=np.float32, order='C')
+    if times.ndim != 1:
+        raise ValueError(f"times[ndim={times.ndim}] must be a 1D array")
+
+    frequencies = np.asarray(frequencies, dtype=np.float32, order='C')
+    if frequencies.ndim != 1:
+        raise ValueError(f"frequencies[ndim={frequencies.ndim}] must be a 1D array")
+
+    if times.shape[0] != frequencies.shape[0]:
+        raise ValueError(f"The lengths of times and frequencies must be the same.")
+
+    if amplitudes is not None:
+        amplitudes = np.asarray(amplitudes, dtype=np.float32, order='C')
+        if amplitudes.ndim != 1:
+            raise ValueError(f"amplitudes[ndim={amplitudes.ndim}] must be a 1D array")
+
+        if amplitudes.shape[0] != frequencies.shape[0]:
+            raise ValueError(f"The lengths of amplitudes and frequencies must be the same.")
+
+    fn = get_fft_lib()['util_synthF0']
+    fn.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS'),
+        np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS'),
+        c_int, c_int,
+        POINTER(c_void_p) if amplitudes is None else np.ctypeslib.ndpointer(dtype=np.float32, ndim=1, flags='C_CONTIGUOUS'),
+    ]
+    fn.restype = c_void_p
+
+    length = times.shape[0]
+    length1 = round(np.max(times) * samplate)
+
+    p = fn(times, frequencies, c_int(length), c_int(samplate), amplitudes)
+    ret = np.frombuffer((c_float * length1).from_address(p), np.float32).copy()
+    return ret

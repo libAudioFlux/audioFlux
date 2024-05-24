@@ -1,9 +1,9 @@
 import warnings
 
 import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.axes as plaxes
-from matplotlib import colormaps
 from matplotlib.ticker import Formatter, ScalarFormatter, MaxNLocator, SymmetricalLogLocator, FixedLocator
 from audioflux.utils import midi_to_note
 
@@ -190,7 +190,12 @@ def fill_spec(
     if y_axis == 'chroma':
         y_coords = np.arange(data.shape[-2] + 1)
 
-    cmap = colormaps['plasma']
+    if hasattr(mpl, 'colormaps'):
+        cmap = mpl.colormaps['plasma']
+    else:
+        from matplotlib.cm import get_cmap
+        cmap = get_cmap('plasma')
+
     collection = axes.pcolormesh(x_coords, y_coords, data, cmap=cmap)
 
     axes.set_xlim(np.min(x_coords), np.max(x_coords))
