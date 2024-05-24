@@ -139,6 +139,7 @@ def synth_f0(times, frequencies, samplate, amplitudes=None):
     Examples
     --------
 
+    >>> import audioflux as af
     >>> import numpy as np
     >>> f0_arr = np.ones((1024,)) * 220
     >>> times = np.arange(0, f0_arr.shape[0]) * (1024 / 32000)

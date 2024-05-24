@@ -1,8 +1,9 @@
 ChangeLog
 =========
 v0.1.9
+------
 * New features:
-    * Add `audioflux.utils.synth_f0`
+    * Add `audioflux.utils.synth_f0`.
 * Fix bug:
     * `#37 <https://github.com/libAudioFlux/audioFlux/issues/37>`__: Fix `audioflux.display.fill_spec` bug.
 
