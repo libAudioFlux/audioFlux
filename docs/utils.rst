@@ -63,6 +63,7 @@ Utils
     audioflux.utils.midi_to_hz
     audioflux.utils.hz_to_note
     audioflux.utils.hz_to_midi
+    audioflux.utils.synth_f0
 
 Sample
 ------
