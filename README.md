@@ -34,6 +34,9 @@ field such as Classification, Separation, Music Information Retrieval(MIR) and A
   * Add a variety of Pitch algorithms: `YIN`, `CEP`, `PEF`, `NCF`, `HPS`, `LHS`, `STFT` and `FFP`.
   * Add `PitchShift` and `TimeStretch` algorithms.
 
+* v0.1.10 
+  * Add `TuneTrack` algorithms to an instrument tuner: accurate, fast, smooth for guitar, ukulele, bass, banjo, mandolin, violin and etc.
+
 
 ### Table of Contents
 

@@ -8,14 +8,16 @@ aux_source_directory(classic classic)
 aux_source_directory(filterbank filterbank)
 aux_source_directory(feature feature)
 aux_source_directory(mir mir)
+aux_source_directory(track track)
 aux_source_directory(. SOURCES)
 
-list(APPEND SOURCES ${vector} ${util} ${dsp} ${classic} ${filterbank} ${feature} ${mir})
+list(APPEND SOURCES ${vector} ${util} ${dsp} ${classic} ${filterbank} ${feature} ${mir} ${track})
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "iOS")
 	set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -DHAVE_ACCELERATE")
 
-	# set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -s")
+	# set(CMAKE_C_FLAGS_RELEASE "-Os -DNDEBUG")
+	# set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-s")
 
 	add_library(audioflux
 				${SOURCES})
@@ -36,6 +38,9 @@ elseif (${CMAKE_SYSTEM_NAME} MATCHES "darwin")
 		link_directories(${ompPath})
 	endif()
 
+	# set(CMAKE_C_FLAGS_RELEASE "-Os -DNDEBUG")
+	# set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-s")
+
 	set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -O3 -DHAVE_ACCELERATE -DHAVE_OMP -fopenmp ")
 
 	add_library(audioflux
@@ -53,7 +58,8 @@ elseif (${CMAKE_SYSTEM_NAME} MATCHES "android")
 	set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -std=c99  -DHAVE_FFTW3F ")
 
 	# strip
-	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -s")
+	set(CMAKE_C_FLAGS_RELEASE "-Os -DNDEBUG")
+	set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-s")
 
 	if(${CMAKE_ANDROID_ARCH_ABI} MATCHES "armeabi-v7a")
 		set(fftwPath ../scripts/android/fftw3/armeabi-v7a)
@@ -163,6 +169,33 @@ elseif (${CMAKE_SYSTEM_NAME} MATCHES "win64")
 	target_link_libraries(audioflux
 						 fftw3f-3
 						 )
+
+	install(TARGETS audioflux DESTINATION lib)
+
+
+elseif (DEFINED OHOS_PLATFORM)
+	set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -DHAVE_FFTW3F ")
+
+	# strip
+	set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -Os -DNDEBUG -Wl,-s")
+
+	if(${OHOS_ARCH} MATCHES "armeabi-v7a")
+		set(fftwPath ../scripts/ohos/fftw3/armeabi-v7a)
+	elseif(${OHOS_ARCH} MATCHES "arm64-v8a")
+		set(fftwPath ../scripts/ohos/fftw3/arm64-v8a)
+	endif()
+
+	include_directories(${fftwPath})
+	link_directories(${fftwPath})
+
+	# add dylib, include source path
+	add_library(audioflux
+				SHARED
+				${SOURCES})
+
+	# link target lib
+	target_link_libraries(audioflux
+						 fftw3f)
 
 	install(TARGETS audioflux DESTINATION lib)
 
