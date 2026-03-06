@@ -15,9 +15,8 @@
 
 #include "../stft_algorithm.h"
 
-#include "../classic/trist.h"
-
 #include "_queue.h"
+#include "_trist3.h"
 #include "_pitch_ffp.h"
 
 struct OpaquePitchFFP{
@@ -493,8 +492,14 @@ static void __pitchFFPObj_sub(PitchFFPObj pitchFFPObj,float *freArr){
 
 		pitchFFPObj->formatFlagArr[i]=0; // reset
 
-		// load trist!!!
-
+		flag=trist3(corrArr1,dbArr1,heightArr1,len1,
+					corrArr2,dbArr2,heightArr2,len2,
+					corrArr3,dbArr3,heightArr3,len3,
+					lightArr[i],freArr+i,
+					pitchFFPObj->formatFlagArr+i,
+					pitchFFPObj->formatFreArr1+i,pitchFFPObj->formatFreArr2+i,pitchFFPObj->formatFreArr3+i,
+					pitchFFPObj->formatDbArr1+i,pitchFFPObj->formatDbArr2+i,pitchFFPObj->formatDbArr3+i);
+		
 		pitchFFPObj->sucessTypeArr[i]=flag;
 	}
 }
